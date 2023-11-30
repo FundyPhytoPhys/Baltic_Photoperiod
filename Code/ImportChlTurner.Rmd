@@ -38,7 +38,7 @@ library(broom)
 library(knitr)
 library(OneR)
 library(zoo)
-library(strucchange)
+#library(strucchange)
 
 library(googledrive)
 library(googlesheets4)
@@ -46,18 +46,13 @@ library(readxl)
 ```
 
 
-Load metadatacatalog
+Load Turner Data
 ```{r load local metadatacatalog, message = FALSE, warning = FALSE, echo=FALSE}
 gs4_deauth()
 
-# imagine this is the URL or ID of a Sheet readable by anyone (with a link)
-# MultiCulti metadata
-MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomfuwn6aAg7dBoq1IqrM/edit#gid=0") %>%
-  #mutate(Date = as.numeric(Date)) %>%
+#URL Turner Data readable by anyone with link
+ChlData <- read_sheet("https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomfuwn6aAg7dBoq1IqrM/edit#gid=0") %>%
   mutate(DATE = ymd(`DATE`)) 
-  #mutate(StartExDate = ymd(`StartExDate`)) 
-  # mutate(StartExDate = ymd(`StartExDate`))
-# %>%
 ```
 
 Load Multiculti catalog
@@ -92,61 +87,19 @@ Colours_nm
 ```
 
 ```{r}
-MetaDataAll <- MetaData %>%
+TurnerMeta <- ChlData %>%
   left_join(., Catalog, by = c("CultureID" = "ID"))
 ```
 
 
-```{r load local catalog, message = FALSE, warning = FALSE, echo=FALSE}
-#col_types specified for some columns as only the last few rows of a large dataset contained values for these columns and the values were not being read in properly
-#there is probably a more robust way to deal with this issue
-# MetaData <- read_csv("../MURIS_catalog.csv") %>%
-#   rename(CultureID = id)
-# 
-# MetaData <- MetaData %>%
-#   mutate(ExpSalinity = (((culture_inocul_L * source_salinity)+(media_inocul_L*salinity))/(culture_inocul_L+media_inocul_L)))
-# 
-# GrowthLong <- readRDS(file = file.path(DataFolder,paste(Project,FileIDSingle, "GrowthLong.Rds", sep  = "_"),fsep = .Platform$file.sep)) %>%
-#   rename(CultureID = id) %>% 
-#   mutate(ObsDate = format(datetime, format = "%Y-%m-%d")) 
-#   #filter(E_hours == '0') %>% #select only E-hour == 0, as starting point for plate inoculation and following Solisense-analyses
-#   
-# 
-# 
-# 
-# MetaGrowthData <- full_join(MetaData, GrowthLong) %>%
-#   filter(E_hours != 'NA')
-# 
-# MediaBlank <- readRDS(file = file.path(DataFolder,paste(Project, "MediaBlankAll.Rds", sep  = "_"),fsep = .Platform$file.sep)) %>%
-#   group_by(Wavelength, ExpSalinity) %>%
-#   summarise(MeanBlankOD = mean(OD))
-# 
-# MetaGrowthBlank <- left_join(MetaGrowthData, MediaBlank, by = c("ExpSalinity", "Wavelength")) %>%
-#   filter(Wavelength %in% AbsWL) 
-# 
-# GrowthLong <- readRDS(file = file.path(DataFolder,paste(Project,FileIDSingle, "GrowthLong.Rds", sep  = "_"),fsep = .Platform$file.sep))
-# 
-# GrowthLong <- GrowthLong %>%
-#   mutate(CorrOD = if_else(CorrOD < 0.001, 0.001, CorrOD)) %>% #experimentally test to set values below 0.001 to 0.001 (~detection limit device)
-#   mutate(ObsDate = format(datetime, format = "%Y-%m-%d")) %>%
-#   mutate(ObsDate = ymd(ObsDate)) %>%
-#   filter(Wavelength %in% AbsWL)
-
-```
-
 ```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
-gs4_deauth()
-#ChloroData <- read_sheet(ChloroGoogle)
 
-ChlTurner <- MetaDataAll %>%
+TurnerMeta <- TurnerMeta %>%
   mutate(Chl_intercept = as.double(Chl_intercept)) %>%
   mutate(Chl_slope = as.double(Chl_slope)) %>%
   mutate(Reading_rfu = as.double(Reading_rfu)) %>%
-    mutate(SolventVol_ul = as.double(SolventVol_ul)) %>%
+  mutate(SolventVol_ul = as.double(SolventVol_ul)) %>%
     mutate(SampleVol_ul = as.double(SampleVol_ul)) %>%
-  #mutate(ChlDateTime = ymd_hms(paste(DATE, TIME))) %>%
-  #rename(ObsDate = DATE, ObsTime = TIME, id = CultureID) %>%
-  #mutate(ObsDate = ymd(ObsDate)) %>%
   mutate(Chl_dil = (Reading_rfu - Chl_intercept)/Chl_slope,
          Chl_ugL = Chl_dil * ((SolventVol_ul + SampleVol_ul)/SampleVol_ul),
          Chl_ugmL = Chl_ugL/1000) 
@@ -154,7 +107,7 @@ ChlTurner <- MetaDataAll %>%
 ```
 
 ```{r}
-ChlTurnerAll <- ChlTurner %>%
+ChlTurnerAll <- TurnerMeta %>%
 
 group_by(CultureID, DATE, TIME) %>%
 
@@ -447,10 +400,6 @@ ChlTurnerAll<-ChlTurnerAll %>%
 saveRDS(ChlTurnerAll, file.path(DataOut, paste(Project, "ChlTurner.Rds", sep = "_"), fsep = .Platform$file.sep))
 
 ```
-
-
-
-
 
 
 Chl Turner correlation file
