@@ -160,7 +160,7 @@ arrowdf5 <- tibble(Strain = "PE-rich_127", E_days = 3, Par_ue = 300)
 arrowdf6 <- tibble(Strain = "PE-rich_127", E_days = 3, Par_ue = 300)
 
 
-Plot <- OLISSpectraShort %>%
+OLISSpectraShort %>%
   filter(Photoperiod == "12") %>%
   filter(Strain == "PE-rich_127" | Strain == "PC-rich_077") %>%
   filter(Par_ue == 300) %>%
@@ -235,12 +235,15 @@ Plot <- OLISSpectraShort %>%
         legend.key.width= unit(0.3, 'cm'),
         #plot.background = element_rect(colour = "dodgerblue4", size = 3),
         legend.text = element_text(size=10))
-Plot
+
+#ggsave(filename = file.path("..", "Output", "Plots", "WholeCellSpectra.png"), plot = WholeCellSpectraPlot)
+
+ggsave(filename = file.path("..", "Output", "Plots", "WholeCellSpectra.png"), plot = last_plot())
 
 
 ```
 
-Olis Plot
+# Olis Plot
 ```{r fig.height = 10, fig.width = 8}
 Par_ue.labs <- c("30 µE", "90 µE", "180 µE", "Phase of growth", "900 µE")
 names(Par_ue.labs) <- c("30", "90", "180", "300", "900")
@@ -782,7 +785,7 @@ Plot
 
 
 
-Plot<-GScatalogAll %>%
+GScatalogAll %>%
   #mutate(HalfPhotoperiod = Photoperiod/2) %>% 
   #filter(meanAccLen>=0) %>%
   filter(Phase != "TP") %>%
@@ -829,7 +832,6 @@ labs(y = "AccLen (h)", x = "Photoperiod (h)") +
         # legend.direction = "vertical", legend.box = "vertical",
         legend.title = element_blank(),
         legend.text = element_text(size=10))
-Plot
 
 
 ```
@@ -845,7 +847,7 @@ lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
 
-Plot<-GScatalogAll %>%
+GScatalogAll %>%
   filter(Phase != "TP") %>% 
   filter(meanAccLen>0) %>% 
   ggplot() +
@@ -887,7 +889,6 @@ Plot<-GScatalogAll %>%
         # legend.direction = "vertical", legend.box = "vertical",
         legend.title = element_blank(),
         legend.text = element_text(size=10))
-Plot
 
 
 
@@ -948,7 +949,7 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 
 
 
-Plot<-GScatalogAllSineok %>%
+GScatalogAllSineok %>%
   filter(Phase != "TP") %>% 
   filter(meanAccLen>0) %>% 
   ggplot() +
@@ -971,11 +972,9 @@ Plot<-GScatalogAllSineok %>%
   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   # ggh4x::facet_nested(rows = vars(Par_ue), cols = vars(Photoperiod), labeller = labeller(Photoperiod = Photoperiod.labs,  Par_ue = Par_ue.labs, WL = WL.labs, O2 = O2.labs)) +
   theme_bw()
-Plot
 
 
-
-Plot<-GScatalogAllSineok %>%
+GScatalogAllSineok %>%
   #mutate(HalfPhotoperiod = Photoperiod/2) %>% 
   #filter(meanAccLen>=0) %>%
   filter(Phase != "TP") %>%
@@ -997,10 +996,6 @@ Plot<-GScatalogAllSineok %>%
   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   # ggh4x::facet_nested(rows = vars(Par_ue), cols = vars(Photoperiod), labeller = labeller(Photoperiod = Photoperiod.labs,  Par_ue = Par_ue.labs, WL = WL.labs, O2 = O2.labs)) +
   theme_bw() 
-Plot
-
-
-
 
 ```
 
