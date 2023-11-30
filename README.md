@@ -1,16 +1,16 @@
-# Project Title
+# Baltic_Photoperiod
 
 ## Summary
 
-Provide a brief description of the project - 150 words.
+Analyses of the responses of Baltic picocyanobacteria, of distinct pigment compositions, to changes in photoperiod and growth light level.
 
 ## Highly Qualified Personnel
 
-- Name, Institution, email, ORCID 0000-0000-0000-0000
+- Douglas A. Campbell, Mount Allison University, dcampbel@mta.ca, ORCID 0000-0001-8996-5463
 
 ## Principle Investigators
 
-- Douglas A. Campbell, Mount Allison University, dcampbel@mta.ca, ORCID 0000-0001-8996-5463
+- Sylwia Sliwinska-Wilczewska, Mount Allison University, @mta.ca, 
 
 ## Primary Contact  
 
