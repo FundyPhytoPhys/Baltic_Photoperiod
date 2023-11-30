@@ -13,7 +13,7 @@ csl: plos-one.csl
 
 
 
-```{r}
+```{r project variables}
 Project <- "PicoBaltic"
 DataOut <- file.path("..", "ImportedData", "Turner")
 # DataType <- "Calibration"
@@ -424,7 +424,6 @@ MetaDataTurner <- read_sheet("https://docs.google.com/spreadsheets/d/1JvcZ8dgPwD
 
 Chl Turner correlation file
 ```{r}
-gs4_deauth()
 
 ChlTurner <- MetaDataTurner %>%
   mutate(Dilution = as.character(Dilution)) %>%
