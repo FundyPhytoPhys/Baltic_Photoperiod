@@ -48,7 +48,7 @@ output:
   #   pandoc_args: 
   #     - '--lua-filter=scholarly-metadata.lua'
   #     - '--lua-filter=author-info-blocks.lua'
-bibliography: [PicoBaltic.bib, packages.bib]
+bibliography: [BalticPhotoperiod.bib, packages.bib]
 csl: elsevier-harvard.csl
 ---
 
@@ -151,7 +151,7 @@ Panel B- Could be replaced by the short term exponential growth rate take over 1
 
 ```{r AbsoluteGrowth, fig.cap = AbsoluteGrowth_cap, fig.height = 6, fig.width = 8, echo = FALSE}
 AbsoluteGrowth_cap<- glue("A) Example of growth (OD~680~, thin black line) of a *Synechococcus* sp. strain fit with logistic growth curve fit (red).  Thin grey line shows the first derivative (taken over 1 h increments) for growth. Within a diel period the acceleration length (AccLen) is the time between the start of the photoperiod and the time to reach the diel maximum of the first derivative of growth; tMaxDG, marked with dotted vertical lines. Deceleration length (DecLen) is then the time from tMaxDG to the end of the photoperiod. We then define the diel growth symmetry (GS) as AccLen/DecLen. The solid vertical line marks the time for the of the hourly first derivative, used as to indicate the transition from near-exponential to pre-stationary growth phases.", .sep = " ")
-knitr::include_graphics(file.path( FiguresFP,"AbsoluteGrowth.png"))   XXXXRemovve Absolute growth increment, replace through out with First Derivative (hourly)
+knitr::include_graphics(file.path( FiguresFP,"AbsoluteGrowth.png"))   #XXXXRemovve Absolute growth increment, replace through out with First Derivative (hourly)
 ```
 
 Based on the first derivative (taken over 1 h increments) for growth were determined the acceleration length (AccLen), defined as the time (expressed in h) between the start of the photoperiod and the time of the tMaxDG. Decleration length (DecLen) is the time from tMaxDG to the end of the photoperiod. We define the diel growth symmetry (GS) as AccLen/DecLen (Eq. \@ref(eq:GS)).
