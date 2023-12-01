@@ -33,8 +33,8 @@ library(broom)
 library(knitr)
 library(OneR)
 
-library(googledrive)
-library(googlesheets4)
+#library(googledrive)
+#library(googlesheets4)
 library(readxl)
 
 library(ggspectra)
@@ -62,18 +62,23 @@ names(Colours_nm) <- Wavelengths_nm
 Colours_nm
 
 ```
+
 Load Multiculti catalog
 ```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
-gs4_deauth()
+# gs4_deauth()
+# 
+# MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0") %>%
+#   drop_na(WL) %>%
+#   mutate(WL = unlist(WL))
+# 
+# as.data.frame(MetaData)
+# MetaData <- MetaData %>%
+#    mutate(ExpDate = ymd(ExpDate),
+#           ExpEndDate = ymd_hms(`ExpEndDate`))
+# 
+# saveRDS(.....)
 
-MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0") %>%
-  drop_na(WL) %>%
-  mutate(WL = unlist(WL))
-
-as.data.frame(MetaData)
-MetaData <- MetaData %>%
-   mutate(ExpDate = ymd(ExpDate),
-          ExpEndDate = ymd_hms(`ExpEndDate`))
+readRDS(xxxxx)
 ```
 
 
