@@ -443,7 +443,7 @@ rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_
 ```
 
 ```{r save rds}
-saveRDS(OLISSpectraMetaAllPURShort, file.path(DataOut, paste(Project, "OlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(OLISSpectraMetaAllPURShort, file.path(DataOut, paste(Project, "ProcessedOlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 
