@@ -16,7 +16,7 @@ output:
 
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ProcessedData")
+DataOut <- file.path("..", "Data", "ImportedData")
 DataIn <- file.path("..", "Data", "RawData", "OlisSpectra", fsep = .Platform$file.sep)
 
 FileID <- "Smooth"
@@ -147,6 +147,9 @@ OLISSpectraMeta440<-OLISSpectraMeta440 %>%
   select(c(Run, CultureID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, Optode, OptodeCh, ExpEndDate, FilenameOlis, ObsDate, Absorbance, nm, E_days, SumAb, Abs440, AbsNorm440, SumAbNorm))
 
 colnames(OLISSpectraMeta440)
+```
+```{r Removed unnecessary files from environment}
+rm(Absorbance440, MetaData, TargetSpectra, OLISSpectraMeta, TargetSpectraLong)
 ```
 
 ```{r save rds}
