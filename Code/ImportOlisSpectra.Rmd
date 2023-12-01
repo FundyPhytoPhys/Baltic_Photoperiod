@@ -1,5 +1,5 @@
 ---
-title: "Import OLIS spectral data data"
+title: "Import OLIS spectral data"
 author: "Douglas A. Campbell, Sylwia Sliwinska-Wilczewska"
 date: "`r format(Sys.Date())`"
 output:
