@@ -52,11 +52,7 @@ library(RColorBrewer)
 library(viridis)
 library(scales)
 
-library(reshape)
-library(patchwork)
-library(minpack.lm)
 library(Cairo) #for greek symbols
-
 ```
 
 
@@ -73,69 +69,51 @@ list.files(path = DataIn, pattern = Project, full.names = TRUE)
 ```
 ```{r Read imported Olis file}
 #File choosen for spectra plot - 4 spectra only
-OLISSpectraShortFile <- "../Data/ProcessedData/Baltic_Photoperiod_OlisSpectra.Rds"
-OLISSpectraShortFileName <- str_split(string = OLISSpectraShortFile, "/")[[1]][3] %>%
+OLISSpectraFile <- "../Data/ProcessedData/Baltic_Photoperiod_OlisSpectra.Rds"
+OLISSpectraFileName <- str_split(string = OLISSpectraFile, "/")[[1]][3] %>%
   str_remove(pattern = ".Rds")
-OLISSpectraShort <- readRDS(OLISSpectraShortFile)  %>%
+OLISSpectra <- readRDS(OLISSpectraFile)  %>%
   ungroup()
 ```
 
-```{r Delete unnecessary strains}
-OLISSpectraShort1 <- OLISSpectraShort %>%
-    filter(Strain=="BA127R" |Strain=="BA48R" | Strain=="BA56G" | Strain=="BA77G") 
-```
-
-```{r Changes in strain names}
-OLISSpectraShort2 <- OLISSpectraShort1 %>%
-      mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
-         Strain=="BA48R"~"PE-rich_048",
-        Strain=="BA56G"~"PC-rich_056",
-         Strain=="BA77G"~"PC-rich_077"))
-```
-
-```{r}
-OLISSpectraShort3<-OLISSpectraShort2 %>% 
-  filter(Strain == "PE-rich_127" | Strain == "PC-rich_077") %>%
-  filter(Par_ue== 300) %>%
-  filter(Photoperiod==12) %>%
-  filter(WL=="WW") %>%
+#Clean unnecessary runs! - fix this Sylwia later!
+```{r Delete unnecessary data}
+OLISSpectraClean <- OLISSpectra %>%
+  filter(Strain=="BA127R" |Strain=="BA48R" | Strain=="BA56G" | Strain=="BA77G") %>% 
+  filter(WL=="WW") %>% 
   filter(O2==21) %>% 
-  filter(E_days==6 | E_days == 2 | E_days == 3) 
-
+  filter(MC!= "MCMIX006") %>% 
+  filter(MC!= "MCMIX004")
 ```
-
-
 
 Export Jaz file
 ```{r}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "CleanData")
 DataIn <- file.path("..", "Data", "ProcessedData", fsep = .Platform$file.sep)
 
 FileEncode <- "UTF-8"
 Delimiter <- ","
-
 HeaderRows <- 0
 ```
 
-Jaz file
-Exported from PICO_SySlJazSpec_MultiCulti.Rmd only first time in session
-```{r}
+```{r Exported Rds only first time in session}
 list.files(path = DataIn, pattern = Project, full.names = TRUE)
 ```
 
-Jaz file
-```{r read ProcessFile}
-JazFile <- "../ImportedData/Jaz/PicoBaltic_MultiCultiSpectraSySlWWPhotoperiodAll.Rds"
+```{r read Jaz file}
+JazFile <- "../Data/ProcessedData/Baltic_Photoperiod_JazEm.Rds"
 
 JazFileName <- str_split(string = JazFile, "/")[[1]][3] %>%
   str_remove(pattern = ".Rds")
 
 JazData <- readRDS(JazFile)  %>%
   ungroup()
-
-colnames(JazData)
 ```
+```{r Clean unnecessary data}
+JazData<-JazData %>% 
+  filter(WL=="WW")
+```
+
 
 ```{r}
 JazData <- JazData %>%
@@ -143,12 +121,12 @@ JazData <- JazData %>%
 colnames(JazData)
 
 JazDataRound <- JazData %>%
-group_by(Filename, WavelengthRound) %>%
-  summarize(Counts, Filename, Instrument, Date, Strain, Par, WL, CDateTime, WavelengthRound, CountsMean = mean(Counts)) %>%
+group_by(FilenameJaz, WavelengthRound) %>%
+  summarize(Counts, FilenameJaz, ObsDate, Strain, Par_ue, WL, WavelengthRound, CountsMean = mean(Counts)) %>%
 ungroup()
 
 JazDataRound <- JazDataRound %>%
-  summarize(Filename, Strain, Par, WL, WavelengthRound, CountsMean) %>%
+  summarize(FilenameJaz, Strain, Par_ue, WL, WavelengthRound, CountsMean) %>%
   unique()
 
 JazDataRound <- JazDataRound %>%
@@ -159,26 +137,24 @@ Normalization at 439
 ```{r}
 
 EmissionJazWW <- JazDataRound %>%
-  group_by(WL, Strain, Par) %>%
+  group_by(WL, Strain, Par_ue) %>%
   filter(WavelengthRound == 439) %>%
   mutate(EmJaz439 = CountsMean) %>%
-  select(Strain, EmJaz439, Par) %>%
+  select(Strain, EmJaz439, Par_ue) %>%
   ungroup()
 
 JazDataRoundMeta <- JazDataRound %>%
   left_join(., EmissionJazWW) %>%
   mutate(EmNormJaz439 = CountsMean / EmJaz439)
-  
 ```
-Combine Olis spectra and Jaz
-```{r}
+```{r Combine Olis spectra and Jaz data}
 
-OLISSpectraMetaAll <- OLISSpectraMeta440All %>%
-  left_join(., JazDataRoundMeta, by = c("Par_ue" = "Par", "nm" = "WavelengthRound", "Strain" = "Strain", "WL" = "WL")) %>%
+OLISSpectraMetaAll <- OLISSpectraClean %>%
+  left_join(., JazDataRoundMeta, by = c("Par_ue" = "Par_ue", "nm" = "WavelengthRound", "Strain" = "Strain", "WL" = "WL")) %>%
   unique()
 
-rm(JazDataRound, EmissionJazWW, JazData)
-rm(OLISSpectraMeta440All, JazDataRoundMeta)
+# rm(JazDataRound, EmissionJazWW, JazData)
+# rm(OLISSpectraMeta440All, JazDataRoundMeta)
 ```
 
 PUR Mireille idea
@@ -209,36 +185,30 @@ OLISSpectraMetaAllPUR2 <- OLISSpectraMetaAllPUR %>%
 
 ```
 
-Clean OLISSpectraMetaAllPUR for WW photoperiod manuscript - contain absorbance and all nm
 ```{r}
-#colnames(OLISSpectraMetaAllPURClean)
-
-OLISSpectraMetaAllPURClean<-OLISSpectraMetaAllPUR %>% 
-  filter(Strain == "BA127R" | Strain == "BA77G" | Strain == "BA48R" | Strain == "BA56G") %>%
-  select(-c(PrimaryOperator, doi, ProjectID, Inoc_mL, Media_mL, Plate, Well, Salinity,  N2, Ar, CO2, Media, MediaDate, SourceSalinity, OptodeCh, InocpH, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ...44, ...45, Description, Motivation, EndDate,  ExpCul, ExpStartTime, Source, Optode, Range, Cdatetime, Project, "Calculated_µmolPhotons_m-2d-1", Temp_c, O2_Category, Filename.x, Filename.y, SumAb, SumAbNorm, CountsMean, PURNormSum, SumEmNormJaz439))
-
-  OLISSpectraMetaAllPURClean1 <- OLISSpectraMetaAllPURClean %>%
-  filter(Photoperiod != "24") %>% 
-  mutate(PARPhotonDose =(Par_ue/2)*Photoperiod*3600)
-  
-  OLISSpectraMetaAllPURClean2 <- OLISSpectraMetaAllPURClean %>%
-  filter(Photoperiod == "24") %>% 
-  mutate(PARPhotonDose = Par_ue*Photoperiod*3600) 
-  
-  OLISAllPURLong <-rbind(OLISSpectraMetaAllPURClean1, OLISSpectraMetaAllPURClean2)
-  
-  rm(OLISSpectraMetaAllPURClean1,OLISSpectraMetaAllPURClean2, OLISSpectraMetaAllPURClean)
-  rm(OLISSpectraMetaAll, OLISSpectraMetaAllPUR)
+OLISSpectraMetaAllPUR<-OLISSpectraMetaAllPUR %>% 
+  filter(PUR>=0)
 ```
 
 
+```{r Changes in strain names}
+OLISSpectraMetaAllPUR <- OLISSpectraMetaAllPUR %>%
+      mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
+         Strain=="BA48R"~"PE-rich_048",
+        Strain=="BA56G"~"PC-rich_056",
+         Strain=="BA77G"~"PC-rich_077"))
+```
 
+```{r}
+OLISSpectraMetaAllPURShort<-OLISSpectraMetaAllPUR %>% 
+  filter(Strain == "PE-rich_127" | Strain == "PC-rich_077") %>%
+  filter(Par_ue== 300) %>%
+  filter(Photoperiod==12) %>%
+  filter(WL=="WW") %>%
+  filter(O2==21) %>% 
+  filter(E_days==6 | E_days == 2 | E_days == 3) 
 
-
-
-
-
-
+```
 
 
 
@@ -279,13 +249,13 @@ arrowdf5 <- tibble(Strain = "PE-rich_127", E_days = 3, Par_ue = 300)
 arrowdf6 <- tibble(Strain = "PE-rich_127", E_days = 3, Par_ue = 300)
 
 
-OLISSpectraShort3 %>%
+OLISSpectraMetaAllPURShort %>%
   # filter(Photoperiod == "12") %>%
   # filter(Strain == "PE-rich_127" | Strain == "PC-rich_077") %>%
   # filter(Par_ue == 300) %>%
   # filter(E_days == "3" | E_days == "7") %>%
   ggplot() +
-  # geom_area(aes(x = nm, y = EmNormJaz439, fill = "gray84"), alpha = 0.6, show.legend = F) +
+  geom_area(aes(x = nm, y = EmNormJaz439, fill = "gray84"), alpha = 0.6, show.legend = F) +
   # geom_area(aes(x = nm, y = PURNormBA127R, fill = "brown4"), alpha = 0.5, show.legend = F) +
   # geom_area(aes(x = nm, y = PURNormBA77G, fill = "palegreen3"), alpha = 0.5, show.legend = F) +
   geom_line(aes(x = nm, y = AbsNorm440, colour = as.factor(Strain), linetype = as.factor(Strain)), show.legend = F, size = 0.7) +
@@ -525,18 +495,11 @@ rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_
 
 
 
+
+
+
+
 PUR, PIGMENTS, GROWTH RATE
-
-
-
-
-
-
-
-
-
-
-
 
 Clean OLISSpectraMetaAllPUR for WW photoperiod manuscript - without absorbance and all nm - smaller df
 ```{r}
