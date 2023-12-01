@@ -88,7 +88,7 @@ JazSpecTrim %>%
   theme_bw() 
 ```
 
-```{r Clean}
+```{r cleaning JazSpecTrim for final rds}
 JazSpecTrim<-JazSpecTrim %>% 
   select(-c(CDateTime))
 
