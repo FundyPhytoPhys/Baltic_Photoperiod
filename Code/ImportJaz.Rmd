@@ -15,7 +15,7 @@ library(googledrive)
 
 ```{r import the data}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ProcessedData")
+DataOut <- file.path("..", "Data", "ImportedData")
 DataIn <- file.path("..", "Data", "RawData", "JazEm", fsep = .Platform$file.sep)
 
 Jazfile <- list.files(path = DataIn, pattern = ".txt", full.names = TRUE)
@@ -94,6 +94,10 @@ JazSpecTrim<-JazSpecTrim %>%
 
 colnames(JazSpecTrim)
 ```
+```{r Removed unnecessary files from environment}
+rm(JazSpec)
+```
+
 ```{r}
  saveRDS(JazSpecTrim, file.path(DataOut, paste(Project, "JazEm.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
