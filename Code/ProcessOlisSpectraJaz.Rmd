@@ -440,9 +440,11 @@ OLISSpectraMetaAllPURShort %>%
 
 ```{r Delete unused stuff from the environment}
 
-rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_textpigment5,data_textpigment6, data_textpigment7, data_textpigment8, data_textpigment9, data_textpigment10, data_textpigment11, data_textpigment12, arrowdf1,arrowdf2,arrowdf3,arrowdf4,arrowdf5,arrowdf6, arrowdf7, arrowdf8, arrowdf9, arrowdf10, arrowdf11, arrowdf12, data_textPUR0, data_textPUR00, data_textPUR1,data_textPUR2)
+rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_textpigment5,data_textpigment6, data_textpigment7, data_textpigment8, data_textpigment9, data_textpigment10, data_textpigment11, data_textpigment12, arrowdf1,arrowdf2,arrowdf3,arrowdf4,arrowdf5,arrowdf6, arrowdf7, arrowdf8, arrowdf9, arrowdf10, arrowdf11, arrowdf12, data_textPUR0, data_textPUR00, data_textPUR1,data_textPUR2, EmissionJazWW, JazData, JazDataRound, JazDataRoundMeta, OLISSpectraMetaAllPURShortBA127R, OLISSpectraMetaAllPURShortBA77G, OLISSpectraClean, OLISSpectraMetaAll, OLISSpectra)
 ```
 
-
+```{r save rds}
+saveRDS(OLISSpectraMetaAllPURShort, file.path(DataOut, paste(Project, "CleanOlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep))
+```
 
 
