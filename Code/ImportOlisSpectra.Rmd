@@ -74,7 +74,7 @@ read.delim_long <- function(flnm, filencode, delimiter, headerrows){read.delim(f
 }
 ```
 
-```{r Import OLISSpectra corrected files}
+```{r Import OLIS Spectra corrected files}
 TargetFile <-  OlisFiles
 TargetSpectra <- TargetFile %>% map_df(~read.delim_plus(flnm = ., filencode = FileEncode, delimiter = Delimiter, headerrows = HeaderRows)) %>% 
   pivot_longer(., -c(`OLIS.3D.ASCII`, Filename, Cdatetime), values_to = "Absorbance", names_to = "SampleID") %>%
@@ -82,13 +82,10 @@ TargetSpectra <- TargetFile %>% map_df(~read.delim_plus(flnm = ., filencode = Fi
   mutate(nm = `OLIS.3D.ASCII`) %>% 
   select(-c(`OLIS.3D.ASCII`))   
 TargetSpectraLong <- TargetSpectra %>%
-  separate(col = Filename, into = c("fp1", "fp2", "fp3", "SpectraDate", "Project", "Source", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
-
+  separate(col = Filename, into = c("fp0", "fp1", "fp2", "fp3", "ObsDate", "Project", "CultureID", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
 TargetSpectraLong <- TargetSpectraLong %>%
-  select(-c(fp1, fp2, fp3, Type, Correction, Smooth, SampleID)) %>% 
-  mutate(CultureID = Source) %>% 
-  select(-c(Source)) %>% 
-  mutate(SpectraDate = ymd(`SpectraDate`)) 
+  select(-c(fp0, fp1, fp2, fp3, Type, Correction, Smooth, SampleID)) %>% 
+  mutate(ObsDate = ymd(`ObsDate`)) 
 ```
 
 ```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
@@ -104,15 +101,19 @@ MetaData <- MetaData %>%
           ExpEndDate = ymd_hms(`ExpEndDate`))
 ```
 
-```{r Merge OLISSpectra with MetaData}
+```{r cleanning MetaData}
+MetaData<-MetaData %>% 
+  select(-c(PrimaryOperator,Description, Motivation, doi, ProjectID, Inoc_mL, Media_mL, ExpCul, ExpStartTime, Temp_c, Plate, Well, EndDate, Salinity, N2, Ar, CO2, O2_Category, Media, MediaDate, Source, SourceSalinity, InocpH, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ...46, ...47, OptodeMeasure, SampleID, "Calculated_µmolPhotons_m-2d-1")) 
+```
 
+```{r Merge OLISSpectra with MetaData}
 OLISSpectraMeta <- MetaData %>%
   left_join(., TargetSpectraLong, by = c("ID" = "CultureID")) 
 
 OLISSpectraMeta <- OLISSpectraMeta %>%
 group_by(ID) %>%
-  arrange(SpectraDate) %>%
-  mutate(E_days = as.numeric((SpectraDate - ExpDate[1]))) %>%
+  arrange(ObsDate) %>%
+  mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
   mutate(SumAb = sum(Absorbance)) %>% 
 ungroup()
 
@@ -121,7 +122,6 @@ OLISSpectraMeta <- OLISSpectraMeta %>%
 ```
 
 ```{r Normalization at 440 }
-
 Absorbance440 <- OLISSpectraMeta %>% 
   filter(nm == 440) %>%
   mutate(Abs440 = Absorbance) %>%
@@ -135,16 +135,15 @@ OLISSpectraMeta440 <- OLISSpectraMeta440 %>%
 group_by(ID, E_days, Par_ue, Photoperiod) %>%
   mutate(SumAbNorm = sum(AbsNorm440)) %>% 
 ungroup()
-
 ```
 
-```{r cleaning OLISSpectraMeta440 for final rds}
+```{r cleaning and ordering OLIS SpectraMeta440 for final rds}
 
 OLISSpectraMeta440<-OLISSpectraMeta440 %>% 
   mutate(CultureID=ID) %>% 
   mutate(FilenameOlis=Filename) %>% 
-  mutate(ObsDate=SpectraDate) %>% 
-  select(-c(PrimaryOperator,Description, Motivation, doi, ProjectID, Inoc_mL, Media_mL, ExpCul, ExpStartTime, Temp_c, Plate, Well, EndDate, Salinity, N2, Ar, CO2, O2_Category, Media, MediaDate, Source, SourceSalinity, InocpH, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ...46, ...47, SampleID, OptodeMeasure, Project, Cdatetime, Range, ID, Filename, "Calculated_µmolPhotons_m-2d-1", SpectraDate)) %>% 
+
+  select(-c(Project, Cdatetime, Range, ID, Filename)) %>% 
   select(c(Run, CultureID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, Optode, OptodeCh, ExpEndDate, FilenameOlis, ObsDate, Absorbance, nm, E_days, SumAb, Abs440, AbsNorm440, SumAbNorm))
 
 colnames(OLISSpectraMeta440)

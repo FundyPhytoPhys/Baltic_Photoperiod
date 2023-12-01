@@ -15,7 +15,7 @@ output:
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "CleanData")
-DataIn <- file.path("..", "Data", "ProcessedData", "OlisSpectra", fsep = .Platform$file.sep)
+DataIn <- file.path("..", "Data", "ProcessedData", fsep = .Platform$file.sep)
 
 FileEncode <- "UTF-8" 
 Delimiter <- ""
@@ -80,7 +80,7 @@ OLIS SPECTRA
 Load previous choosen Olis file - for nice plot
 ```{r read ProcessFile}
 #File choosen for spectra plot - 4 spectra only
-OLISSpectraShortFile <- "../ImportedData/SySlmanuscriptWWPhotoperiod/PicoBaltic_OLISSpectraMetaAllPURShort.Rds"
+OLISSpectraShortFile <- "../Data/ProcessedData/Baltic_Photoperiod_OlisSpectra.Rds"
 OLISSpectraShortFileName <- str_split(string = OLISSpectraShortFile, "/")[[1]][3] %>%
   str_remove(pattern = ".Rds")
 OLISSpectraShort <- readRDS(OLISSpectraShortFile)  %>%
@@ -96,6 +96,18 @@ OLISSpectraShort <- OLISSpectraShort %>%
         Strain=="BA56G"~"PC-rich_056",
          Strain=="BA77G"~"PC-rich_077"))
 ```
+
+```{r}
+OLISSpectraShort<-OLISSpectraShort %>% 
+  filter(Strain=="PE-rich_127") %>% 
+  filter(Strain=="PC-rich_077") %>% 
+  filter(Par_ue== 300) %>% 
+  filter(Photoperiod==12) %>% 
+  filter(E_days==3) %>% 
+  filter(E_days==7)
+```
+
+
 
 OLISSpectraMetaAllPURShort -> File choosen for spectra plot - 4 spectra only
 Olis Plot
