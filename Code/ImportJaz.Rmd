@@ -1,0 +1,101 @@
+---
+title: "Import Jaz emission data"
+author: "Douglas A. Campbell, Sylwia Sliwinska-Wilczewska, Mireille Savoie"
+date: "`r format(Sys.Date())`"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r libraries}
+library(tidyverse)
+library(lubridate)
+library(googledrive)
+```
+
+```{r import the data}
+Project <- "Baltic_Photoperiod"
+DataOut <- file.path("..", "Data", "ProcessedData")
+DataIn <- file.path("..", "Data", "RawData", "JazEm", fsep = .Platform$file.sep)
+
+Jazfile <- list.files(path = DataIn, pattern = ".txt", full.names = TRUE)
+
+Jazfile[1:10]
+unique(duplicated(Jazfile))
+SkipCS <- 14
+FileEncodeCS <- "UTF-8"
+DelimCS <- "\t"
+RollWindow <- 10
+```
+
+```{r read Jaz data using map_df}
+fread_plus <- function(Flnm, Skip, FileEncode, Delim){data.table::fread(file = Flnm, skip = Skip, encoding = FileEncode, sep = Delim, header = FALSE) %>%
+    mutate(Filename = Flnm, CDateTime = ymd_hms(file.info(Flnm)$ctime))
+}
+
+JazSpec <- Jazfile %>%
+  map_df(~fread_plus(Flnm = ., Skip = SkipCS, FileEncode = FileEncodeCS, Delim = DelimCS))
+
+colnames(JazSpec)[1] <- "Wavelength"
+colnames(JazSpec)[2] <- "Counts"
+
+JazSpec[1:10]
+```
+
+```{r filename separation}
+JazSpec <- JazSpec %>% 
+  mutate(Filename = str_remove(Filename, pattern = "../"))  %>% 
+  separate(col = Filename, into = c("fp0", "Project","Instrument","ObsDate", "Strain", "Par_ue", "WL"), sep = "([\\/\\/\\_\\_\\_\\_\\_\\_\\.])", remove = FALSE) %>% 
+  mutate(FilenameJaz=Filename) %>% 
+  select(-c("fp0", "Project","Instrument", "Filename"))
+
+JazSpec <- JazSpec %>% 
+mutate(ObsDate = ymd(ObsDate),
+       Par_ue = as.numeric(Par_ue),
+       WL = as.factor(WL))
+```
+
+```{r remove the wl < 350 and > 750}
+JazSpecTrim <- JazSpec %>% 
+  subset(JazSpec$Wavelength >= 400 & JazSpec$Wavelength <= 701)
+```
+
+```{r Remove all NA columns & empty rows, fix column types}
+not_all_na <- function(x) {!all(is.na(x))}
+
+JazSpecTrim <- JazSpecTrim %>%
+  select_if(not_all_na)
+```
+
+```{r, Find nm at max count and compare with rolling mean of counts}
+JazSpecTrim <- JazSpecTrim %>% 
+  group_by(WL, Strain) %>%
+   mutate(rollmeanCounts = zoo::rollmean(Counts, k = RollWindow, align = "left", fill = NA),
+          is_nm = round(Wavelength[which.max(Counts)]),
+          is_nm_rollmean= round(Wavelength[which.max(rollmeanCounts)])) %>% 
+  ungroup()
+```
+
+```{r initial plot annotate measured nm, fig.height = 6, fig.width = 8}
+JazSpecTrim %>%
+    ggplot() +
+  geom_point(aes(x = Wavelength, y = Counts, colour = as.factor(WL))) +
+  geom_text(aes(x = is_nm, y= max(Counts), label= is_nm), alpha = 0.5 ,hjust = 0.5, vjust=-0.5) +
+  guides(colour = "none") +
+  geom_vline(aes(xintercept = is_nm), linetype = "dashed") +
+  scale_y_continuous(limits = c(0,100000)) +
+  ggh4x::facet_nested(rows = vars(WL), labeller = labeller(WL = label_both, Par = label_both, MultiCulti = label_both)) +
+  theme_bw() 
+```
+
+```{r Clean}
+JazSpecTrim<-JazSpecTrim %>% 
+  select(-c(CDateTime))
+
+colnames(JazSpecTrim)
+```
+```{r}
+ saveRDS(JazSpecTrim, file.path(DataOut, paste(Project, "JazEm.Rds", sep = "_"), fsep = .Platform$file.sep))
+```
+
+
