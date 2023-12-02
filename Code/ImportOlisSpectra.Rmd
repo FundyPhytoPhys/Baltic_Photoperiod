@@ -28,7 +28,6 @@ HeaderRows <- 0
 ```{r load libraries} 
 library(tidyverse)
 library(lubridate)
-#library(stringr)
 library(broom)
 library(knitr)
 library(OneR)
@@ -101,17 +100,12 @@ MetaData <- MetaData %>%
           ExpEndDate = ymd_hms(`ExpEndDate`))
 ```
 
-```{r cleanning MetaData}
-# MetaData<-MetaData %>% 
-#   select(-c(PrimaryOperator,Description, Motivation, doi, ProjectID, Inoc_mL, Media_mL, ExpCul, ExpStartTime, Temp_c, Plate, Well, EndDate, Salinity, N2, Ar, CO2, O2_Category, Media, MediaDate, Source, SourceSalinity, InocpH, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ...46, ...47, OptodeMeasure, SampleID, "Calculated_µmolPhotons_m-2d-1")) 
-```
-
 ```{r Merge OLISSpectra with MetaData}
 OLISSpectraMeta <- MetaData %>%
   left_join(., TargetSpectraLong, by = c("CultureID" = "CultureID")) 
 
 OLISSpectraMeta <- OLISSpectraMeta %>%
-group_by(ID) %>%
+group_by(CultureID) %>%
   arrange(ObsDate) %>%
   mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
   mutate(SumAb = sum(Absorbance)) %>% 
@@ -125,29 +119,27 @@ OLISSpectraMeta <- OLISSpectraMeta %>%
 Absorbance440 <- OLISSpectraMeta %>% 
   filter(nm == 440) %>%
   mutate(Abs440 = Absorbance) %>%
-  select(ID, Strain, Abs440, Par_ue, Photoperiod, E_days)
+  select(CultureID, Strain, Abs440, Par_ue, Photoperiod, E_days)
   
 OLISSpectraMeta440 <- OLISSpectraMeta %>%
   left_join(., Absorbance440) %>%
   mutate(AbsNorm440 = Absorbance / Abs440) 
   
 OLISSpectraMeta440 <- OLISSpectraMeta440 %>%
-group_by(ID, E_days, Par_ue, Photoperiod) %>%
+group_by(CultureID, E_days, Par_ue, Photoperiod) %>%
   mutate(SumAbNorm = sum(AbsNorm440)) %>% 
 ungroup()
 ```
 
 ```{r cleaning and ordering OLIS SpectraMeta440 for final rds}
-
 OLISSpectraMeta440<-OLISSpectraMeta440 %>% 
-  mutate(CultureID=ID) %>% 
   mutate(FilenameOlis=Filename) %>% 
+  select(-c(Project, Cdatetime, Range, Filename)) %>% 
+  select(c(Run, CultureID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, PhotonDose, MC, Tube, O2, WL, LightShape, ExpEndDate, FilenameOlis, ObsDate, Absorbance, nm, E_days, SumAb, Abs440, AbsNorm440, SumAbNorm))
 
-  select(-c(Project, Cdatetime, Range, ID, Filename)) %>% 
-  select(c(Run, CultureID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, Optode, OptodeCh, ExpEndDate, FilenameOlis, ObsDate, Absorbance, nm, E_days, SumAb, Abs440, AbsNorm440, SumAbNorm))
-
-colnames(OLISSpectraMeta440)
+#colnames(OLISSpectraMeta440)
 ```
+
 ```{r Removed unnecessary files from environment}
 rm(Absorbance440, MetaData, TargetSpectra, OLISSpectraMeta, TargetSpectraLong)
 ```
