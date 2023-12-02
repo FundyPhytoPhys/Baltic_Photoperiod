@@ -40,7 +40,7 @@ library(readxl)
 ```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
 gs4_deauth()
 
-MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0") %>%
+MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1y144Qjs1pxO2vYU4G6of69qX1TVlA8WTwnhfVwaSU0U/edit#gid=0") %>%
   drop_na(WL) %>%
   mutate(WL = unlist(WL))
 
@@ -50,22 +50,13 @@ MetaData <- MetaData %>%
           ExpEndDate = ymd_hms(`ExpEndDate`))
 ```
 
-```{r cleanning MetaData}
-MetaData<-MetaData %>% 
-  select(-c(PrimaryOperator,Description, Motivation, doi, ProjectID, Inoc_mL, Media_mL, ExpCul, ExpStartTime, Temp_c, Plate, Well, EndDate, Salinity, N2, Ar, CO2, O2_Category, Media, MediaDate, Source, SourceSalinity, InocpH, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ...46, ...47, OptodeMeasure, SampleID, "Calculated_µmolPhotons_m-2d-1")) 
-```
-
 ```{r Load local GS catalog, message = FALSE, warning = FALSE, echo=FALSE}
 gs4_deauth()
 
-GScatalog<- read_sheet("https://docs.google.com/spreadsheets/d/1JG_GvHuJBtGf4NfWBSrgm0GxM7EpFVLQG-BARl8Lw8A/edit#gid=0")
+GScatalog<- read_sheet("https://docs.google.com/spreadsheets/d/1zqH6iYlqMPigyloLKJPeVWugmcnmgJ-eMU3gLkR6FSU/edit#gid=0")
 
 as.data.frame(GScatalog)
 GScatalog <- GScatalog 
-```
-```{r Clean unnecessary data}
-GScatalog <- GScatalog %>% 
-  select(-c(Acceleration_len, Decceleration_len, Ratio))
 ```
 
 ```{r Prepare data - mutate as numeric, calculate AccLen, DecLen, GS (growth symmetry)}
@@ -90,7 +81,7 @@ GScatalog <- GScatalog %>%
 ```
 
 ```{r Calculate mean of GS from every day (every peak in exp and pre-stationary phase)}
-GScatalog2<-GScatalog %>% 
+GScatalog<-GScatalog %>% 
   filter(AccDecRatio_perc<10) %>% #3 error points 
   group_by(Strain, Photoperiod, Par_ue, Phase) %>%
   summarize(PhotoperiodTstart_h, PhotoperiodTend_h,tMaxDG,tMaxAG, Phase, AchivePreStationary, MaxDG, MaxAG, Acc_perc, Dec_perc, Strain, Par_ue, Photoperiod, O2, WL, OD680start, OD680end, TDG, AccDecRatio_perc, AccLen, DecLen, GS, 
@@ -102,74 +93,24 @@ GScatalog2<-GScatalog %>%
   ungroup() 
 ```
 
-```{r Calculate Photon Dose}
-  GScatalog21 <- GScatalog2 %>%
-  filter(Photoperiod != "24") %>% 
-  mutate(PARPhotonDose =(Par_ue/2)*Photoperiod*3600)
-  
-  GScatalog22 <- GScatalog2 %>%
-  filter(Photoperiod == "24") %>% 
-  mutate(PARPhotonDose = Par_ue*Photoperiod*3600) 
-  
-  GScatalogAll <-rbind(GScatalog21, GScatalog22)
-
-  rm(GScatalog2, GScatalog21, GScatalog22)
+```{r Create some facets labels}
+GScatalog$facetsPar_ue = factor(GScatalog$O2, labels = c("PAR~(µmol~photons~m^{-2}~s^{-1})"))
+GScatalog$facetsPhotoperiod = factor(GScatalog$WL, labels = c("Photoperiod~(h)"))
+GScatalog$facetsStrain = factor(GScatalog$O2, labels = c("Strain"))
+GScatalog$facetsPhase = factor(GScatalog$WL, labels = c("Phase~of~growth"))
 ```
 
-
-vertical lines without 24 photoperiod
-```{r}
-
-data_vline9 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facets= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facets2= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(347,321.02,240.90,187.92,110,347,245.39,189.48,162.62,110,347,168.39,113.76,111.56,110))
-
-data_vline10 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facets= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facets2= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(346,319.92,240.81,214.41,109.5,346,216.33,163.44,136.03,109.5,299.38,166.28,137.32,111.28,109.45))
-
-data_vline11 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facets= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facets2= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(345,347,266.84,240.72,109,345,296.45,217.80,191.03,109,345,191.49,114.95,112.75,108))
-
-data_vline12 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facets= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facets2= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(344, 345, 266.93, 215.42, 108.5,344, 244.38,190.39,163.62,108.5,299.57, 168.85, 137.50, 112.29, 107))
-
-```
-
-Create facets for nice plot
-```{r}
-
-GScatalogAll$facetsPar_ue = factor(GScatalogAll$O2, labels = c("PAR~(µmol~photons~m^{-2}~s^{-1})"))
-
-GScatalogAll$facetsPhotoperiod = factor(GScatalogAll$WL, labels = c("Photoperiod~(h)"))
-
-GScatalogAll$facetsStrain = factor(GScatalogAll$O2, labels = c("Strain"))
-
-GScatalogAll$facetsPhase = factor(GScatalogAll$WL, labels = c("Phase~of~growth"))
-```
-
-
-
-TDG plot
-```{r fig.height = 8, fig.width = 8, warning = FALSE}
-
-
-
-# lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-# 
-# Strain.labs <- c("PE-rich_127", "PE-rich_048", "PC-rich_056", "PC-rich_077")
-# names(Strain.labs) <- c("BA127R", "BA48R", "BA56G", "BA77G")
-# 
-# Par_ue.labs <- c("30 µE", "90 µE", "180 µE", "300 µE", "900 µE")
-# names(Par_ue.labs) <- c("30", "90", "180", "300", "900")
-# WL.labs <- c("Strain")
-# names(WL.labs) <- c("WW")
-# O2.labs <- c("Light level")
-# names(O2.labs) <- c(21)
+```{r Create TDG plot, fig.height = 8, fig.width = 8, warning = FALSE}
 
 #scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
-Plot <- GScatalogAll %>%
+GScatalog %>%
   #filter(Photoperiod != 24) %>% 
   ggplot() +
   geom_point(aes(x = PhotoperiodTend_h, y = TDG, colour = as.factor(Strain)), size = 3.5, alpha = 0.8, show.legend = T) +
-  geom_vline(data = data_vline9, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline10, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline11, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline12, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  # geom_vline(data = data_vline9, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
+  # geom_vline(data = data_vline10, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  # geom_vline(data = data_vline11, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
+  # geom_vline(data = data_vline12, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
 labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
   # scale_x_continuous(breaks=seq(0, 4000000, by = 1000000)) +
   # coord_cartesian(xlim = c(-100, 3300000)) +
@@ -178,11 +119,10 @@ labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   # ggh4x::facet_nested(rows = vars(Par_ue), cols = vars(Photoperiod), labeller = labeller(Photoperiod = Photoperiod.labs,  Par_ue = Par_ue.labs, WL = WL.labs, O2 = O2.labs)) +
   theme_bw() 
-Plot
+
 ```
 
-Create df to show hline
-```{r}
+```{r Create df to show hline}
 data_hlineGS8 <- data.frame(Photoperiod= c(8),facets2= c("Photoperiod~(h)"),value = c(4))
 data_hlineGS12 <- data.frame(Photoperiod= c(12),facets2= c("Photoperiod~(h)"),value = c(6))
 data_hlineGS16 <- data.frame(Photoperiod= c(16),facets2= c("Photoperiod~(h)"),value = c(8))
@@ -199,11 +139,11 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 
 
 
-Plot<-GScatalogAll %>%
+GScatalog %>%
   filter(Phase != "TP") %>% 
   #filter(meanGS<3) %>% 
   ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = meanGS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
+  geom_point(aes(x = PhotonDose, y = meanGS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
   # geom_errorbar(aes(x = PARPhotonDose, ymin = meanGS_h - sdGS_h, ymax = meanGS_h + sdGS_h, colour = as.factor(Par_ue)), show.legend = F) +
   # geom_hline(data = data_hlineGS8, aes(yintercept = value), linetype="dotted") +
   # geom_hline(data = data_hlineGS12, aes(yintercept = value), linetype="dotdash") +
@@ -237,11 +177,11 @@ Plot<-GScatalogAll %>%
         # legend.direction = "vertical", legend.box = "vertical",
         legend.title = element_blank(),
         legend.text = element_text(size=10))
-Plot
 
 
 
-Plot<-GScatalogAll %>%
+
+GScatalog %>%
   #mutate(HalfPhotoperiod = Photoperiod/2) %>% 
   #filter(meanAccLen>=0) %>%
   filter(Phase != "TP") %>%
@@ -288,7 +228,7 @@ labs(y = "AccLen (h)", x = "Photoperiod (h)") +
         # legend.direction = "vertical", legend.box = "vertical",
         legend.title = element_blank(),
         legend.text = element_text(size=10))
-Plot
+
 
 
 ```
@@ -304,7 +244,7 @@ lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
 
-Plot<-GScatalogAll %>%
+GScatalog %>%
   filter(Phase != "TP") %>% 
   filter(meanAccLen>0) %>% 
   ggplot() +
@@ -346,7 +286,7 @@ Plot<-GScatalogAll %>%
         # legend.direction = "vertical", legend.box = "vertical",
         legend.title = element_blank(),
         legend.text = element_text(size=10))
-Plot
+
 
 
 
@@ -356,7 +296,7 @@ Calculate real Par_ue and PARphotondoseSine based on AccLen (because of sine sha
 
 change as character to extract first digit without round - b/c this is hours
 ```{r}
-GScatalogAllSine<-GScatalogAll %>% 
+GScatalogAllSine<-GScatalog %>% 
   mutate(meanAccLen = as.character(meanAccLen)) 
 
   library(stringi)
