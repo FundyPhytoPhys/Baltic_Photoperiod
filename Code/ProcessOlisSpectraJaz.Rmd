@@ -54,17 +54,6 @@ OLISSpectra <- readRDS(OLISSpectraFile)  %>%
   ungroup()
 ```
 
-```{r Clean unnecessary data}
-OLISSpectraClean <- OLISSpectra %>%
-  filter(Strain=="BA127R" |Strain=="BA48R" | Strain=="BA56G" | Strain=="BA77G") %>% 
-  filter(WL=="WW") %>% 
-  filter(O2==21) %>% 
-  filter(MC!= "MCMIX006") %>% 
-  filter(MC!= "MCMIX004") %>% 
-  filter(Run!= 64) %>% #different experiment
-  filter(Run!= 67) #different experiment
-```
-
 ```{r set variables}
 Project <- "Baltic_Photoperiod"
 DataIn <- file.path("..", "Data", "ProcessedData", fsep = .Platform$file.sep)
@@ -86,11 +75,6 @@ JazFileName <- str_split(string = JazFile, "/")[[1]][3] %>%
 
 JazData <- readRDS(JazFile)  %>%
   ungroup()
-```
-
-```{r Clean unnecessary data}
-JazData<-JazData %>% 
-  filter(WL=="WW")
 ```
 
 ```{r}
@@ -124,13 +108,13 @@ JazDataRoundMeta <- JazDataRound %>%
   mutate(EmNormJaz439 = CountsMean / EmJaz439)
 ```
 ```{r Combine Olis spectra and Jaz data}
-OLISSpectraMetaAll <- OLISSpectraClean %>%
+OLISSpectraMeta <- OLISSpectra %>%
   left_join(., JazDataRoundMeta, by = c("Par_ue" = "Par_ue", "nm" = "WavelengthRound", "Strain" = "Strain", "WL" = "WL")) %>%
   unique()
 ```
 
 ```{r Estimate PUR}
-OLISSpectraMetaAllPUR <- OLISSpectraMetaAll %>%
+OLISSpectraMetaPUR <- OLISSpectraMeta %>%
   mutate(PURNorm = (AbsNorm440*EmNormJaz439)) %>% 
   group_by(WL, Strain, Par_ue, Photoperiod, E_days) %>%
   mutate(PURNormSum = sum(PURNorm)) %>% 
@@ -140,27 +124,28 @@ OLISSpectraMetaAllPUR <- OLISSpectraMetaAll %>%
 ```
 
 ```{r Calculate PAR and PUR Photon dose}
-OLISSpectraMetaAllPUR1 <- OLISSpectraMetaAllPUR %>%
+OLISSpectraMetaPUR1 <- OLISSpectraMetaPUR %>%
   filter(Photoperiod != "24") %>% 
   mutate(PURPhotonDose =(PUR/2)*Photoperiod*3600) %>% 
   mutate(PARPhotonDose =(Par_ue/2)*Photoperiod*3600)
 
-OLISSpectraMetaAllPUR2 <- OLISSpectraMetaAllPUR %>%
+OLISSpectraMetaPUR2 <- OLISSpectraMetaPUR %>%
   filter(Photoperiod == "24") %>% 
   mutate(PURPhotonDose = PUR*Photoperiod*3600) %>% 
   mutate(PARPhotonDose = Par_ue*Photoperiod*3600) 
   
-  OLISSpectraMetaAllPUR <-rbind(OLISSpectraMetaAllPUR1, OLISSpectraMetaAllPUR2)
-  rm(OLISSpectraMetaAllPUR1,OLISSpectraMetaAllPUR2)
+  OLISSpectraMetaPUR <-rbind(OLISSpectraMetaPUR1, OLISSpectraMetaPUR2)
+  rm(OLISSpectraMetaPUR1,OLISSpectraMetaPUR2)
 ```
 
-```{r Filter negative value}
-OLISSpectraMetaAllPUR<-OLISSpectraMetaAllPUR %>% 
-  filter(PUR>=0)
+```{r Filter error value}
+OLISSpectraMetaPUR<-OLISSpectraMetaPUR %>% 
+  filter(PUR>=0) %>% 
+  filter(PUR<=900)
 ```
 
-```{r Preparing selected data for representative plot}
-OLISSpectraMetaAllPURShortBA127R<- OLISSpectraMetaAllPUR %>%
+```{r Preparing selected data for creating representative plot}
+OLISSpectraMetaPURShortBA127R<- OLISSpectraMetaPUR %>%
   filter(Photoperiod == "12") %>% 
   filter(Strain == "BA127R") %>% 
   filter(Par_ue == 300) %>% 
@@ -168,24 +153,22 @@ OLISSpectraMetaAllPURShortBA127R<- OLISSpectraMetaAllPUR %>%
   mutate(E_days=case_when(E_days==4~3,
          E_days==8~7)) %>% 
   mutate(PURNormBA127R = PURNorm) %>% 
-  select(-c(PURNorm)) %>% 
-  select(-c(FilenameJaz, FilenameOlis))
+  select(-c(PURNorm, FilenameJaz, FilenameOlis, PhotonDose))
 
-OLISSpectraMetaAllPURShortBA77G<- OLISSpectraMetaAllPUR %>%
+OLISSpectraMetaPURShortBA77G<- OLISSpectraMetaPUR %>%
   filter(Photoperiod == "12") %>% 
   filter(Strain == "BA77G") %>% 
   filter(Par_ue == 300) %>% 
   filter(E_days == "3" | E_days == "7") %>% 
   mutate(PURNormBA77G = PURNorm) %>% 
-  select(-c(PURNorm)) %>% 
-  select(-c(FilenameJaz, FilenameOlis))
+  select(-c(PURNorm, FilenameJaz, FilenameOlis, PhotonDose))
 
-OLISSpectraMetaAllPURShort <- OLISSpectraMetaAllPURShortBA127R %>%
-  full_join(., OLISSpectraMetaAllPURShortBA77G, by = c("CultureID" = "CultureID", "Run" = "Run", "Strain" = "Strain", "InnocDate" = "InnocDate", "ExpDate" = "ExpDate", "Par_ue" = "Par_ue", "Photoperiod" = "Photoperiod", "MC"="MC", "Tube" = "Tube", "O2" = "O2", "WL" = "WL", "LightShape" = "LightShape", "Optode"="Optode", "OptodeCh"="OptodeCh", "ExpEndDate"="ExpEndDate", "nm" = "nm", "ObsDate" = "ObsDate", "Absorbance" = "Absorbance", "SumAb" = "SumAb", "Abs440" = "Abs440", "AbsNorm440" = "AbsNorm440", "SumAbNorm" = "SumAbNorm", "E_days" = "E_days", "CountsMean" = "CountsMean", "EmJaz439" = "EmJaz439", "EmNormJaz439" = "EmNormJaz439", "PURNormSum" = "PURNormSum", "SumEmNormJaz439" = "SumEmNormJaz439", "PUR" = "PUR", "PURPhotonDose" = "PURPhotonDose", "PARPhotonDose" = "PARPhotonDose")) 
+OLISSpectraMetaPURShort <- OLISSpectraMetaPURShortBA127R %>%
+  full_join(., OLISSpectraMetaPURShortBA77G, by = c("CultureID" = "CultureID", "Run" = "Run", "Strain" = "Strain", "InnocDate" = "InnocDate", "ExpDate" = "ExpDate", "Par_ue" = "Par_ue", "Photoperiod" = "Photoperiod", "MC"="MC", "Tube" = "Tube", "O2" = "O2", "WL" = "WL", "LightShape" = "LightShape", "ExpEndDate"="ExpEndDate", "nm" = "nm", "ObsDate" = "ObsDate", "Absorbance" = "Absorbance", "SumAb" = "SumAb", "Abs440" = "Abs440", "AbsNorm440" = "AbsNorm440", "SumAbNorm" = "SumAbNorm", "E_days" = "E_days", "CountsMean" = "CountsMean", "EmJaz439" = "EmJaz439", "EmNormJaz439" = "EmNormJaz439", "PURNormSum" = "PURNormSum", "SumEmNormJaz439" = "SumEmNormJaz439", "PUR" = "PUR", "PURPhotonDose" = "PURPhotonDose", "PARPhotonDose" = "PARPhotonDose")) 
 ```
 
 ```{r Changes strain names}
-OLISSpectraMetaAllPURShort <- OLISSpectraMetaAllPURShort %>%
+OLISSpectraMetaPURShort <- OLISSpectraMetaPURShort %>%
       mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
          Strain=="BA48R"~"PE-rich_048",
         Strain=="BA56G"~"PC-rich_056",
@@ -242,8 +225,7 @@ arrowdf10 <- tibble(Strain = "PE-rich_127", E_days = 3, Par_ue = 300, O2 = c(21)
 arrowdf11 <- tibble(Strain = "PE-rich_127", E_days = 3, Par_ue = 300, O2 = c(21))
 arrowdf12 <- tibble(Strain = "PE-rich_127", E_days = 3, Par_ue = 300, O2 = c(21))
 
-
-OLISSpectraMetaAllPURShort %>%
+OLISSpectraMetaPURShort %>%
   filter(Photoperiod == "12") %>%
   filter(Strain == "PC-rich_077" | Strain == "PE-rich_127") %>%
   filter(Par_ue == 300) %>%
@@ -368,7 +350,7 @@ arrowdf5 <- tibble(Strain = "PE-rich_127", E_days = 3, Par_ue = 300)
 arrowdf6 <- tibble(Strain = "PE-rich_127", E_days = 3, Par_ue = 300)
 
 
-OLISSpectraMetaAllPURShort %>%
+OLISSpectraMetaPURShort %>%
   filter(Photoperiod == "12") %>%
   filter(Strain == "PE-rich_127" | Strain == "PC-rich_077") %>%
   filter(Par_ue == 300) %>%
@@ -438,11 +420,11 @@ OLISSpectraMetaAllPURShort %>%
 ```
 
 ```{r Delete unused stuff from the environment}
-rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_textpigment5,data_textpigment6, data_textpigment7, data_textpigment8, data_textpigment9, data_textpigment10, data_textpigment11, data_textpigment12, arrowdf1,arrowdf2,arrowdf3,arrowdf4,arrowdf5,arrowdf6, arrowdf7, arrowdf8, arrowdf9, arrowdf10, arrowdf11, arrowdf12, data_textPUR0, data_textPUR00, data_textPUR1,data_textPUR2, EmissionJazWW, JazData, JazDataRound, JazDataRoundMeta, OLISSpectraMetaAllPURShortBA127R, OLISSpectraMetaAllPURShortBA77G, OLISSpectraClean, OLISSpectraMetaAll, OLISSpectra)
+rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_textpigment5,data_textpigment6, data_textpigment7, data_textpigment8, data_textpigment9, data_textpigment10, data_textpigment11, data_textpigment12, arrowdf1,arrowdf2,arrowdf3,arrowdf4,arrowdf5,arrowdf6, arrowdf7, arrowdf8, arrowdf9, arrowdf10, arrowdf11, arrowdf12, data_textPUR0, data_textPUR00, data_textPUR1,data_textPUR2, EmissionJazWW, JazData, JazDataRound, JazDataRoundMeta, OLISSpectraMetaPURShortBA127R, OLISSpectraMetaPURShortBA77G, OLISSpectraMeta, OLISSpectra)
 ```
 
 ```{r save rds}
-saveRDS(OLISSpectraMetaAllPURShort, file.path(DataOut, paste(Project, "ProcessedOlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(OLISSpectraMetaPURShort, file.path(DataOut, paste(Project, "ProcessedOlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 
