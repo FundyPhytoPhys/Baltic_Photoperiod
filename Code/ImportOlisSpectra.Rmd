@@ -91,7 +91,7 @@ TargetSpectraLong <- TargetSpectraLong %>%
 ```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
 gs4_deauth()
 
-MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0") %>%
+MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1y144Qjs1pxO2vYU4G6of69qX1TVlA8WTwnhfVwaSU0U/edit#gid=0") %>%
   drop_na(WL) %>%
   mutate(WL = unlist(WL))
 
@@ -102,13 +102,13 @@ MetaData <- MetaData %>%
 ```
 
 ```{r cleanning MetaData}
-MetaData<-MetaData %>% 
-  select(-c(PrimaryOperator,Description, Motivation, doi, ProjectID, Inoc_mL, Media_mL, ExpCul, ExpStartTime, Temp_c, Plate, Well, EndDate, Salinity, N2, Ar, CO2, O2_Category, Media, MediaDate, Source, SourceSalinity, InocpH, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ...46, ...47, OptodeMeasure, SampleID, "Calculated_µmolPhotons_m-2d-1")) 
+# MetaData<-MetaData %>% 
+#   select(-c(PrimaryOperator,Description, Motivation, doi, ProjectID, Inoc_mL, Media_mL, ExpCul, ExpStartTime, Temp_c, Plate, Well, EndDate, Salinity, N2, Ar, CO2, O2_Category, Media, MediaDate, Source, SourceSalinity, InocpH, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ...46, ...47, OptodeMeasure, SampleID, "Calculated_µmolPhotons_m-2d-1")) 
 ```
 
 ```{r Merge OLISSpectra with MetaData}
 OLISSpectraMeta <- MetaData %>%
-  left_join(., TargetSpectraLong, by = c("ID" = "CultureID")) 
+  left_join(., TargetSpectraLong, by = c("CultureID" = "CultureID")) 
 
 OLISSpectraMeta <- OLISSpectraMeta %>%
 group_by(ID) %>%
