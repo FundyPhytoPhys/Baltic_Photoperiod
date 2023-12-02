@@ -135,7 +135,7 @@ ungroup()
 OLISSpectraMeta440<-OLISSpectraMeta440 %>% 
   mutate(FilenameOlis=Filename) %>% 
   select(-c(Project, Cdatetime, Range, Filename)) %>% 
-  select(c(Run, CultureID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, PhotonDose, MC, Tube, O2, WL, LightShape, ExpEndDate, FilenameOlis, ObsDate, Absorbance, nm, E_days, SumAb, Abs440, AbsNorm440, SumAbNorm))
+  select(c(Run, CultureID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, PARPhotonDose, MC, Tube, O2, WL, LightShape, ExpEndDate, FilenameOlis, ObsDate, Absorbance, nm, E_days, SumAb, Abs440, AbsNorm440, SumAbNorm))
 
 #colnames(OLISSpectraMeta440)
 ```

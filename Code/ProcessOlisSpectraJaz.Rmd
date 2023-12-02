@@ -126,13 +126,11 @@ OLISSpectraMetaPUR <- OLISSpectraMeta %>%
 ```{r Calculate PAR and PUR Photon dose}
 OLISSpectraMetaPUR1 <- OLISSpectraMetaPUR %>%
   filter(Photoperiod != "24") %>% 
-  mutate(PURPhotonDose =(PUR/2)*Photoperiod*3600) %>% 
-  mutate(PARPhotonDose =(Par_ue/2)*Photoperiod*3600)
+  mutate(PURPhotonDose =(PUR/2)*Photoperiod*3600)
 
 OLISSpectraMetaPUR2 <- OLISSpectraMetaPUR %>%
   filter(Photoperiod == "24") %>% 
-  mutate(PURPhotonDose = PUR*Photoperiod*3600) %>% 
-  mutate(PARPhotonDose = Par_ue*Photoperiod*3600) 
+  mutate(PURPhotonDose = PUR*Photoperiod*3600)
   
   OLISSpectraMetaPUR <-rbind(OLISSpectraMetaPUR1, OLISSpectraMetaPUR2)
   rm(OLISSpectraMetaPUR1,OLISSpectraMetaPUR2)
@@ -153,7 +151,7 @@ OLISSpectraMetaPURShortBA127R<- OLISSpectraMetaPUR %>%
   mutate(E_days=case_when(E_days==4~3,
          E_days==8~7)) %>% 
   mutate(PURNormBA127R = PURNorm) %>% 
-  select(-c(PURNorm, FilenameJaz, FilenameOlis, PhotonDose))
+  select(-c(PURNorm, FilenameJaz, FilenameOlis))
 
 OLISSpectraMetaPURShortBA77G<- OLISSpectraMetaPUR %>%
   filter(Photoperiod == "12") %>% 
@@ -161,7 +159,7 @@ OLISSpectraMetaPURShortBA77G<- OLISSpectraMetaPUR %>%
   filter(Par_ue == 300) %>% 
   filter(E_days == "3" | E_days == "7") %>% 
   mutate(PURNormBA77G = PURNorm) %>% 
-  select(-c(PURNorm, FilenameJaz, FilenameOlis, PhotonDose))
+  select(-c(PURNorm, FilenameJaz, FilenameOlis))
 
 OLISSpectraMetaPURShort <- OLISSpectraMetaPURShortBA127R %>%
   full_join(., OLISSpectraMetaPURShortBA77G, by = c("CultureID" = "CultureID", "Run" = "Run", "Strain" = "Strain", "InnocDate" = "InnocDate", "ExpDate" = "ExpDate", "Par_ue" = "Par_ue", "Photoperiod" = "Photoperiod", "MC"="MC", "Tube" = "Tube", "O2" = "O2", "WL" = "WL", "LightShape" = "LightShape", "ExpEndDate"="ExpEndDate", "nm" = "nm", "ObsDate" = "ObsDate", "Absorbance" = "Absorbance", "SumAb" = "SumAb", "Abs440" = "Abs440", "AbsNorm440" = "AbsNorm440", "SumAbNorm" = "SumAbNorm", "E_days" = "E_days", "CountsMean" = "CountsMean", "EmJaz439" = "EmJaz439", "EmNormJaz439" = "EmNormJaz439", "PURNormSum" = "PURNormSum", "SumEmNormJaz439" = "SumEmNormJaz439", "PUR" = "PUR", "PURPhotonDose" = "PURPhotonDose", "PARPhotonDose" = "PARPhotonDose")) 

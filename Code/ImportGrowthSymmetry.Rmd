@@ -347,7 +347,7 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 
 
 
-Plot<-GScatalogAllSineok %>%
+GScatalogAllSineok %>%
   filter(Phase != "TP") %>% 
   filter(meanAccLen>0) %>% 
   ggplot() +
@@ -370,11 +370,11 @@ Plot<-GScatalogAllSineok %>%
   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   # ggh4x::facet_nested(rows = vars(Par_ue), cols = vars(Photoperiod), labeller = labeller(Photoperiod = Photoperiod.labs,  Par_ue = Par_ue.labs, WL = WL.labs, O2 = O2.labs)) +
   theme_bw()
-Plot
 
 
 
-Plot<-GScatalogAllSineok %>%
+
+GScatalogAllSineok %>%
   #mutate(HalfPhotoperiod = Photoperiod/2) %>% 
   #filter(meanAccLen>=0) %>%
   filter(Phase != "TP") %>%
@@ -396,10 +396,6 @@ Plot<-GScatalogAllSineok %>%
   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   # ggh4x::facet_nested(rows = vars(Par_ue), cols = vars(Photoperiod), labeller = labeller(Photoperiod = Photoperiod.labs,  Par_ue = Par_ue.labs, WL = WL.labs, O2 = O2.labs)) +
   theme_bw() 
-Plot
-
-
-
 
 ```
 
