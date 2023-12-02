@@ -28,7 +28,7 @@ HeaderRows <- 0
 ```{r load libraries} 
 library(tidyverse)
 library(lubridate)
-library(stringr)
+#library(stringr)
 library(broom)
 library(knitr)
 library(OneR)
