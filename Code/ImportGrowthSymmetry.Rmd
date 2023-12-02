@@ -189,6 +189,218 @@ GScatalogMeta %>%
 
 ```
 
+one phase decay
+
+```{r}
+
+GScatalogMetaExp <-GScatalogMeta %>% 
+  drop_na(meanGS) %>%
+  filter(Phase == "Exponential") %>% 
+  filter(Strain=="PE-rich_056") %>% 
+  select(c(meanGS, PARPhotonDose, Strain, Phase)) %>% 
+  mutate(y=meanGS) %>% 
+  mutate(t=PARPhotonDose) 
+  
+
+
+# Fit the data
+fitted <- GScatalogMetaExp %>% 
+  nest(-Strain) %>%
+  mutate(
+    fit = map(data, ~nls(y ~ SSasymp(t, yf, y0, log_alpha), data = .)),
+    tidied = map(fit, tidy),
+    augmentedExp = map(fit, augment),
+  )  
+
+# Produce a table of fit parameters: y0, yf, alpha - doesnt work for now - fix this later!
+# fitted %>% 
+#   unnest(tidied) %>% 
+#   select(term, estimate) %>% 
+#   spread(term, estimate) %>% 
+#   mutate(alpha = exp(log_alpha))
+
+#Plotting with gglot2
+augmentedExp <- fitted %>% 
+  unnest(augmentedExp)
+# qplot(t, y, data = augmented590, geom = 'point', colour = Strain) +
+#   geom_line(aes(y=.fitted))
+```
+
+
+mutate for nice plot PAR photon Dose 590 and 445
+```{r}
+augmented590 <- augmented590 %>% 
+  mutate(Ex_WL=Strain) %>% 
+      mutate(Ex_WL=case_when(Ex_WL=="PE-rich_127"~590,
+         Ex_WL=="PE-rich_048"~590,
+        Ex_WL=="PC-rich_056"~590,
+         Ex_WL=="PC-rich_077"~590)) %>% 
+  mutate(Ex_WL = as.factor(Ex_WL)) %>% 
+  mutate(O2=Ex_WL) %>% 
+  mutate(O2=case_when(O2==590~21)) %>% 
+  mutate(WL=Ex_WL) %>% 
+  mutate(WL=case_when(WL==590~"WW")) 
+
+augmented590dark <- augmented590dark %>% 
+  mutate(Ex_WL=Strain) %>% 
+      mutate(Ex_WL=case_when(Ex_WL=="PE-rich_127"~590,
+         Ex_WL=="PE-rich_048"~590,
+        Ex_WL=="PC-rich_056"~590,
+         Ex_WL=="PC-rich_077"~590)) %>% 
+  mutate(Ex_WL = as.factor(Ex_WL)) %>% 
+  mutate(O2=Ex_WL) %>% 
+  mutate(O2=case_when(O2==590~21)) %>% 
+  mutate(WL=Ex_WL) %>% 
+  mutate(WL=case_when(WL==590~"WW")) 
+
+# augmented445 <- augmented445 %>% 
+#   mutate(Ex_WL=Strain) %>% 
+#       mutate(Ex_WL=case_when(Ex_WL=="PE-rich_127"~445,
+#          Ex_WL=="PE-rich_048"~445,
+#         Ex_WL=="PC-rich_056"~445,
+#          Ex_WL=="PC-rich_077"~445)) %>% 
+#   mutate(Ex_WL = as.factor(Ex_WL)) %>% 
+#   mutate(O2=Ex_WL) %>% 
+#   mutate(O2=case_when(O2==445~21)) %>% 
+#   mutate(WL=Ex_WL) %>% 
+#   mutate(WL=case_when(WL==445~"WW")) 
+
+```
+
+
+
+Delete unused df
+```{r}
+rm(SolFitsAllfit445, SolFitsAllfit590)
+```
+
+
+Plot sigma vs photondose - mean only replica (shows different days from exp phase)
+```{r fig.height = 8, fig.width = 8, warning = FALSE}
+
+
+WL.labs <- c("Excitation (nm)")
+names(WL.labs) <- c("WW")
+O2.labs <- c("Strain")
+names(O2.labs) <- c(21)
+
+
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
+
+
+  ggplot(SolFitsAllChoosenExp, aes(x = PARPhotonDose, y = meanSig_nm2psii)) +
+  geom_point(aes(x = PARPhotonDose, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_errorbar(aes(x = PARPhotonDose, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
+  geom_line(aes(t, .fitted), show.legend = F, augmented590) +
+  #geom_line(aes(t, .fitted), show.legend = F, augmented445) +
+  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
+  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
+  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
+  #labs(y = "Sigma", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  # scale_y_continuous(breaks=seq(0, 1000, by = 200)) +
+  # coord_cartesian(ylim = c(0, 1000)) +
+  scale_x_continuous(label=scientific_10) +
+  ggh4x::facet_nested(rows = vars(O2,Strain), cols = vars(WL,Ex_WL), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.text.x = element_text(size=11),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="transparent"),
+        legend.position = c(0.44,0.89),
+        legend.key.height= unit(0.003, 'cm'),
+        legend.spacing.y = unit(-0.1, "cm"),
+        legend.spacing.x = unit(-0.1, 'cm'),
+        # legend.direction = "vertical", legend.box = "vertical",
+        legend.title = element_blank(),
+        legend.text = element_text(size=9))
+  
+  
+  
+  ggplot(SolFitsAllChoosenExp, aes(x = PARPhotonDose, y = meanSigdark_nm2psii)) +
+  geom_point(aes(x = PARPhotonDose, y = meanSigdark_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_errorbar(aes(x = PARPhotonDose, ymin = meanSigdark_nm2psii - sdSigdark_nm2psii, ymax = meanSigdark_nm2psii + sdSigdark_nm2psii, colour=as.factor(Par_ue))) +
+  geom_line(aes(t, .fitted), show.legend = F, augmented590dark) +
+  #geom_line(aes(t, .fitted), show.legend = F, augmented445) +
+  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
+  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
+  labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  scale_x_continuous(label=scientific_10) +
+  ggh4x::facet_nested(rows = vars(O2,Strain), cols = vars(WL,Ex_WL), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.text.x = element_text(size=11),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="transparent"),
+        legend.position = c(0.44,0.89),
+        legend.key.height= unit(0.003, 'cm'),
+        legend.spacing.y = unit(-0.1, "cm"),
+        legend.spacing.x = unit(-0.1, 'cm'),
+        # legend.direction = "vertical", legend.box = "vertical",
+        legend.title = element_blank(),
+        legend.text = element_text(size=9))
+  
+  
+    ggplot(SolFitsAllChoosenExp1s, aes(x = PARPhotonDose, y = meanSig1s_nm2psii)) +
+  geom_point(aes(x = PARPhotonDose, y = meanSig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_errorbar(aes(x = PARPhotonDose, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Par_ue))) +
+  # geom_line(aes(t, .fitted), show.legend = F, augmented590dark) +
+  #geom_line(aes(t, .fitted), show.legend = F, augmented445) +
+  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
+  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
+  labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  scale_x_continuous(label=scientific_10) +
+  ggh4x::facet_nested(rows = vars(O2,Strain), cols = vars(WL,Ex_WL), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.text.x = element_text(size=11),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="transparent"),
+        legend.position = c(0.44,0.89),
+        legend.key.height= unit(0.003, 'cm'),
+        legend.spacing.y = unit(-0.1, "cm"),
+        legend.spacing.x = unit(-0.1, 'cm'),
+        # legend.direction = "vertical", legend.box = "vertical",
+        legend.title = element_blank(),
+        legend.text = element_text(size=9))
+    
+    
+    
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r AccLen vs PARphotondose Plot, fig.height = 8, fig.width = 8, warning = FALSE}
 
@@ -253,6 +465,16 @@ labs(y = "AccLen (h)", x = "Photoperiod (h)") +
         legend.title = element_blank(),
         legend.text = element_text(size=10))
 ```
+
+
+
+
+
+
+
+
+
+
 
 Calculate real Par_ue and PARphotondoseSine based on AccLen (because of sine shape of light)
 
@@ -336,6 +558,9 @@ GScatalogAllSineok %>%
 
 
 
+```{r save rds}
+# saveRDS(OLISSpectraMeta440, file.path(DataOut, paste(Project, "OlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep))
+```
 
 
 
