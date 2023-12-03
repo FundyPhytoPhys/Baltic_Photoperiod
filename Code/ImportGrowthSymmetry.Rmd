@@ -35,6 +35,7 @@ library(magrittr)
 library(googledrive)
 library(googlesheets4)
 library(readxl)
+library(stringi)
 ```
 
 ```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
@@ -221,8 +222,8 @@ GScatalogMeta %>%
   scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   scale_x_continuous(label=scientific_10) +
-  scale_y_continuous(breaks=seq(0, 10, by = 2.5)) +
-  coord_cartesian(ylim = c(0, 12.5)) +
+  scale_y_continuous(breaks=seq(0, 10, by = 2)) +
+  coord_cartesian(ylim = c(0, 12)) +
   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
@@ -249,8 +250,8 @@ GScatalogMeta %>%
 labs(y = "AccLen (h)", x = "Photoperiod (h)") +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   geom_abline(slope = 0.5, intercept = 0, linetype = "dashed") +
-  scale_y_continuous(breaks=seq(0, 10, by = 2.5)) +
-  coord_cartesian(ylim = c(0, 12.5)) +
+  scale_y_continuous(breaks=seq(0, 10, by = 2)) +
+  coord_cartesian(ylim = c(0, 14)) +
   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
@@ -263,11 +264,12 @@ labs(y = "AccLen (h)", x = "Photoperiod (h)") +
         axis.title.y = element_text(margin=margin(r=10)),
         axis.title.x = element_text(margin=margin(t=10)),
         legend.background = element_rect(fill="transparent"),
-        legend.position = c(0.88,0.89),
-        legend.key.height= unit(0.005, 'cm'),
-        legend.spacing.y = unit(-0.1, "cm"),
+        legend.position = c(0.575,0.91),
+        #legend.margin = margin(0,-0.5,0,0, unit="cm"),
+        legend.key.height= unit(0.0005, 'cm'),
+        legend.spacing.y = unit(-0.2, "cm"),
         legend.title = element_blank(),
-        legend.text = element_text(size=10))
+        legend.text = element_text(size=9))
 ```
 
 ```{r Removed unnecessary data from environment}
@@ -320,7 +322,9 @@ labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
         legend.title = element_blank(),
         legend.text = element_text(size=10))
 ```
-
+```{r Removed unnecessary data from environment}
+rm(data_vline_048, data_vline_127, data_vline_056, data_vline_077)
+```
 
 
 
@@ -331,7 +335,7 @@ change as character to extract first digit without round - b/c this is hours
 GScatalogAllSine<-GScatalogMeta %>% 
   mutate(meanAccLen = as.character(meanAccLen)) 
 
-  library(stringi)
+
 GScatalogAllSine$meanAccLenRound<- substr(GScatalogAllSine$meanAccLen, 1, 1)
 
 GScatalogAllSine<-GScatalogAllSine %>% 
