@@ -114,43 +114,49 @@ data_hlineGS12 <- data.frame(Photoperiod= c(12),facets2= c("Photoperiod~(h)"),va
 data_hlineGS16 <- data.frame(Photoperiod= c(16),facets2= c("Photoperiod~(h)"),value = c(8))
 ```
 
-vertical lines without 24 photoperiod - fix this Sylwia!!!! Data from catalog!
-```{r}
-data_vline9 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facets= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facets2= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(347,321.02,240.90,187.92,110,347,245.39,189.48,162.62,110,347,168.39,113.76,111.56,110))
+```{r Create df for vertical lines (coloured as Strain) contained tMaxAG values}
+#PC-rich_056
+data_vline_056 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(293.8333, 375.6500, 266.84, 240.72, 187.73, 353.10, 296.45, 217.80, 191.03, 188.19, 355.30, 191.49, 114.95, 112.75, 163.44))
 
-data_vline10 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facets= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facets2= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(346,319.92,240.81,214.41,109.5,346,216.33,163.44,136.03,109.5,299.38,166.28,137.32,111.28,109.45))
+#PC-rich_077
+data_vline_077 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(244.2500, 348.2400, 266.9300, 215.42, 187.18, 349.80, 244.38, 190.39, 163.62, 184.16, 299.57, 168.85, 137.50, 112.29, 161.97))
 
-data_vline11 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facets= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facets2= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(345,347,266.84,240.72,109,345,296.45,217.80,191.03,109,345,191.49,114.95,112.75,108))
+#PE-rich_048
+data_vline_048 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(347.1400, 319.9200, 240.8100, 214.41, 187.27, 350.17, 216.33, 163.44, 136.03, 135.39, 299.38, 166.28, 137.32, 111.28, 109.45))
 
-data_vline12 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facets= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facets2= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(344, 345, 266.93, 215.42, 108.5,344, 244.38,190.39,163.62,108.5,299.57, 168.85, 137.50, 112.29, 107))
+#PE-rich_127
+data_vline_127 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(373.2700, 321.0200, 240.9000, 187.92, 187.00, 371.98, 245.39, 189.48, 162.62, 188.38, 382.07, 168.39, 113.76, 111.56, 135.76))
 ```
-
 
 ```{r Create TDG plot, fig.height = 8, fig.width = 8, warning = FALSE}
 GScatalogMeta %>%
   filter(Photoperiod != 24) %>% 
   ggplot() +
   geom_point(aes(x = PhotoperiodTend_h, y = TDG, colour = as.factor(Strain)), size = 3.5, alpha = 0.8, show.legend = T) +
-  geom_vline(data = data_vline9, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline10, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline11, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline12, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  geom_vline(data = data_vline_056, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
+  geom_vline(data = data_vline_077, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  geom_vline(data = data_vline_048, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
+  geom_vline(data = data_vline_127, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
 labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
+  scale_x_continuous(breaks=seq(0, 300, by = 100)) +
+  coord_cartesian(xlim = c(0, 380)) +
+  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
         panel.grid.major = element_blank(),
         axis.text = element_text(size=12),
         axis.title = element_text(size=16),
-        strip.background = element_rect(fill="transparent"),
+        strip.background = element_rect(fill="white"),
+        legend.background = element_rect(fill="transparent"),
         strip.text = element_text(size=12),
         axis.title.y = element_text(margin=margin(r=10)),
         axis.title.x = element_text(margin=margin(t=10)),
-        legend.background = element_rect(fill="white"),
-        legend.position = c(0.09,0.94),
+        #panel.spacing.x=unit(0.9, "lines"),
+        legend.position = c(0.08,0.94),
         legend.key.height= unit(0.005, 'cm'),
         legend.spacing.y = unit(-0.1, "cm"),
+        legend.spacing.x = unit(-0.1, 'cm'),
         legend.title = element_blank(),
         legend.text = element_text(size=10))
 ```
