@@ -392,7 +392,7 @@ GScatalogSineMeta %>%
 ```
 
 ```{r Cleaning the environment}
-rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GSMetaSt, augmented, fitted, GScatalog, GScatalogMetaExp, GSMetaExp, MetaData, data_vline_048, data_vline_127, data_vline_056, data_vline_077)
+rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GSMetaSt, augmented, fitted, GScatalog, GScatalogMetaExp, GSMetaExp, MetaData, data_vline_048, data_vline_127, data_vline_056, data_vline_077, ParSine, GSMetaExpPlot, GScatalogSine, GScatalogMetaFinalPlot, GScatalogSineMeta)
 ```
 
 ```{r save rds}
