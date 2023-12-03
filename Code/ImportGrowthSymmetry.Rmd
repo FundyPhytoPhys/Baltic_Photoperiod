@@ -272,10 +272,6 @@ labs(y = "AccLen (h)", x = "Photoperiod (h)") +
         legend.text = element_text(size=9))
 ```
 
-```{r Removed unnecessary data from environment}
-rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GSMetaSt, augmented, fitted, GScatalog, GScatalogMetaExp, GSMetaExp, MetaData)
-```
-
 ```{r Create 4 df for vertical lines (coloured as Strain) contained tMaxAG values}
 #PC-rich_056
 data_vline_056 <- data.frame(Par_ue= c(30, 30, 30, 90, 90, 90, 180, 180, 180, 300, 300, 300, 900, 900, 900),Photoperiod= c(8,12,16,8,12,16,8,12,16,8,12,16,8,12,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(293.8333, 321.0833, 323.0833, 317.2500, 269.5833, 174.1667, 242.6667, 198.0833, 104.5833, 218.9167, 173.7500, 102.5833, 147.5000, 148.41667, 148.66667))
@@ -322,29 +318,22 @@ labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
         legend.title = element_blank(),
         legend.text = element_text(size=10))
 ```
-```{r Removed unnecessary data from environment}
-rm(data_vline_048, data_vline_127, data_vline_056, data_vline_077)
-```
 
+#Ask Doug
+Calculate Par_ue Sine and PARphotondose Sine (because of sine shape of light)
 
-
-Calculate real Par_ue and PARphotondoseSine based on AccLen (because of sine shape of light)
-
-change as character to extract first digit without round - b/c this is hours
-```{r}
-GScatalogAllSine<-GScatalogMeta %>% 
+```{r change as character to extract first digit without round - b/c this is hours}
+GScatalogSine<-GScatalogMeta %>% 
   mutate(meanAccLen = as.character(meanAccLen)) 
 
+GScatalogSine$meanAccLenRound<- substr(GScatalogSine$meanAccLen, 1, 1)
 
-GScatalogAllSine$meanAccLenRound<- substr(GScatalogAllSine$meanAccLen, 1, 1)
-
-GScatalogAllSine<-GScatalogAllSine %>% 
+GScatalogSine<-GScatalogSine %>% 
   mutate(meanAccLen = as.numeric(meanAccLen)) %>% 
   mutate(meanAccLenRound = as.numeric(meanAccLenRound)) 
-
 ```
-df with calculated Par_ue sine per hour
-```{r}
+
+```{r Load df with calculated Par_ue sine per hour}
 gs4_deauth()
 
 ParSine<- read_sheet("https://docs.google.com/spreadsheets/d/1oZLemHtd6H3j2MgXbgNzqtZ2Gy3EKH6Vnn14PnEpPTw/edit#gid=0")
@@ -363,11 +352,10 @@ ParSine<-ParSine %>%
         Strain=="BA56G"~"PC-rich_056",
          Strain=="BA77G"~"PC-rich_077")) %>% 
   mutate(PARPhotonDoseSine = (PAR_Sine*Photoperiod/2)*3600)
-
 ```
 
 ```{r Combine GScatalogAllSine with ParSine}
-GScatalogAllSineok <- GScatalogAllSine %>%
+GScatalogSineMeta <- GScatalogSine %>%
   left_join(., ParSine, by = c("Strain" = "Strain", "Photoperiod" = "Photoperiod", "Par_ue" = "Par_ue", "meanAccLenRound" = "Photoperiod_h_Sine"))
 ```
 
@@ -376,42 +364,39 @@ scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::sc
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
-GScatalogAllSineok %>%
-  filter(Phase != "TP") %>% 
-  filter(meanAccLen>0) %>% 
+GScatalogSineMeta %>%
   ggplot() +
-  geom_point(aes(x = PARPhotonDoseSine, y = meanAccLen, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
-  geom_line(aes(x = PARPhotonDoseSine, y = meanAccLen, colour = as.factor(Par_ue)), size = 0.7, show.legend = F) +
-  # geom_errorbar(aes(x = PARPhotonDose, ymin = meanGS_h - sdGS_h, ymax = meanGS_h + sdGS_h, colour = as.factor(Par_ue)), show.legend = F) +
-  # geom_hline(data = data_hlineGS8, aes(yintercept = value), linetype="dotted") +
-  # geom_hline(data = data_hlineGS12, aes(yintercept = value), linetype="dotdash") +
-  # geom_hline(data = data_hlineGS16, aes(yintercept = value), linetype="dashed") +
-  #geom_hline(yintercept = 1, linetype="dashed") +
-   labs(y = "AccLen (h)", x = "Real PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
- #labs(y = "Diel growth symmetry", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  geom_point(aes(x = PARPhotonDoseSine, y = meanGS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
+  geom_errorbar(aes(x = PARPhotonDoseSine, ymin = meanGS - sdGS, ymax = meanGS + sdGS, colour = as.factor(Par_ue)), show.legend = F, width=0) +
+  geom_hline(yintercept = 1, linetype="dashed") +
+  #labs(y = "Diel growth symmetry (AccLen/DecLen)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   scale_x_continuous(label=scientific_10) +
-  ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
-  theme_bw()
-
-
-GScatalogAllSineok %>%
-  filter(Phase != "TP") %>%
-  ggplot() +
-  geom_point(aes(x = PAR_Sine, y = meanAccLen, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
-  # geom_errorbar(aes(x = PARPhotonDose, ymin = meanGS_h - sdGS_h, ymax = meanGS_h + sdGS_h, colour = as.factor(Par_ue)), show.legend = F) +
-#labs(y = "AccLen (h)", x = "Photoperiod (h)") +
-  scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
-  theme_bw() 
+  ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(Strain), labeller = label_parsed) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="white"),
+        legend.position = c(0.92,0.89),
+        legend.key.height= unit(0.005, 'cm'),
+        legend.spacing.y = unit(-0.1, "cm"),
+        legend.title = element_blank(),
+        legend.text = element_text(size=10))
 ```
 
-
+```{r Cleaning the environment}
+rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GSMetaSt, augmented, fitted, GScatalog, GScatalogMetaExp, GSMetaExp, MetaData, data_vline_048, data_vline_127, data_vline_056, data_vline_077)
+```
 
 ```{r save rds}
-# saveRDS(OLISSpectraMeta440, file.path(DataOut, paste(Project, "OlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Imported_GS.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 
