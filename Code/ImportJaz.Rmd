@@ -99,7 +99,7 @@ rm(JazSpec)
 ```
 
 ```{r}
- saveRDS(JazSpecTrim, file.path(DataOut, paste(Project, "JazEm.Rds", sep = "_"), fsep = .Platform$file.sep))
+ saveRDS(JazSpecTrim, file.path(DataOut, paste(Project, "Imported_JazEm.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 

@@ -145,6 +145,6 @@ rm(Absorbance440, MetaData, TargetSpectra, OLISSpectraMeta, TargetSpectraLong)
 ```
 
 ```{r save rds}
-saveRDS(OLISSpectraMeta440, file.path(DataOut, paste(Project, "OlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(OLISSpectraMeta440, file.path(DataOut, paste(Project, "Imported_OlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
