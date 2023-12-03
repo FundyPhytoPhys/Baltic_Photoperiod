@@ -46,6 +46,7 @@ library(scales)
 ```{r Exported Rmd only first time in session}
 list.files(path = DataIn, pattern = Project, full.names = TRUE)
 ```
+
 ```{r Read imported Olis file}
 OLISSpectraFile <- "../Data/ImportedData/Baltic_Photoperiod_OlisSpectra.Rds"
 OLISSpectraFileName <- str_split(string = OLISSpectraFile, "/")[[1]][3] %>%
