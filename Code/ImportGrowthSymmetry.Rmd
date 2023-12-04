@@ -396,7 +396,7 @@ rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GSMetaSt, augmented, fitted, G
 ```
 
 ```{r save rds}
-saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Imported_GS.Rds", sep = "_"), fsep = .Platform$file.sep))
+# saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Imported_GS.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 
