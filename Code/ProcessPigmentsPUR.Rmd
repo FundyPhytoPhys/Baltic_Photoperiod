@@ -149,7 +149,178 @@ MCPigment <- MCPigment %>%
   mutate(PhycougL = (PCugmL+PEugmL+APCugmL)*1000) 
 ```
 
+```{r Combine Chla, phyco, and Car in one column for final plot}
+MCPigment1<-MCPigment %>% 
+  select(-c(Chlapgcell, Carpgcell)) %>% 
+  mutate(Pigmentspgcell=Phycopgcell*1) %>% 
+  select(-c(Phycopgcell))
+MCPigment1$PigmentsName = "Total~phycobilins"
 
+MCPigment2<-MCPigment %>% 
+  select(-c(Phycopgcell, Carpgcell)) %>% 
+  mutate(Pigmentspgcell=Chlapgcell*1) %>% 
+  select(-c(Chlapgcell))
+MCPigment2$PigmentsName = "Chlorophyll~a"
+
+MCPigment3<-MCPigment %>% 
+  select(-c(Chlapgcell, Phycopgcell)) %>% 
+  mutate(Pigmentspgcell=Carpgcell*1) %>% 
+  select(-c(Carpgcell))
+MCPigment3$PigmentsName = "Carotenoids"
+  
+MCPigmentPlot<-rbind(MCPigment1, MCPigment2, MCPigment3)
+
+rm(MCPigment1, MCPigment2, MCPigment3)
+```
+
+```{r Test plot - pigments per cell, fig.height = 8, fig.width = 8}
+# scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+# lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
+# lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+# lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+# 
+# MCPigment %>%
+#   ggplot() +
+#   geom_point(aes(x = Time_h, y = Phycopgcell, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
+#   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+#   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
+#   theme_bw()
+# 
+# MCPigmentPlot %>%
+#   ggplot() +
+#   geom_point(aes(x = PARPhotonDose, y = Pigmentspgcell, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
+#   scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
+#   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
+#   ggh4x::facet_nested(rows = vars(Strain), cols = vars(PigmentsName), labeller = label_parsed) +
+#   theme_bw()
+```
+
+```{r Create tidy PAR photon dose column and facets for plot}
+MCPigmentPlot <- MCPigmentPlot %>%
+    mutate(PARPhotonDoseTidy=PARPhotonDose/100000)
+
+MCPigmentPlot$facetsPARPhotonDose = factor(MCPigmentPlot$WL, labels = c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"))
+```
+
+```{r Final pigments per cell plot, fig.height = 8, fig.width = 8}
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
+lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
+MCPigmentPlot %>%
+  filter(PARPhotonDoseTidy == 4.32000|
+  PARPhotonDoseTidy == 6.48000|
+  PARPhotonDoseTidy == 8.64000|
+  PARPhotonDoseTidy == 43.20000|
+  PARPhotonDoseTidy == 64.80000|
+  PARPhotonDoseTidy == 86.40000) %>%
+  ggplot() +
+  geom_point(aes(x = Time_h, y = Pigmentspgcell, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
+  labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
+  ggh4x::facet_nested(cols = vars(facetsPARPhotonDose, PARPhotonDoseTidy), rows = vars(factor(PigmentsName, levels=c('Chlorophyll~a', 'Total~phycobilins', 'Carotenoids'))), labeller = label_parsed) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="transparent"),
+        legend.position = c(0.08,0.92),
+        legend.key.height= unit(0.005, 'cm'),
+        legend.spacing.y = unit(-0.005, "cm"),
+        legend.spacing.x = unit(-0.005, "cm"),
+        legend.title = element_blank(),
+        legend.text = element_text(size=10))
+```
+
+```{r Combine phyco/Chla ratio and car/chla ratio in one column for final plot}
+MCPigmentRatio1<-MCPigment %>% 
+  select(-c(PhycoChlaRatio)) %>% 
+  mutate(PigmentsRatio=CarChlaRatio*1) %>% 
+  select(-c(CarChlaRatio))
+MCPigmentRatio1$PigmentsRatioName = "Car/Chl~a~ratio"
+
+MCPigmentRatio2<-MCPigment %>% 
+  select(-c(CarChlaRatio)) %>% 
+  mutate(PigmentsRatio=PhycoChlaRatio*1) %>% 
+  select(-c(PhycoChlaRatio))
+MCPigmentRatio2$PigmentsRatioName = "Total~Phyco/Chl~a~ratio"
+
+MCPigmentRatioPlot<-rbind(MCPigmentRatio1, MCPigmentRatio2)
+
+rm(MCPigmentRatio1, MCPigmentRatio2)
+```
+
+```{r Test plot - pigment ratio, fig.height = 8, fig.width = 8}
+# lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
+# lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+# lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+# 
+# MCPigmentRatioPlot %>%
+#   ggplot() +
+#   geom_point(aes(x = PARPhotonDose, y = PigmentsRatio, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
+#   scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
+#   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
+#   ggh4x::facet_nested(rows = vars(Strain), cols = vars(PigmentsRatioName), labeller = label_parsed) +
+#   theme_bw() 
+# 
+# MCPigmentRatioPlot %>%
+#   ggplot() +
+#   geom_point(aes(x = Time_h, y = PigmentsRatio, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+#   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+#   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
+#   theme_bw()
+```
+
+```{r Create tidy PAR photon dose column and facets for plot}
+MCPigmentRatioPlot <- MCPigmentRatioPlot %>%
+    mutate(PARPhotonDoseTidy=PARPhotonDose/100000)
+
+MCPigmentRatioPlot$facetsPARPhotonDose = factor(MCPigmentRatioPlot$WL, labels = c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"))
+```
+
+```{r Final pigments per cell plot, fig.height = 8, fig.width = 8}
+lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
+lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
+MCPigmentRatioPlot %>%
+  filter(PARPhotonDoseTidy == 4.32000|
+  PARPhotonDoseTidy == 6.48000|
+  PARPhotonDoseTidy == 8.64000|
+  PARPhotonDoseTidy == 43.20000|
+  PARPhotonDoseTidy == 64.80000|
+  PARPhotonDoseTidy == 86.40000) %>%
+  ggplot() +
+  geom_point(aes(x = Time_h, y = PigmentsRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
+  labs(y = "Pigments ratio", x = "Elapsed time (h)") +
+  ggh4x::facet_nested(cols = vars(facetsPARPhotonDose, PARPhotonDoseTidy), rows = vars(factor(PigmentsRatioName, levels=c('Total~Phyco/Chl~a~ratio', 'Car/Chl~a~ratio'))), labeller = label_parsed) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="transparent"),
+        legend.position = c(0.08,0.92),
+        legend.key.height= unit(0.005, 'cm'),
+        legend.spacing.y = unit(-0.005, "cm"),
+        legend.spacing.x = unit(-0.005, "cm"),
+        legend.title = element_blank(),
+        legend.text = element_text(size=10))
+```
+
+
+combine with PUR data
 ```{r}
 # MultiCultiGrowthRatePURExp<-MultiCultiGrowthRatePURExp %>%
 #   select(-c(Filename, OD720_Lmu_corr, OD720_Lmu_se, OD720_LseGrowthFlag, GrowthAmpOD720Flag_14days))
@@ -158,218 +329,6 @@ MCPigment <- MCPigment %>%
 # 
 # MultiCultiPigmentMaxAll <- OLISAllPURTidy %>%
 #   left_join(., MCPigment, by = c("Run"="Run","ID"="ID", "Tube"="Tube", "Strain"="Strain", "ExpDate"="ExpDate","Par_ue"="Par_ue","Photoperiod"="Photoperiod","O2"="O2","WL"="WL","LightShape"="LightShape","ExpEndDate"="ExpEndDate", "E_days"="MultiDay", "E_hours"="Time_h", "PARPhotonDose"="PARPhotonDose", "MC"="MC"))
-```
-
-
-Combine Chla and phyco in one column for nice plot
-```{r}
-MultiCultiPigmentMaxAllChlaPhyco1<-MCPigment %>% 
-  select(-c(Chlapgcell, Carpgcell)) %>% 
-  mutate(Pigmentspgcell=Phycopgcell*1) %>% 
-  select(-c(Phycopgcell))
-MultiCultiPigmentMaxAllChlaPhyco1$PigmentsName = "Phyco"
-
-MultiCultiPigmentMaxAllChlaPhyco2<-MCPigment %>% 
-  select(-c(Phycopgcell, Carpgcell)) %>% 
-  mutate(Pigmentspgcell=Chlapgcell*1) %>% 
-  select(-c(Chlapgcell))
-MultiCultiPigmentMaxAllChlaPhyco2$PigmentsName = "Chla"
-
-MultiCultiPigmentMaxAllChlaPhyco3<-MCPigment %>% 
-  select(-c(Chlapgcell, Phycopgcell)) %>% 
-  mutate(Pigmentspgcell=Carpgcell*1) %>% 
-  select(-c(Carpgcell))
-MultiCultiPigmentMaxAllChlaPhyco3$PigmentsName = "Car"
-  
-MultiCultiPigmentMaxAllChlaPhyco<-rbind(MultiCultiPigmentMaxAllChlaPhyco1, MultiCultiPigmentMaxAllChlaPhyco2, MultiCultiPigmentMaxAllChlaPhyco3)
-
-rm(MultiCultiPigmentMaxAllChlaPhyco1, MultiCultiPigmentMaxAllChlaPhyco2, MultiCultiPigmentMaxAllChlaPhyco3)
-```
-
-```{r test pigments per cell plot, fig.height = 8, fig.width = 8}
-scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
-lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
-lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
-
-MultiCultiPigmentMaxAllChlaPhyco %>%
-  ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = Pigmentspgcell, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
-  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
-  ggh4x::facet_nested(rows = vars(Strain), cols = vars(PigmentsName), labeller = label_parsed) +
-  theme_bw() 
-
-MultiCultiPigmentMaxAllChlaPhyco %>%
-  filter(PARPhotonDose == 432000|
-  PARPhotonDose == 864000|
-  PARPhotonDose == 1944000|
-  PARPhotonDose == 3888000|
-  PARPhotonDose == 6480000|
-  PARPhotonDose == 8640000|
-  PARPhotonDose == 77760000) %>%
-  ggplot() +
-  geom_point(aes(x = Time_h, y = Pigmentspgcell, colour = as.factor(PigmentsName)), alpha = 0.9, size = 3, show.legend = T) +
-  labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
-  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() 
-```
-
-
-```{r test pigments per cell plot, fig.height = 8, fig.width = 8}
-
-scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
-
-lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
-lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
-
-MultiCultiPigmentMaxAllChlaPhyco %>%
-  filter(PARPhotonDose == 432000|
-  PARPhotonDose == 864000|
-  PARPhotonDose == 1944000|
-  PARPhotonDose == 3888000|
-  PARPhotonDose == 6480000|
-  PARPhotonDose == 8640000|
-  PARPhotonDose == 77760000) %>%
-  ggplot() +
-  geom_point(aes(x = Time_h, y = Pigmentspgcell, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
-  # geom_vline(data = data_vline5, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  # geom_vline(data = data_vline6, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  # geom_vline(data = data_vline7, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  # geom_vline(data = data_vline8, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.5)) +
-  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(PigmentsName), labeller = label_parsed) +
-  theme_bw()
-
-```
-
-
-Combine phyco/Chla ratio and car/chla ratio in one column for nice plot
-```{r}
-MultiCultiPigmentMaxAllChlaPhycoratio1<-MultiCultiPigmentMaxAll %>% 
-  select(-c(PhycoChlaRatio)) %>% 
-  mutate(PigmentsRatio=CarChlaRatio*1) %>% 
-  select(-c(CarChlaRatio))
-# MultiCultiPigmentMaxAllChlaPhyco1$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco1$O2, labels = c("Total~Phyco~(pg~cell^{-1})"))
-MultiCultiPigmentMaxAllChlaPhycoratio1$PigmentsRatioName = "CarChlaRatio"
-
-MultiCultiPigmentMaxAllChlaPhycoratio2<-MultiCultiPigmentMaxAll %>% 
-  select(-c(CarChlaRatio)) %>% 
-  mutate(PigmentsRatio=PhycoChlaRatio*1) %>% 
-  select(-c(PhycoChlaRatio))
-# MultiCultiPigmentMaxAllChlaPhyco2$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco2$O2, labels = c("Chl~a~(pg~cell^{-1})"))
-MultiCultiPigmentMaxAllChlaPhycoratio2$PigmentsRatioName = "PhycoChlaRatio"
-
-
-  
-MultiCultiPigmentMaxAllChlaPhycoratio<-rbind(MultiCultiPigmentMaxAllChlaPhycoratio1, MultiCultiPigmentMaxAllChlaPhycoratio2)
-
-rm(MultiCultiPigmentMaxAllChlaPhycoratio1, MultiCultiPigmentMaxAllChlaPhycoratio2)
-```
-
-
-
-Plot -> pigments ratio - PAR PhotonDose and time
-```{r fig.height = 8, fig.width = 8}
-
-
-lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
-
-lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
-
-
-# Plot <- MultiCultiPigmentMaxAll %>%
-#   filter(Par_ue!= 600) %>% 
-#   ggplot() +
-#   geom_point(aes(x = E_hours, y = PhycoChlaRatio, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
-#   scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
-#   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
-#   labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
-#   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
-#   theme_bw() 
-# Plot
-
-Plot <- MultiCultiPigmentMaxAllChlaPhycoratio %>%
-  filter(Par_ue!= 600) %>% 
-  ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = PigmentsRatio, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
-  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
-  # scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  #labs(y = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")", x = "PARPhotonDOse") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.2)) +
-  ggh4x::facet_nested(rows = vars(facetsStrain, Strain), cols = vars(PigmentsRatioName), labeller = label_parsed) +
-  theme_bw() 
-Plot
-
-
-Plot <- MultiCultiPigmentMaxAll %>%
-  filter(Par_ue!=600) %>% 
-  ggplot() +
-  geom_point(aes(x = E_hours, y = PhycoChlaRatio, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
-  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.7)) +
-  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
-  theme_bw()
-Plot
-
-
-
-Plot <- MultiCultiPigmentMaxAllChlaPhycoratio %>%
-  filter(PURPARRatio<=1) %>%
-  filter(PARPhotonDose == 432000|
-  PARPhotonDose == 864000|
-  PARPhotonDose == 1944000|
-  PARPhotonDose == 3888000|
-  PARPhotonDose == 6480000|
-  PARPhotonDose == 8640000|
-  PARPhotonDose == 77760000) %>%
-  ggplot() +
-  geom_point(aes(x = E_hours, y = PigmentsRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
-  # geom_vline(data = data_vline5, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  # geom_vline(data = data_vline6, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  # geom_vline(data = data_vline7, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  # geom_vline(data = data_vline8, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.5)) +
-  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(PigmentsRatioName), labeller = label_parsed) +
-  # ggh4x::facet_nested(cols = vars(facets, PhotonDose), labeller = labeller(Photoperiod = Photoperiod.labs,  Strain = label_value, Par_ue = Par_ue.labs, WL = label_parsed, O2 = O2.labs)) +
-  theme_bw() 
-Plot
-
-
-
-Plot <- MultiCultiPigmentMaxAllChlaPhycoratio %>%
-  filter(PURPARRatio<=1) %>%
-  filter(PARPhotonDose == 432000|
-  PARPhotonDose == 864000|
-  PARPhotonDose == 1944000|
-  PARPhotonDose == 3888000|
-  PARPhotonDose == 6480000|
-  PARPhotonDose == 8640000|
-  PARPhotonDose == 77760000) %>%
-  ggplot() +
-  geom_point(aes(x = E_hours, y = PigmentsRatio, colour = as.factor(PigmentsRatioName)), alpha = 0.9, size = 3, show.legend = T) +
-  #labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
-  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() 
-Plot
-
-
 ```
 
 
