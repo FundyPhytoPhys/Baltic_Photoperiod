@@ -41,126 +41,214 @@ library(gcookbook)
 library(RColorBrewer)
 library(viridis)
 library(scales)
+library(googledrive)
+library(googlesheets4)
+library(readxl)
 ```
 
 ```{r Exported Rmd only first time in session}
 list.files(path = DataIn, pattern = Project, full.names = TRUE)
 ```
+
 ```{r Read processed Olis and jaz file}
-OLISSpectraMetaAllPURFile <- "../Data/ProcessedData/Baltic_Photoperiod_Processed_OlisSpectraAll.Rds"
-OLISSpectraMetaAllPURFileName <- str_split(string = OLISSpectraMetaAllPURFile, "/")[[1]][3] %>%
-  str_remove(pattern = ".Rds")
-OLISSpectraMetaAllPUR <- readRDS(OLISSpectraMetaAllPURFile)  %>%
-  ungroup()
-```
-
-```{r Clean df, without absorbance and all nm - smaller df}
-OLISAllPURShort<-OLISSpectraMetaAllPUR %>% 
-  select(-c(Absorbance, nm, Abs440, AbsNorm440, EmJaz439, EmNormJaz439, PURNorm, CountsMean, SumAbNorm, PURNormSum, SumEmNormJaz439)) %>% 
-  unique()
-
-OLISAllPURShort<-OLISAllPURShort %>% 
-  
-  group_by(Strain, Par_ue, Photoperiod, E_days, MC, Run) %>%
-  mutate(PURPARRatio = PUR/Par_ue) %>% 
-ungroup()
-
-OLISAllPURShort <- OLISAllPURShort %>% 
-  mutate(E_hours = E_days*24) 
-  
-OLISAllPURShort <- OLISAllPURShort %>% 
-  filter(PURPARRatio<=1) %>% 
-  filter(PURPARRatio>0)
-```
-
-```{r Create facets for plot}
-OLISAllPURShort <- OLISAllPURShort %>%
-      mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
-         Strain=="BA48R"~"PE-rich_048",
-        Strain=="BA56G"~"PC-rich_056",
-         Strain=="BA77G"~"PC-rich_077"))
-
-OLISAllPURShort$facetsPar_ue = factor(OLISAllPURShort$O2, labels = c("PAR~(µmol~photons~m^{-2}~s^{-1})"))
-OLISAllPURShort$facetsPhotoperiod = factor(OLISAllPURShort$WL, labels = c("Photoperiod~(h)"))
-OLISAllPURShort$facetsStrain = factor(OLISAllPURShort$WL, labels = c("Strain"))
-OLISAllPURShort$facetsPhase = factor(OLISAllPURShort$WL, labels = c("Phase~of~growth"))
+# OLISSpectraMetaAllPURFile <- "../Data/ProcessedData/Baltic_Photoperiod_Processed_OlisSpectraAll.Rds"
+# OLISSpectraMetaAllPURFileName <- str_split(string = OLISSpectraMetaAllPURFile, "/")[[1]][3] %>%
+#   str_remove(pattern = ".Rds")
+# OLISSpectraMetaAllPUR <- readRDS(OLISSpectraMetaAllPURFile)  %>%
+#   ungroup()
 ```
 
 
-PUR/PAR ratio - photoperiod and PAR
-```{r fig.height = 8, fig.width = 8}
-
-
-lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
-
-lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
-
-Plot <- OLISAllPURShort %>%
-  ggplot() +
-  geom_point(aes(x = E_hours, y = PURPARRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
-  # geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  # geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  # geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  # geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  labs(y = "PUR/PAR ratio", x = "Elapsed time (h)") +
-  scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  coord_cartesian(ylim = c(0, 1.7)) +
-  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
-  # ggh4x::facet_nested(cols = vars(facets2, Photoperiod), rows = vars(facets, Par_ue), labeller = labeller(Photoperiod = Photoperiod.labs,  Strain = label_value, Par_ue = Par_ue.labs, WL = WL.labs, O2 = O2.labs)) +
-  theme_bw() 
-Plot
-
-
-```
-
-Load tmaxAG
-```{r}
-gs4_deauth()
-
-tmaxAG<- read_sheet("https://docs.google.com/spreadsheets/d/1WyB4jonJGW9uFzKHp1Z6DnkMv-CP1PerwQ6sSLK7O8I/edit#gid=0")
-
-as.data.frame(tmaxAG)
-tmaxAG <- tmaxAG
-
-tmaxAG<-tmaxAG %>% 
-
-  mutate(Par_ue = as.numeric(Par_ue)) %>%
-  mutate(Photoperiod = as.numeric(Photoperiod)) %>%
-  mutate(dayRound_tmaxAG = as.numeric(dayRound_tmaxAG)) %>%
-  mutate(hRound_tmaxAG = as.numeric(hRound_tmaxAG)) %>% 
-  mutate(day_tmaxAG = as.numeric(day_tmaxAG)) %>% 
-  mutate(h_tmaxAG = as.numeric(h_tmaxAG)) %>%
-
-  mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
-         Strain=="BA48R"~"PE-rich_048",
-        Strain=="BA56G"~"PC-rich_056",
-         Strain=="BA77G"~"PC-rich_077"))
-
+pozniej potrzebne do solisense i growth, nie wyrzucac na razie!
+```{r Load tmaxAG}
+# gs4_deauth()
+# 
+# tmaxAG<- read_sheet("https://docs.google.com/spreadsheets/d/1WyB4jonJGW9uFzKHp1Z6DnkMv-CP1PerwQ6sSLK7O8I/edit#gid=0")
+# 
+# as.data.frame(tmaxAG)
+# tmaxAG <- tmaxAG
+# 
+# tmaxAG<-tmaxAG %>% 
+#   mutate(Par_ue = as.numeric(Par_ue)) %>%
+#   mutate(Photoperiod = as.numeric(Photoperiod)) %>%
+#   mutate(dayRound_tmaxAG = as.numeric(dayRound_tmaxAG)) %>%
+#   mutate(hRound_tmaxAG = as.numeric(hRound_tmaxAG)) %>% 
+#   mutate(day_tmaxAG = as.numeric(day_tmaxAG)) %>% 
+#   mutate(h_tmaxAG = as.numeric(h_tmaxAG)) %>%
+#   mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
+#          Strain=="BA48R"~"PE-rich_048",
+#         Strain=="BA56G"~"PC-rich_056",
+#          Strain=="BA77G"~"PC-rich_077"))
 ```
 Combine OLISAllPURShort with tmaxAG data from google sheet
 
 OLISAllPURShortPhase -> Divided PAR, PUR and PUR/PAR Ratio data to Exponential and Pre-stationary phase according to tmaxAG from google sheet
 ```{r}
-OLISAllPURShortPhase <- OLISAllPURShort %>%
-  left_join(., tmaxAG, by = c("Strain"="Strain","Par_ue"="Par_ue","Photoperiod"="Photoperiod")) 
-
-OLISAllPURShortPhase <- OLISAllPURShortPhase %>%
-  mutate(Phase = O2) %>% 
-  mutate(Phase=case_when(E_days<=dayRound_tmaxAG~"Exponential",
-         E_days>dayRound_tmaxAG~"Pre-stationary"))
+# OLISAllPURTidyhase <- OLISAllPURTidy %>%
+#   left_join(., tmaxAG, by = c("Strain"="Strain","Par_ue"="Par_ue","Photoperiod"="Photoperiod")) 
+# 
+# OLISAllPURTidyhase <- OLISAllPURTidyhase %>%
+#   mutate(Phase = O2) %>% 
+#   mutate(Phase=case_when(E_days<=dayRound_tmaxAG~"Exponential",
+#          E_days>dayRound_tmaxAG~"Pre-stationary"))
 ```
 
 
-Plot -> PUR/PAR ratio - photoperiod and PAR or PAR PhotonDose
+
+
+PIGMENTS
+
+There are a few negative value of pigments (based on correlation) - I replaced them by 0
+
+pigments file
+```{r}
+Project <- "PicoBaltic"
+DataIn <- file.path("..", "ImportedData", "SySlmanuscriptWWPhotoperiod", fsep = .Platform$file.sep)
+FileEncode <- "UTF-8"
+Delimiter <- ","
+HeaderRows <- 0
+```
+
+pigments file
+Exported Rmd only first time in session
+```{r}
+list.files(path = DataIn, pattern = Project, full.names = TRUE)
+```
+
+pigments file
+```{r read ProcessFile}
+
+#contained mean OD per day from Multiculti and based on this OD calculated pigments per mL and per cell (pg/cell)
+MultiCultiPigmentMaxFile <- "../ImportedData/SySlmanuscriptWWPhotoperiod/PicoBaltic_MultiCultiPigmentMax.Rds"
+MultiCultiPigmentMaxFileName <- str_split(string = MultiCultiPigmentMaxFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds")
+MultiCultiPigmentMax <- readRDS(MultiCultiPigmentMaxFile)  %>%
+  ungroup()
+
+```
+
+combine pigments data (for Solisense) and number of cells (based on MultiCulti OD) with PUR and Growth rate
+```{r}
+#colnames(MultiCultiGrowthRatePURExp)
+
+MultiCultiPigmentMax<-MultiCultiPigmentMax %>% 
+  mutate(MultiDay=E_days) %>% 
+  mutate(OlisDate = Date) %>% 
+  select(-c(FilenameMultiCulti,Filename,E_days,Date)) %>% 
+    mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
+         Strain=="BA48R"~"PE-rich_048",
+        Strain=="BA56G"~"PC-rich_056",
+         Strain=="BA77G"~"PC-rich_077")) %>% 
+  select(-c(InnocDate,Abs440, Abs480, Abs565, Abs620, Abs650, Abs665))
+
+MultiCultiGrowthRatePURExp<-MultiCultiGrowthRatePURExp %>% 
+  select(-c(Filename, OD720_Lmu_corr, OD720_Lmu_se, OD720_LseGrowthFlag, GrowthAmpOD720Flag_14days))
+
+MultiCultiPigmentMaxAll <- MultiCultiGrowthRatePURExp %>%
+  left_join(., MultiCultiPigmentMax, by = c("Run"="Run","ID"="ID", "Tube"="Tube", "Strain"="Strain", "ExpDate"="ExpDate","Par_ue"="Par_ue","Photoperiod"="Photoperiod","O2"="O2","WL"="WL","LightShape"="LightShape","ExpEndDate"="ExpEndDate", "E_days"="MultiDay", "E_hours"="Time_h", "PARPhotonDose"="PARPhotonDose", "MC"="MC")) 
+
+MultiCultiPigmentMaxAll <- MultiCultiPigmentMaxAll %>%
+  mutate(cellL=cellml*1000) %>% 
+  mutate(ChlaugL = ChlaugmL*1000) %>% 
+  mutate(PhycougL = (PCugmL+PEugmL+APCugmL)*1000) 
+
+```
+
+
+Replace negative values in data frame by zero
+```{r}
+MultiCultiPigmentMaxAll <- MultiCultiPigmentMaxAll                     # Duplicate data frame
+MultiCultiPigmentMaxAll[MultiCultiPigmentMaxAll < 0] <- 0     # Set negative values to 0
+
+```
+Combine Chla and phyco in one column for nice plot
+```{r}
+MultiCultiPigmentMaxAllChlaPhyco1<-MultiCultiPigmentMaxAll %>% 
+  select(-c(Chlapgcell, Carpgcell)) %>% 
+  mutate(Pigmentspgcell=Phycopgcell*1) %>% 
+  select(-c(Phycopgcell))
+# MultiCultiPigmentMaxAllChlaPhyco1$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco1$O2, labels = c("Total~Phyco~(pg~cell^{-1})"))
+MultiCultiPigmentMaxAllChlaPhyco1$PigmentsName = "Phyco"
+
+MultiCultiPigmentMaxAllChlaPhyco2<-MultiCultiPigmentMaxAll %>% 
+  select(-c(Phycopgcell, Carpgcell)) %>% 
+  mutate(Pigmentspgcell=Chlapgcell*1) %>% 
+  select(-c(Chlapgcell))
+# MultiCultiPigmentMaxAllChlaPhyco2$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco2$O2, labels = c("Chl~a~(pg~cell^{-1})"))
+MultiCultiPigmentMaxAllChlaPhyco2$PigmentsName = "Chla"
+
+MultiCultiPigmentMaxAllChlaPhyco3<-MultiCultiPigmentMaxAll %>% 
+  select(-c(Chlapgcell, Phycopgcell)) %>% 
+  mutate(Pigmentspgcell=Carpgcell*1) %>% 
+  select(-c(Carpgcell))
+# MultiCultiPigmentMaxAllChlaPhyco3$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco3$O2, labels = c("Car~(pg~cell^{-1})"))
+MultiCultiPigmentMaxAllChlaPhyco3$PigmentsName = "Car"
+  
+MultiCultiPigmentMaxAllChlaPhyco<-rbind(MultiCultiPigmentMaxAllChlaPhyco1, MultiCultiPigmentMaxAllChlaPhyco2, MultiCultiPigmentMaxAllChlaPhyco3)
+
+rm(MultiCultiPigmentMaxAllChlaPhyco1, MultiCultiPigmentMaxAllChlaPhyco2, MultiCultiPigmentMaxAllChlaPhyco3)
+```
+
+
+Plot -> pigments per cell - PAR PhotonDose and time
 ```{r fig.height = 8, fig.width = 8}
 
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+
 lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
+
 lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
 lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
-OLISAllPURShortPhase %>%
+
+# Plot <- MultiCultiPigmentMaxAll %>%
+#   filter(Par_ue!= 600) %>% 
+#   ggplot() +
+#   geom_point(aes(x = E_hours, y = Chlapgcell, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
+#   scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
+#   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
+#   labs(y = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
+#   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
+#   theme_bw() 
+# Plot
+
+
+Plot <- MultiCultiPigmentMaxAllChlaPhyco %>%
+  filter(Par_ue!= 600) %>% 
+  ggplot() +
+  geom_point(aes(x = PARPhotonDose, y = Pigmentspgcell, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
+  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
+  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
+  # scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+  #labs(y = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")", x = "PARPhotonDOse") +
+  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+  # coord_cartesian(ylim = c(0, 1.2)) +
+  ggh4x::facet_nested(rows = vars(facetsStrain, Strain), cols = vars(PigmentsName), labeller = label_parsed) +
+  theme_bw() 
+Plot
+
+
+
+Plot <- MultiCultiPigmentMaxAll %>%
+  filter(Par_ue!=600) %>% 
+  ggplot() +
+  # geom_smooth(aes(x = Time_h, y = PURPARRatio, colour = as.factor(Strain)),  alpha = 0, size = 0.2, linetype = "solid", show.legend = T) +
+  geom_point(aes(x = E_hours, y = Phycopgcell, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
+  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
+  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+  labs(y = "Total phycobilins content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
+  # geom_errorbar(aes(x = Photoperiod, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, width=3, color = '#3C3B53', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+  # coord_cartesian(ylim = c(0, 1.7)) +
+  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
+  theme_bw()
+Plot
+
+
+Plot <- MultiCultiPigmentMaxAllChlaPhyco %>%
   filter(PURPARRatio<=1) %>%
   filter(PARPhotonDose == 432000|
   PARPhotonDose == 864000|
@@ -170,33 +258,372 @@ OLISAllPURShortPhase %>%
   PARPhotonDose == 8640000|
   PARPhotonDose == 77760000) %>%
   ggplot() +
-  geom_point(aes(x = E_hours, y = PURPARRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
+  geom_point(aes(x = E_hours, y = Pigmentspgcell, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
   # geom_vline(data = data_vline5, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
   # geom_vline(data = data_vline6, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
   # geom_vline(data = data_vline7, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
   # geom_vline(data = data_vline8, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  labs(y = "PUR/PAR ratio", x = "Elapsed time (h)") +
-  scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  coord_cartesian(ylim = c(0, 1.5)) +
-  ggh4x::facet_nested(cols = vars(PARPhotonDose), labeller = label_parsed) +
+  labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
+  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+  # coord_cartesian(ylim = c(0, 1.5)) +
+  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(PigmentsName), labeller = label_parsed) +
+  # ggh4x::facet_nested(cols = vars(facets, PhotonDose), labeller = labeller(Photoperiod = Photoperiod.labs,  Strain = label_value, Par_ue = Par_ue.labs, WL = label_parsed, O2 = O2.labs)) +
+  theme_bw()
+Plot
+
+
+Plot <- MultiCultiPigmentMaxAllChlaPhyco %>%
+  filter(PURPARRatio<=1) %>%
+  filter(PARPhotonDose == 432000|
+  PARPhotonDose == 864000|
+  PARPhotonDose == 1944000|
+  PARPhotonDose == 3888000|
+  PARPhotonDose == 6480000|
+  PARPhotonDose == 8640000|
+  PARPhotonDose == 77760000) %>%
+  ggplot() +
+  geom_point(aes(x = E_hours, y = Pigmentspgcell, colour = as.factor(PigmentsName)), alpha = 0.9, size = 3, show.legend = T) +
+  labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
+  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
+Plot
+
 ```
 
-
-df for choosen PAR photondose data
+Combine phyco/Chla ratio and car/chla ratio in one column for nice plot
 ```{r}
+MultiCultiPigmentMaxAllChlaPhycoratio1<-MultiCultiPigmentMaxAll %>% 
+  select(-c(PhycoChlaRatio)) %>% 
+  mutate(PigmentsRatio=CarChlaRatio*1) %>% 
+  select(-c(CarChlaRatio))
+# MultiCultiPigmentMaxAllChlaPhyco1$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco1$O2, labels = c("Total~Phyco~(pg~cell^{-1})"))
+MultiCultiPigmentMaxAllChlaPhycoratio1$PigmentsRatioName = "CarChlaRatio"
 
-# data_vline5 <- data.frame(PARPhotonDose= c(432000, 1944000, 3888000, 6480000, 864000, 8640000, 77760000),facets3=c("PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})"), value = c(347, 245.39,189.48,162.62, 347, 111.56,110))
-# 
-# 
-# data_vline6 <- data.frame(PARPhotonDose= c(432000, 1944000, 3888000, 6480000, 864000, 8640000, 77760000),facets3=c("PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})"), value = c(346, 216.33,163.44,136.03, 299.38,111.28,94.23))
-# 
-# data_vline7 <- data.frame(PARPhotonDose= c(432000, 1944000, 3888000, 6480000, 864000, 8640000, 77760000),facets3=c("PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})"), value = c(345, 296.45,217.80,191.03, 345,112.75,79.66))
-# 
-# data_vline8 <- data.frame(PARPhotonDose= c(432000, 1944000, 3888000, 6480000, 864000, 8640000, 77760000),facets3=c("PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})"), value = c(344, 244.38,190.39,163.62, 299.57, 112.29, 107))
+MultiCultiPigmentMaxAllChlaPhycoratio2<-MultiCultiPigmentMaxAll %>% 
+  select(-c(CarChlaRatio)) %>% 
+  mutate(PigmentsRatio=PhycoChlaRatio*1) %>% 
+  select(-c(PhycoChlaRatio))
+# MultiCultiPigmentMaxAllChlaPhyco2$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco2$O2, labels = c("Chl~a~(pg~cell^{-1})"))
+MultiCultiPigmentMaxAllChlaPhycoratio2$PigmentsRatioName = "PhycoChlaRatio"
+
+
+  
+MultiCultiPigmentMaxAllChlaPhycoratio<-rbind(MultiCultiPigmentMaxAllChlaPhycoratio1, MultiCultiPigmentMaxAllChlaPhycoratio2)
+
+rm(MultiCultiPigmentMaxAllChlaPhycoratio1, MultiCultiPigmentMaxAllChlaPhycoratio2)
+```
+
+
+
+Plot -> pigments ratio - PAR PhotonDose and time
+```{r fig.height = 8, fig.width = 8}
+
+
+lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
+
+lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
+
+# Plot <- MultiCultiPigmentMaxAll %>%
+#   filter(Par_ue!= 600) %>% 
+#   ggplot() +
+#   geom_point(aes(x = E_hours, y = PhycoChlaRatio, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
+#   scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
+#   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
+#   labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
+#   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
+#   theme_bw() 
+# Plot
+
+Plot <- MultiCultiPigmentMaxAllChlaPhycoratio %>%
+  filter(Par_ue!= 600) %>% 
+  ggplot() +
+  geom_point(aes(x = PARPhotonDose, y = PigmentsRatio, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
+  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
+  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
+  # scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+  #labs(y = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")", x = "PARPhotonDOse") +
+  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+  # coord_cartesian(ylim = c(0, 1.2)) +
+  ggh4x::facet_nested(rows = vars(facetsStrain, Strain), cols = vars(PigmentsRatioName), labeller = label_parsed) +
+  theme_bw() 
+Plot
+
+
+Plot <- MultiCultiPigmentMaxAll %>%
+  filter(Par_ue!=600) %>% 
+  ggplot() +
+  geom_point(aes(x = E_hours, y = PhycoChlaRatio, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
+  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
+  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+  labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
+  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+  # coord_cartesian(ylim = c(0, 1.7)) +
+  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
+  theme_bw()
+Plot
+
+
+
+Plot <- MultiCultiPigmentMaxAllChlaPhycoratio %>%
+  filter(PURPARRatio<=1) %>%
+  filter(PARPhotonDose == 432000|
+  PARPhotonDose == 864000|
+  PARPhotonDose == 1944000|
+  PARPhotonDose == 3888000|
+  PARPhotonDose == 6480000|
+  PARPhotonDose == 8640000|
+  PARPhotonDose == 77760000) %>%
+  ggplot() +
+  geom_point(aes(x = E_hours, y = PigmentsRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
+  # geom_vline(data = data_vline5, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
+  # geom_vline(data = data_vline6, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  # geom_vline(data = data_vline7, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
+  # geom_vline(data = data_vline8, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
+  #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
+  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+  # coord_cartesian(ylim = c(0, 1.5)) +
+  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(PigmentsRatioName), labeller = label_parsed) +
+  # ggh4x::facet_nested(cols = vars(facets, PhotonDose), labeller = labeller(Photoperiod = Photoperiod.labs,  Strain = label_value, Par_ue = Par_ue.labs, WL = label_parsed, O2 = O2.labs)) +
+  theme_bw() 
+Plot
+
+
+
+Plot <- MultiCultiPigmentMaxAllChlaPhycoratio %>%
+  filter(PURPARRatio<=1) %>%
+  filter(PARPhotonDose == 432000|
+  PARPhotonDose == 864000|
+  PARPhotonDose == 1944000|
+  PARPhotonDose == 3888000|
+  PARPhotonDose == 6480000|
+  PARPhotonDose == 8640000|
+  PARPhotonDose == 77760000) %>%
+  ggplot() +
+  geom_point(aes(x = E_hours, y = PigmentsRatio, colour = as.factor(PigmentsRatioName)), alpha = 0.9, size = 3, show.legend = T) +
+  #labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
+  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(Strain), labeller = label_parsed) +
+  theme_bw() 
+Plot
+
 
 ```
+
+
+Create only one pigment in exp - for Solisense data
+Combine growth rate and exp pigments
+```{r}
+MultiCultiPigmentMaxAllExp<-MultiCultiPigmentMaxAll 
+  
+O1 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 30 | Par_ue == 300 | Par_ue == 90 | Par_ue == 180) %>% 
+  filter(Photoperiod == 24) %>% 
+  filter(E_days < 4)
+
+O2 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 180 | Par_ue == 300) %>% 
+  filter(Photoperiod == 16) %>% 
+  filter(E_days == 4)
+
+O3 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 90) %>% 
+  filter(Photoperiod == 16) %>% 
+  filter(E_days == 6)
+
+O4 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 30) %>% 
+  filter(Photoperiod == 16) %>% 
+  filter(E_days == 12)
+
+O5 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 900 | Par_ue == 600) %>% 
+  filter(Photoperiod == 16) %>% 
+  filter(E_days == 4)
+
+O6 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 30) %>% 
+  filter(Photoperiod == 8 | Photoperiod == 12) %>% 
+  filter(E_days == 12| E_days == 13)
+  
+O7 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 90) %>% 
+  filter(Photoperiod == 8) %>% 
+  filter(E_days == 12 | E_days ==13)
+
+O8 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 90) %>% 
+  filter(Photoperiod == 12) %>% 
+  filter(Strain == "PE-rich_127" | Strain == "PE-rich_048" | Strain == "PC-rich_077") %>% 
+  filter(E_days == 8 | E_days ==9)
+
+O9 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 90) %>% 
+  filter(Photoperiod == 12) %>% 
+  filter(Strain == "PC-rich_056") %>% 
+  filter(E_days == 11)
+
+O10 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 180) %>% 
+  filter(Photoperiod == 8) %>% 
+  filter(E_days == 8 | E_days == 9)
+
+O11 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 180) %>% 
+  filter(Photoperiod == 12) %>% 
+  filter(E_days == 6 | E_days == 7)
+
+O12 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 300) %>% 
+  filter(Photoperiod == 8) %>% 
+  filter(Strain == "PE-rich_127" | Strain == "PE-rich_048" | Strain == "PC-rich_077") %>% 
+  filter(E_days == 6 | E_days ==7)
+
+O13 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 300) %>% 
+  filter(Photoperiod == 8) %>% 
+  filter(Strain == "PC-rich_056") %>% 
+  filter(E_days == 9)
+
+O14 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 300) %>% 
+  filter(Photoperiod == 12) %>% 
+  filter(Strain == "PE-rich_127" | Strain == "PE-rich_048" | Strain == "PC-rich_077") %>% 
+  filter(E_days == 4 | E_days ==5)
+
+O15 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 300) %>% 
+  filter(Photoperiod == 12) %>% 
+  filter(Strain == "PC-rich_056") %>%  
+  filter(E_days == 7)
+
+O16 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 900) %>% 
+  filter(Photoperiod == 8 | Photoperiod == 12)
+
+O17 <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue == 900 | Par_ue == 600) %>% 
+  filter(Photoperiod == 24) %>% 
+  filter(E_hours < 100 & E_hours > 48)
+
+MultiCultiPigmentMaxAllExp2 <-rbind(O1, O2, O3, O4, O5, O6, O7, O8, O9, O10, O11, O12, O13, O14, O15, O16, O17)
+
+rm(O1, O2, O3, O4, O5, O6, O7, O8, O9, O10, O11, O12, O13, O14, O15, O16, O17)
+
+  
+```
+
+Because I have replica in growt rate - I combine one choosen pigmen exp to all growth rate data
+```{r}
+#colnames(MultiCultiDataCleanGrowthAll4)
+MultiCultiPigmentMaxAllExp4<-MultiCultiPigmentMaxAllExp2 %>% 
+  # mutate(cellL=cellml*1000) %>% 
+  # mutate(ChlaugL = ChlaugmL*1000) %>% 
+  # mutate(PhycougL = (PCugmL+PEugmL+APCugmL)*1000) %>% 
+  mutate(cellLExp = cellL) %>%
+  mutate(ChlapgcellExp = Chlapgcell) %>% 
+  mutate(PhycopgcellExp = Phycopgcell) %>% 
+  mutate(ChlaugLExp = ChlaugL) %>% 
+  mutate(PhycougLExp = PhycougL) %>% 
+  mutate(PhycoChlaRatioExp = PhycopgcellExp/ChlapgcellExp) %>% 
+  select(c(Strain, Par_ue, Photoperiod, ChlapgcellExp, PhycopgcellExp, ChlaugLExp, PhycougLExp, PhycoChlaRatioExp, cellLExp))
+  
+MultiCultiPigmentMaxAllExp <- MultiCultiPigmentMaxAll %>%
+  full_join(., MultiCultiPigmentMaxAllExp4, by = c("Strain"="Strain", "Par_ue"="Par_ue","Photoperiod"="Photoperiod"))
+
+
+```
+
+
+Plot -> only exp Phyco, Chla, and Phyco/chla ratio
+```{r fig.height = 8, fig.width = 8}
+
+
+lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
+
+lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
+
+
+Plot <- MultiCultiPigmentMaxAllExp %>%
+   filter(Par_ue!=600) %>% 
+  ggplot() +
+  geom_point(aes(x = E_hoursExp, y = PhycopgcellExp, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
+  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
+  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+  #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
+  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+  # coord_cartesian(ylim = c(0, 1.7)) +
+  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
+  theme_bw()
+Plot
+
+
+
+Plot <- MultiCultiPigmentMaxAllExp %>%
+   filter(Par_ue!=600) %>% 
+  ggplot() +
+  geom_point(aes(x = E_hoursExp, y = ChlapgcellExp, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
+  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
+  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+  #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
+  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+  # coord_cartesian(ylim = c(0, 1.7)) +
+  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
+  theme_bw() 
+Plot
+
+
+Plot <- MultiCultiPigmentMaxAllExp %>%
+  filter(Par_ue!=600) %>% 
+  ggplot() +
+  geom_point(aes(x = E_hoursExp, y = PhycoChlaRatioExp, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
+  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
+  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+  #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
+  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+  # coord_cartesian(ylim = c(0, 1.7)) +
+  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
+  theme_bw() 
+Plot
+
+
+```
+
+Create df with only exp data for PUR, PUR/PAR ratio, pigments and cell/L
+```{r}
+#colnames(MultiCultiPigmentMaxAllExp)
+GrowthPigmentPURonlyExp<-MultiCultiPigmentMaxAllExp %>% 
+  select(-c(SpectraDate, E_days, PUR, PURPhotonDose, PURPARRatio, E_hours, meanActinic_parDay, meanOD680Day, meanOD720Day, cellml, ChlaugmL, CarugmL, PEugmL, PCugmL, APCugmL, Chlapgcell, Carpgcell, PEpgcell, OlisDate, cellL, ChlaugL, PhycougL, PCpgcell, APCpgcell, Phycopgcell, CarChlaRatio, PhycoChlaRatio, PEPCRatio)) %>% 
+  unique()
+  
+```
+
+
+rm additional df
+```{r}
+rm(MultiCultiGrowthAll, MultiCultiGrowth, MultiCultiGrowth121, MultiCultiDataCleanGrowthAll2, MultiCultiDataCleanGrowthAll4)
+```
+
+
+
+
+
 
 
 
@@ -1040,532 +1467,6 @@ rm(MultiCultiGrowthRatePURExpFit30, MultiCultiGrowthRatePURExpFit90, MultiCultiG
 
 
 
-PIGMENTS
-
-There are a few negative value of pigments (based on correlation) - I replaced them by 0
-
-Growth file
-```{r}
-Project <- "PicoBaltic"
-DataIn <- file.path("..", "ImportedData", "SySlmanuscriptWWPhotoperiod", fsep = .Platform$file.sep)
-FileEncode <- "UTF-8"
-Delimiter <- ","
-HeaderRows <- 0
-```
-
-Growth file
-Exported Rmd only first time in session
-```{r}
-list.files(path = DataIn, pattern = Project, full.names = TRUE)
-```
-
-Growth file
-```{r read ProcessFile}
-
-#contained mean OD per day from Multiculti and based on this OD calculated pigments per mL and per cell (pg/cell)
-MultiCultiPigmentMaxFile <- "../ImportedData/SySlmanuscriptWWPhotoperiod/PicoBaltic_MultiCultiPigmentMax.Rds"
-MultiCultiPigmentMaxFileName <- str_split(string = MultiCultiPigmentMaxFile, "/")[[1]][3] %>%
-  str_remove(pattern = ".Rds")
-MultiCultiPigmentMax <- readRDS(MultiCultiPigmentMaxFile)  %>%
-  ungroup()
-
-```
-
-combine pigments data (for Solisense) and number of cells (based on MultiCulti OD) with PUR and Growth rate
-```{r}
-#colnames(MultiCultiGrowthRatePURExp)
-
-MultiCultiPigmentMax<-MultiCultiPigmentMax %>% 
-  mutate(MultiDay=E_days) %>% 
-  mutate(OlisDate = Date) %>% 
-  select(-c(FilenameMultiCulti,Filename,E_days,Date)) %>% 
-    mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
-         Strain=="BA48R"~"PE-rich_048",
-        Strain=="BA56G"~"PC-rich_056",
-         Strain=="BA77G"~"PC-rich_077")) %>% 
-  select(-c(InnocDate,Abs440, Abs480, Abs565, Abs620, Abs650, Abs665))
-
-MultiCultiGrowthRatePURExp<-MultiCultiGrowthRatePURExp %>% 
-  select(-c(Filename, OD720_Lmu_corr, OD720_Lmu_se, OD720_LseGrowthFlag, GrowthAmpOD720Flag_14days))
-
-MultiCultiPigmentMaxAll <- MultiCultiGrowthRatePURExp %>%
-  left_join(., MultiCultiPigmentMax, by = c("Run"="Run","ID"="ID", "Tube"="Tube", "Strain"="Strain", "ExpDate"="ExpDate","Par_ue"="Par_ue","Photoperiod"="Photoperiod","O2"="O2","WL"="WL","LightShape"="LightShape","ExpEndDate"="ExpEndDate", "E_days"="MultiDay", "E_hours"="Time_h", "PARPhotonDose"="PARPhotonDose", "MC"="MC")) 
-
-MultiCultiPigmentMaxAll <- MultiCultiPigmentMaxAll %>%
-  mutate(cellL=cellml*1000) %>% 
-  mutate(ChlaugL = ChlaugmL*1000) %>% 
-  mutate(PhycougL = (PCugmL+PEugmL+APCugmL)*1000) 
-
-```
-
-
-Replace negative values in data frame by zero
-```{r}
-MultiCultiPigmentMaxAll <- MultiCultiPigmentMaxAll                     # Duplicate data frame
-MultiCultiPigmentMaxAll[MultiCultiPigmentMaxAll < 0] <- 0     # Set negative values to 0
-
-```
-Combine Chla and phyco in one column for nice plot
-```{r}
-MultiCultiPigmentMaxAllChlaPhyco1<-MultiCultiPigmentMaxAll %>% 
-  select(-c(Chlapgcell, Carpgcell)) %>% 
-  mutate(Pigmentspgcell=Phycopgcell*1) %>% 
-  select(-c(Phycopgcell))
-# MultiCultiPigmentMaxAllChlaPhyco1$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco1$O2, labels = c("Total~Phyco~(pg~cell^{-1})"))
-MultiCultiPigmentMaxAllChlaPhyco1$PigmentsName = "Phyco"
-
-MultiCultiPigmentMaxAllChlaPhyco2<-MultiCultiPigmentMaxAll %>% 
-  select(-c(Phycopgcell, Carpgcell)) %>% 
-  mutate(Pigmentspgcell=Chlapgcell*1) %>% 
-  select(-c(Chlapgcell))
-# MultiCultiPigmentMaxAllChlaPhyco2$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco2$O2, labels = c("Chl~a~(pg~cell^{-1})"))
-MultiCultiPigmentMaxAllChlaPhyco2$PigmentsName = "Chla"
-
-MultiCultiPigmentMaxAllChlaPhyco3<-MultiCultiPigmentMaxAll %>% 
-  select(-c(Chlapgcell, Phycopgcell)) %>% 
-  mutate(Pigmentspgcell=Carpgcell*1) %>% 
-  select(-c(Carpgcell))
-# MultiCultiPigmentMaxAllChlaPhyco3$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco3$O2, labels = c("Car~(pg~cell^{-1})"))
-MultiCultiPigmentMaxAllChlaPhyco3$PigmentsName = "Car"
-  
-MultiCultiPigmentMaxAllChlaPhyco<-rbind(MultiCultiPigmentMaxAllChlaPhyco1, MultiCultiPigmentMaxAllChlaPhyco2, MultiCultiPigmentMaxAllChlaPhyco3)
-
-rm(MultiCultiPigmentMaxAllChlaPhyco1, MultiCultiPigmentMaxAllChlaPhyco2, MultiCultiPigmentMaxAllChlaPhyco3)
-```
-
-
-Plot -> pigments per cell - PAR PhotonDose and time
-```{r fig.height = 8, fig.width = 8}
-
-scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
-
-lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
-
-lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
-
-
-# Plot <- MultiCultiPigmentMaxAll %>%
-#   filter(Par_ue!= 600) %>% 
-#   ggplot() +
-#   geom_point(aes(x = E_hours, y = Chlapgcell, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
-#   scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
-#   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
-#   labs(y = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
-#   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
-#   theme_bw() 
-# Plot
-
-
-Plot <- MultiCultiPigmentMaxAllChlaPhyco %>%
-  filter(Par_ue!= 600) %>% 
-  ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = Pigmentspgcell, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
-  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
-  # scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  #labs(y = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")", x = "PARPhotonDOse") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.2)) +
-  ggh4x::facet_nested(rows = vars(facetsStrain, Strain), cols = vars(PigmentsName), labeller = label_parsed) +
-  theme_bw() 
-Plot
-
-
-
-Plot <- MultiCultiPigmentMaxAll %>%
-  filter(Par_ue!=600) %>% 
-  ggplot() +
-  # geom_smooth(aes(x = Time_h, y = PURPARRatio, colour = as.factor(Strain)),  alpha = 0, size = 0.2, linetype = "solid", show.legend = T) +
-  geom_point(aes(x = E_hours, y = Phycopgcell, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
-  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  labs(y = "Total phycobilins content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
-  # geom_errorbar(aes(x = Photoperiod, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, width=3, color = '#3C3B53', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.7)) +
-  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
-  theme_bw()
-Plot
-
-
-Plot <- MultiCultiPigmentMaxAllChlaPhyco %>%
-  filter(PURPARRatio<=1) %>%
-  filter(PARPhotonDose == 432000|
-  PARPhotonDose == 864000|
-  PARPhotonDose == 1944000|
-  PARPhotonDose == 3888000|
-  PARPhotonDose == 6480000|
-  PARPhotonDose == 8640000|
-  PARPhotonDose == 77760000) %>%
-  ggplot() +
-  geom_point(aes(x = E_hours, y = Pigmentspgcell, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
-  # geom_vline(data = data_vline5, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  # geom_vline(data = data_vline6, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  # geom_vline(data = data_vline7, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  # geom_vline(data = data_vline8, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.5)) +
-  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(PigmentsName), labeller = label_parsed) +
-  # ggh4x::facet_nested(cols = vars(facets, PhotonDose), labeller = labeller(Photoperiod = Photoperiod.labs,  Strain = label_value, Par_ue = Par_ue.labs, WL = label_parsed, O2 = O2.labs)) +
-  theme_bw()
-Plot
-
-
-Plot <- MultiCultiPigmentMaxAllChlaPhyco %>%
-  filter(PURPARRatio<=1) %>%
-  filter(PARPhotonDose == 432000|
-  PARPhotonDose == 864000|
-  PARPhotonDose == 1944000|
-  PARPhotonDose == 3888000|
-  PARPhotonDose == 6480000|
-  PARPhotonDose == 8640000|
-  PARPhotonDose == 77760000) %>%
-  ggplot() +
-  geom_point(aes(x = E_hours, y = Pigmentspgcell, colour = as.factor(PigmentsName)), alpha = 0.9, size = 3, show.legend = T) +
-  labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
-  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() 
-Plot
-
-```
-
-Combine phyco/Chla ratio and car/chla ratio in one column for nice plot
-```{r}
-MultiCultiPigmentMaxAllChlaPhycoratio1<-MultiCultiPigmentMaxAll %>% 
-  select(-c(PhycoChlaRatio)) %>% 
-  mutate(PigmentsRatio=CarChlaRatio*1) %>% 
-  select(-c(CarChlaRatio))
-# MultiCultiPigmentMaxAllChlaPhyco1$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco1$O2, labels = c("Total~Phyco~(pg~cell^{-1})"))
-MultiCultiPigmentMaxAllChlaPhycoratio1$PigmentsRatioName = "CarChlaRatio"
-
-MultiCultiPigmentMaxAllChlaPhycoratio2<-MultiCultiPigmentMaxAll %>% 
-  select(-c(CarChlaRatio)) %>% 
-  mutate(PigmentsRatio=PhycoChlaRatio*1) %>% 
-  select(-c(PhycoChlaRatio))
-# MultiCultiPigmentMaxAllChlaPhyco2$PigmentsName = factor(MultiCultiPigmentMaxAllChlaPhyco2$O2, labels = c("Chl~a~(pg~cell^{-1})"))
-MultiCultiPigmentMaxAllChlaPhycoratio2$PigmentsRatioName = "PhycoChlaRatio"
-
-
-  
-MultiCultiPigmentMaxAllChlaPhycoratio<-rbind(MultiCultiPigmentMaxAllChlaPhycoratio1, MultiCultiPigmentMaxAllChlaPhycoratio2)
-
-rm(MultiCultiPigmentMaxAllChlaPhycoratio1, MultiCultiPigmentMaxAllChlaPhycoratio2)
-```
-
-
-
-Plot -> pigments ratio - PAR PhotonDose and time
-```{r fig.height = 8, fig.width = 8}
-
-
-lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
-
-lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
-
-
-# Plot <- MultiCultiPigmentMaxAll %>%
-#   filter(Par_ue!= 600) %>% 
-#   ggplot() +
-#   geom_point(aes(x = E_hours, y = PhycoChlaRatio, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
-#   scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
-#   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
-#   labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
-#   ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
-#   theme_bw() 
-# Plot
-
-Plot <- MultiCultiPigmentMaxAllChlaPhycoratio %>%
-  filter(Par_ue!= 600) %>% 
-  ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = PigmentsRatio, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3, show.legend = T) +
-  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
-  # scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  #labs(y = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")", x = "PARPhotonDOse") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.2)) +
-  ggh4x::facet_nested(rows = vars(facetsStrain, Strain), cols = vars(PigmentsRatioName), labeller = label_parsed) +
-  theme_bw() 
-Plot
-
-
-Plot <- MultiCultiPigmentMaxAll %>%
-  filter(Par_ue!=600) %>% 
-  ggplot() +
-  geom_point(aes(x = E_hours, y = PhycoChlaRatio, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
-  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.7)) +
-  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
-  theme_bw()
-Plot
-
-
-
-Plot <- MultiCultiPigmentMaxAllChlaPhycoratio %>%
-  filter(PURPARRatio<=1) %>%
-  filter(PARPhotonDose == 432000|
-  PARPhotonDose == 864000|
-  PARPhotonDose == 1944000|
-  PARPhotonDose == 3888000|
-  PARPhotonDose == 6480000|
-  PARPhotonDose == 8640000|
-  PARPhotonDose == 77760000) %>%
-  ggplot() +
-  geom_point(aes(x = E_hours, y = PigmentsRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
-  # geom_vline(data = data_vline5, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  # geom_vline(data = data_vline6, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  # geom_vline(data = data_vline7, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  # geom_vline(data = data_vline8, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.5)) +
-  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(PigmentsRatioName), labeller = label_parsed) +
-  # ggh4x::facet_nested(cols = vars(facets, PhotonDose), labeller = labeller(Photoperiod = Photoperiod.labs,  Strain = label_value, Par_ue = Par_ue.labs, WL = label_parsed, O2 = O2.labs)) +
-  theme_bw() 
-Plot
-
-
-
-Plot <- MultiCultiPigmentMaxAllChlaPhycoratio %>%
-  filter(PURPARRatio<=1) %>%
-  filter(PARPhotonDose == 432000|
-  PARPhotonDose == 864000|
-  PARPhotonDose == 1944000|
-  PARPhotonDose == 3888000|
-  PARPhotonDose == 6480000|
-  PARPhotonDose == 8640000|
-  PARPhotonDose == 77760000) %>%
-  ggplot() +
-  geom_point(aes(x = E_hours, y = PigmentsRatio, colour = as.factor(PigmentsRatioName)), alpha = 0.9, size = 3, show.legend = T) +
-  #labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
-  ggh4x::facet_nested(cols = vars(PARPhotonDose), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() 
-Plot
-
-
-```
-
-
-Create only one pigment in exp - for Solisense data
-Combine growth rate and exp pigments
-```{r}
-MultiCultiPigmentMaxAllExp<-MultiCultiPigmentMaxAll 
-  
-O1 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 30 | Par_ue == 300 | Par_ue == 90 | Par_ue == 180) %>% 
-  filter(Photoperiod == 24) %>% 
-  filter(E_days < 4)
-
-O2 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 180 | Par_ue == 300) %>% 
-  filter(Photoperiod == 16) %>% 
-  filter(E_days == 4)
-
-O3 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 90) %>% 
-  filter(Photoperiod == 16) %>% 
-  filter(E_days == 6)
-
-O4 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 30) %>% 
-  filter(Photoperiod == 16) %>% 
-  filter(E_days == 12)
-
-O5 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 900 | Par_ue == 600) %>% 
-  filter(Photoperiod == 16) %>% 
-  filter(E_days == 4)
-
-O6 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 30) %>% 
-  filter(Photoperiod == 8 | Photoperiod == 12) %>% 
-  filter(E_days == 12| E_days == 13)
-  
-O7 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 90) %>% 
-  filter(Photoperiod == 8) %>% 
-  filter(E_days == 12 | E_days ==13)
-
-O8 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 90) %>% 
-  filter(Photoperiod == 12) %>% 
-  filter(Strain == "PE-rich_127" | Strain == "PE-rich_048" | Strain == "PC-rich_077") %>% 
-  filter(E_days == 8 | E_days ==9)
-
-O9 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 90) %>% 
-  filter(Photoperiod == 12) %>% 
-  filter(Strain == "PC-rich_056") %>% 
-  filter(E_days == 11)
-
-O10 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 180) %>% 
-  filter(Photoperiod == 8) %>% 
-  filter(E_days == 8 | E_days == 9)
-
-O11 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 180) %>% 
-  filter(Photoperiod == 12) %>% 
-  filter(E_days == 6 | E_days == 7)
-
-O12 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 300) %>% 
-  filter(Photoperiod == 8) %>% 
-  filter(Strain == "PE-rich_127" | Strain == "PE-rich_048" | Strain == "PC-rich_077") %>% 
-  filter(E_days == 6 | E_days ==7)
-
-O13 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 300) %>% 
-  filter(Photoperiod == 8) %>% 
-  filter(Strain == "PC-rich_056") %>% 
-  filter(E_days == 9)
-
-O14 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 300) %>% 
-  filter(Photoperiod == 12) %>% 
-  filter(Strain == "PE-rich_127" | Strain == "PE-rich_048" | Strain == "PC-rich_077") %>% 
-  filter(E_days == 4 | E_days ==5)
-
-O15 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 300) %>% 
-  filter(Photoperiod == 12) %>% 
-  filter(Strain == "PC-rich_056") %>%  
-  filter(E_days == 7)
-
-O16 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 900) %>% 
-  filter(Photoperiod == 8 | Photoperiod == 12)
-
-O17 <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue == 900 | Par_ue == 600) %>% 
-  filter(Photoperiod == 24) %>% 
-  filter(E_hours < 100 & E_hours > 48)
-
-MultiCultiPigmentMaxAllExp2 <-rbind(O1, O2, O3, O4, O5, O6, O7, O8, O9, O10, O11, O12, O13, O14, O15, O16, O17)
-
-rm(O1, O2, O3, O4, O5, O6, O7, O8, O9, O10, O11, O12, O13, O14, O15, O16, O17)
-
-  
-```
-
-Because I have replica in growt rate - I combine one choosen pigmen exp to all growth rate data
-```{r}
-#colnames(MultiCultiDataCleanGrowthAll4)
-MultiCultiPigmentMaxAllExp4<-MultiCultiPigmentMaxAllExp2 %>% 
-  # mutate(cellL=cellml*1000) %>% 
-  # mutate(ChlaugL = ChlaugmL*1000) %>% 
-  # mutate(PhycougL = (PCugmL+PEugmL+APCugmL)*1000) %>% 
-  mutate(cellLExp = cellL) %>%
-  mutate(ChlapgcellExp = Chlapgcell) %>% 
-  mutate(PhycopgcellExp = Phycopgcell) %>% 
-  mutate(ChlaugLExp = ChlaugL) %>% 
-  mutate(PhycougLExp = PhycougL) %>% 
-  mutate(PhycoChlaRatioExp = PhycopgcellExp/ChlapgcellExp) %>% 
-  select(c(Strain, Par_ue, Photoperiod, ChlapgcellExp, PhycopgcellExp, ChlaugLExp, PhycougLExp, PhycoChlaRatioExp, cellLExp))
-  
-MultiCultiPigmentMaxAllExp <- MultiCultiPigmentMaxAll %>%
-  full_join(., MultiCultiPigmentMaxAllExp4, by = c("Strain"="Strain", "Par_ue"="Par_ue","Photoperiod"="Photoperiod"))
-
-
-```
-
-
-Plot -> only exp Phyco, Chla, and Phyco/chla ratio
-```{r fig.height = 8, fig.width = 8}
-
-
-lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
-
-lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
-
-
-
-Plot <- MultiCultiPigmentMaxAllExp %>%
-   filter(Par_ue!=600) %>% 
-  ggplot() +
-  geom_point(aes(x = E_hoursExp, y = PhycopgcellExp, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
-  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.7)) +
-  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
-  theme_bw()
-Plot
-
-
-
-Plot <- MultiCultiPigmentMaxAllExp %>%
-   filter(Par_ue!=600) %>% 
-  ggplot() +
-  geom_point(aes(x = E_hoursExp, y = ChlapgcellExp, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
-  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.7)) +
-  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
-  theme_bw() 
-Plot
-
-
-Plot <- MultiCultiPigmentMaxAllExp %>%
-  filter(Par_ue!=600) %>% 
-  ggplot() +
-  geom_point(aes(x = E_hoursExp, y = PhycoChlaRatioExp, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
-  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
-  # scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  # coord_cartesian(ylim = c(0, 1.7)) +
-  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
-  theme_bw() 
-Plot
-
-
-```
-
-Create df with only exp data for PUR, PUR/PAR ratio, pigments and cell/L
-```{r}
-#colnames(MultiCultiPigmentMaxAllExp)
-GrowthPigmentPURonlyExp<-MultiCultiPigmentMaxAllExp %>% 
-  select(-c(SpectraDate, E_days, PUR, PURPhotonDose, PURPARRatio, E_hours, meanActinic_parDay, meanOD680Day, meanOD720Day, cellml, ChlaugmL, CarugmL, PEugmL, PCugmL, APCugmL, Chlapgcell, Carpgcell, PEpgcell, OlisDate, cellL, ChlaugL, PhycougL, PCpgcell, APCpgcell, Phycopgcell, CarChlaRatio, PhycoChlaRatio, PEPCRatio)) %>% 
-  unique()
-  
-```
-
-
-rm additional df
-```{r}
-rm(MultiCultiGrowthAll, MultiCultiGrowth, MultiCultiGrowth121, MultiCultiDataCleanGrowthAll2, MultiCultiDataCleanGrowthAll4)
-```
-
-
-
 
 
 
@@ -1580,6 +1481,602 @@ rm(MultiCultiGrowthAll, MultiCultiGrowth, MultiCultiGrowth121, MultiCultiDataCle
 
 
 GROWTH CURVE
+
+
+
+# Comparison Multiculti Import data
+
+# Add MultiCulti Data
+MultiCulti Import
+```{r}
+Project <- "PICO"
+DataIn <- file.path("..", "ImportedData", "MultiCultiImportSySl", fsep = .Platform$file.sep)
+FileEncode <- "UTF-8" 
+Delimiter <- ","
+HeaderRows <- 0
+```
+
+MultiCulti Import
+Exported only first time in session
+```{r}
+list.files(path = DataIn, pattern = Project, full.names = TRUE)
+```
+
+MultiCulti Import run39
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20211214_PICO_MC247_RUN39_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData39 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean39 <- MultiCultiData39 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall39 <- MultiCultiDataMean39 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#BA127R, BA48R
+MultiCultiDataMeanSmall39BA127R <- MultiCultiDataMeanSmall39 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall39BA48R <- MultiCultiDataMeanSmall39 %>%
+  filter(Strain == "BA48R") 
+
+```
+
+MultiCulti Import run40
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20211223_PICO_MC257_RUN40_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData40 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean40 <- MultiCultiData40 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall40 <- MultiCultiDataMean40 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#BA127R, BA48R
+MultiCultiDataMeanSmall40BA127R <- MultiCultiDataMeanSmall40 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall40BA48R <- MultiCultiDataMeanSmall40 %>%
+  filter(Strain == "BA48R") 
+
+```
+
+MultiCulti Import run43
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20211229_PICO_MC247_RUN43_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData43 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean43 <- MultiCultiData43 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall43 <- MultiCultiDataMean43 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#BA127R, BA48R
+MultiCultiDataMeanSmall43BA127R <- MultiCultiDataMeanSmall43 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall43BA48R <- MultiCultiDataMeanSmall43 %>%
+  filter(Strain == "BA48R") 
+
+```
+
+MultiCulti Import run44
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20220107_PICO_MC257_RUN44_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData44 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean44 <- MultiCultiData44 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall44 <- MultiCultiDataMean44 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#BA56G, BA77G
+MultiCultiDataMeanSmall44BA56G <- MultiCultiDataMeanSmall44 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall44BA77G <- MultiCultiDataMeanSmall44 %>%
+  filter(Strain == "BA77G")
+
+```
+
+MultiCulti Import run45
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20220113_PICO_MC247_RUN45_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData45 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean45 <- MultiCultiData45 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall45 <- MultiCultiDataMean45 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#BA56G, BA77G
+MultiCultiDataMeanSmall45BA56G <- MultiCultiDataMeanSmall45 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall45BA77G <- MultiCultiDataMeanSmall45 %>%
+  filter(Strain == "BA77G")
+
+```
+
+MultiCulti Import run46
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20220122_PICO_MC257_RUN46_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData46 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean46 <- MultiCultiData46 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall46 <- MultiCultiDataMean46 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#BA56G, BA77G
+MultiCultiDataMeanSmall46BA56G <- MultiCultiDataMeanSmall46 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall46BA77G <- MultiCultiDataMeanSmall46 %>%
+  filter(Strain == "BA77G")
+
+```
+
+
+MultiCulti Import run60
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20220405_PICO_MC247_RUN60_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData60 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean60 <- MultiCultiData60 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall60 <- MultiCultiDataMean60 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#900uE, 8strains
+MultiCultiDataMeanSmall60BA127R <- MultiCultiDataMeanSmall60 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall60BA48R <- MultiCultiDataMeanSmall60 %>%
+  filter(Strain == "BA48R") 
+
+MultiCultiDataMeanSmall60BA56G <- MultiCultiDataMeanSmall60 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall60BA77G <- MultiCultiDataMeanSmall60 %>%
+  filter(Strain == "BA77G")
+
+```
+
+MultiCulti Import run62
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20220410_PICO_MC257_RUN62_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData62 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean62 <- MultiCultiData62 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall62 <- MultiCultiDataMean62 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#900uE, 8strains
+MultiCultiDataMeanSmall62BA127R <- MultiCultiDataMeanSmall62 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall62BA48R <- MultiCultiDataMeanSmall62 %>%
+  filter(Strain == "BA48R") 
+
+MultiCultiDataMeanSmall62BA56G <- MultiCultiDataMeanSmall62 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall62BA77G <- MultiCultiDataMeanSmall62 %>%
+  filter(Strain == "BA77G") 
+
+```
+
+MultiCulti Import run65
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20220420_PICO_MC257_RUN65_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData65 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean65 <- MultiCultiData65 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall65 <- MultiCultiDataMean65 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#900uE, 8strains
+MultiCultiDataMeanSmall65BA127R <- MultiCultiDataMeanSmall65 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall65BA48R <- MultiCultiDataMeanSmall65 %>%
+  filter(Strain == "BA48R") 
+
+MultiCultiDataMeanSmall65BA56G <- MultiCultiDataMeanSmall65 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall65BA77G <- MultiCultiDataMeanSmall65 %>%
+  filter(Strain == "BA77G") 
+
+```
+
+
+MultiCulti Import run71
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20220507_PICO_MC257_RUN71_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData71 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean71 <- MultiCultiData71 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall71 <- MultiCultiDataMean71 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#30UE, 300uE, 4 strains
+MultiCultiDataMeanSmall71BA127R <- MultiCultiDataMeanSmall71 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall71BA48R <- MultiCultiDataMeanSmall71 %>%
+  filter(Strain == "BA48R") 
+
+MultiCultiDataMeanSmall71BA56G <- MultiCultiDataMeanSmall71 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall71BA77G <- MultiCultiDataMeanSmall71 %>%
+  filter(Strain == "BA77G") 
+
+```
+
+MultiCulti Import run74
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20220607_PICO_MC257_RUN74_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData74 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean74 <- MultiCultiData74 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall74 <- MultiCultiDataMean74 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#90UE, 180uE, 4 strains
+MultiCultiDataMeanSmall74BA127R <- MultiCultiDataMeanSmall74 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall74BA48R <- MultiCultiDataMeanSmall74 %>%
+  filter(Strain == "BA48R") 
+
+MultiCultiDataMeanSmall74BA56G <- MultiCultiDataMeanSmall74 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall74BA77G <- MultiCultiDataMeanSmall74 %>%
+  filter(Strain == "BA77G") 
+
+```
+
+MultiCulti Import run77
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20220615_PICO_MC257_RUN77_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData77 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean77 <- MultiCultiData77 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall77 <- MultiCultiDataMean77 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#600UE, 900uE, 4 strains
+MultiCultiDataMeanSmall77BA127R <- MultiCultiDataMeanSmall77 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall77BA48R <- MultiCultiDataMeanSmall77 %>%
+  filter(Strain == "BA48R") 
+
+MultiCultiDataMeanSmall77BA56G <- MultiCultiDataMeanSmall77 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall77BA77G <- MultiCultiDataMeanSmall77 %>%
+  filter(Strain == "BA77G") 
+
+```
+MultiCulti Import run50
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20220206_PICO_MC257_RUN50_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData50 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean50 <- MultiCultiData50 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall50 <- MultiCultiDataMean50 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+#600uE, 4strains
+MultiCultiDataMeanSmall50BA127R <- MultiCultiDataMeanSmall50 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall50BA48R <- MultiCultiDataMeanSmall50 %>%
+  filter(Strain == "BA48R") 
+
+MultiCultiDataMeanSmall50BA56G <- MultiCultiDataMeanSmall50 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall50BA77G <- MultiCultiDataMeanSmall50 %>%
+  filter(Strain == "BA77G")
+
+```
+
+
+MultiCulti Import run121
+```{r warning = FALSE}
+MultiCultiFile <- "../ImportedData/MultiCultiImportSySl/20230816_PICO_MC257_RUN121_TargetDataMetaFilter.Rds"
+MultiCultiFileName <- str_split(string = MultiCultiFile, "/")[[1]][3] %>%
+  str_remove(pattern = ".Rds") 
+MultiCultiData <- readRDS(MultiCultiFile)  %>%
+  ungroup()
+
+MultiCultiData121 <- MultiCultiData %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate) %>% 
+mutate(Actinic_par = Actinic_par/1000) %>% 
+mutate(timeRound = round(time, 0))
+
+MultiCultiDataMean121 <- MultiCultiData121 %>% 
+group_by(ID, timeRound) %>% 
+summarize(time, Filename, CDateTime, Tube, abs_time, ToD, Day, ExpDate, Actinic_par, OD680, OD720, Run, ID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, timeRound, meanActinic_par = mean(Actinic_par), meanOD680 = mean(OD680), meanOD720 = mean(OD720)) %>%
+ungroup()
+
+MultiCultiDataMeanSmall121 <- MultiCultiDataMean121 %>%
+  select(-c(time, abs_time, ToD, Actinic_par, OD680, OD720, CDateTime, InnocDate)) %>% 
+  unique()
+
+# 600 and 900uE, 8strains
+MultiCultiDataMeanSmall121BA127R <- MultiCultiDataMeanSmall121 %>%
+  filter(Strain == "BA127R") 
+
+MultiCultiDataMeanSmall121BA48R <- MultiCultiDataMeanSmall121 %>%
+  filter(Strain == "BA48R") 
+
+MultiCultiDataMeanSmall121BA56G <- MultiCultiDataMeanSmall121 %>%
+  filter(Strain == "BA56G") 
+
+MultiCultiDataMeanSmall121BA77G <- MultiCultiDataMeanSmall121 %>%
+  filter(Strain == "BA77G")
+
+```
+
+
+
+
+
+
+
+
+```{r}
+
+MultiCultiDataAllBA127R <- rbind(MultiCultiDataMeanSmall39BA127R, MultiCultiDataMeanSmall40BA127R, MultiCultiDataMeanSmall43BA127R, MultiCultiDataMeanSmall60BA127R, MultiCultiDataMeanSmall62BA127R, MultiCultiDataMeanSmall65BA127R, MultiCultiDataMeanSmall71BA127R, MultiCultiDataMeanSmall74BA127R, MultiCultiDataMeanSmall77BA127R, MultiCultiDataMeanSmall50BA127R, MultiCultiDataMeanSmall121BA127R)
+
+
+MultiCultiDataAllBA48R <- rbind(MultiCultiDataMeanSmall39BA48R, MultiCultiDataMeanSmall40BA48R, MultiCultiDataMeanSmall43BA48R, MultiCultiDataMeanSmall60BA48R, MultiCultiDataMeanSmall62BA48R, MultiCultiDataMeanSmall65BA48R, MultiCultiDataMeanSmall71BA48R, MultiCultiDataMeanSmall74BA48R, MultiCultiDataMeanSmall77BA48R, MultiCultiDataMeanSmall50BA48R, MultiCultiDataMeanSmall121BA48R)
+
+
+MultiCultiDataAllBA56G <- rbind(MultiCultiDataMeanSmall44BA56G, MultiCultiDataMeanSmall45BA56G, MultiCultiDataMeanSmall46BA56G, MultiCultiDataMeanSmall60BA56G, MultiCultiDataMeanSmall62BA56G, MultiCultiDataMeanSmall65BA56G, MultiCultiDataMeanSmall71BA56G, MultiCultiDataMeanSmall74BA56G, MultiCultiDataMeanSmall77BA56G, MultiCultiDataMeanSmall50BA56G, MultiCultiDataMeanSmall121BA56G)
+
+
+MultiCultiDataAllBA77G <- rbind(MultiCultiDataMeanSmall44BA77G, MultiCultiDataMeanSmall45BA77G, MultiCultiDataMeanSmall46BA77G, MultiCultiDataMeanSmall60BA77G, MultiCultiDataMeanSmall62BA77G, MultiCultiDataMeanSmall65BA77G, MultiCultiDataMeanSmall71BA77G, MultiCultiDataMeanSmall74BA77G, MultiCultiDataMeanSmall77BA77G, MultiCultiDataMeanSmall50BA77G, MultiCultiDataMeanSmall121BA77G)
+
+
+
+rm(MultiCultiDataMeanSmall39BA127R, MultiCultiDataMeanSmall40BA127R, MultiCultiDataMeanSmall43BA127R, MultiCultiDataMeanSmall60BA127R, MultiCultiDataMeanSmall62BA127R, MultiCultiDataMeanSmall65BA127R, MultiCultiDataMeanSmall71BA127R, MultiCultiDataMeanSmall74BA127R, MultiCultiDataMeanSmall77BA127R, MultiCultiDataMeanSmall39BA48R, MultiCultiDataMeanSmall40BA48R, MultiCultiDataMeanSmall43BA48R, MultiCultiDataMeanSmall60BA48R, MultiCultiDataMeanSmall62BA48R, MultiCultiDataMeanSmall65BA48R, MultiCultiDataMeanSmall71BA48R, MultiCultiDataMeanSmall74BA48R, MultiCultiDataMeanSmall77BA48R, MultiCultiDataMeanSmall44BA56G, MultiCultiDataMeanSmall45BA56G, MultiCultiDataMeanSmall46BA56G, MultiCultiDataMeanSmall60BA56G, MultiCultiDataMeanSmall62BA56G, MultiCultiDataMeanSmall65BA56G, MultiCultiDataMeanSmall71BA56G, MultiCultiDataMeanSmall74BA56G, MultiCultiDataMeanSmall77BA56G, MultiCultiDataMeanSmall44BA77G, MultiCultiDataMeanSmall45BA77G, MultiCultiDataMeanSmall46BA77G, MultiCultiDataMeanSmall60BA77G, MultiCultiDataMeanSmall62BA77G, MultiCultiDataMeanSmall65BA77G, MultiCultiDataMeanSmall71BA77G, MultiCultiDataMeanSmall74BA77G, MultiCultiDataMeanSmall77BA77G)
+
+rm(MultiCultiDataMeanSmall39, MultiCultiDataMeanSmall40, MultiCultiDataMeanSmall43, MultiCultiDataMeanSmall44, MultiCultiDataMeanSmall45, MultiCultiDataMeanSmall46, MultiCultiDataMeanSmall60, MultiCultiDataMeanSmall62, MultiCultiDataMeanSmall65, MultiCultiDataMeanSmall71, MultiCultiDataMeanSmall74, MultiCultiDataMeanSmall77) 
+
+```
+
+
+
+```{r}
+
+MultiCultiDataAllStrains <- rbind(MultiCultiDataAllBA127R, MultiCultiDataAllBA48R, MultiCultiDataAllBA56G, MultiCultiDataAllBA77G)
+
+MultiCultiDataAllStrains81216 <- MultiCultiDataAllStrains %>% 
+filter(Photoperiod !="24")
+
+MultiCultiDataAllStrains24 <- MultiCultiDataAllStrains %>% 
+filter(Photoperiod =="24")
+
+
+```
+
+
+
+```{r}
+
+MultiCultiDataAllStrainsCut <- MultiCultiDataAllStrains %>% 
+filter(Par_ue == 900) 
+#filter(timeRound <= 110)
+
+MultiCultiDataAllStrainsRest <- MultiCultiDataAllStrains %>% 
+filter(Par_ue != 900) 
+
+MultiCultiDataAllStrainsok <- rbind(MultiCultiDataAllStrainsCut, MultiCultiDataAllStrainsRest)
+```
+
+
+
+
+
+```{r}
+MultiCultiDataAllStrainsok2 <- MultiCultiDataAllStrainsok %>% 
+  group_by(ID, timeRound) %>% 
+  mutate(DeltaOD = meanOD680-meanOD720) %>% 
+ungroup()
+
+```
+
+
+
+od720 from Multiculti - mean from day
+```{r}
+# colnames(MultiCultiDataAllStrainsok)
+#group_by(ID, Strain, Par_ue, Day, Run, ExpDate, Photoperiod, Tube) %>% 
+MultiCultiOD750 <- MultiCultiDataAllStrainsok %>% 
+
+group_by(ID, Day, ExpDate) %>% 
+summarize(ID, timeRound, Filename, Tube, Day, ExpDate, Run,  Strain, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par, meanOD680, meanOD720, meanActinic_parDay = mean(meanActinic_par), meanOD680Day = mean(meanOD680),  meanOD720Day = mean(meanOD720)) %>%
+ungroup()
+
+MultiCultiOD750Small <- MultiCultiOD750 %>%
+  select(-c(timeRound, meanActinic_par, meanOD680, meanOD720)) %>% 
+  unique()
+```
+
+
+
+
+
+
 
 Load previos Growth curve 
 ```{r read ProcessFile}
