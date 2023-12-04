@@ -298,8 +298,8 @@ OLISSpectraMetaPURShort %>%
   ggh4x::facet_nested(cols = vars(Par_ue, E_days), rows = vars(O2, Strain),labeller = labeller(Ex_WL = label_both, WL = label_both, E_days = E_days.labs, Photoperiod = Photoperiod.labs, Par_ue = Par_ue.labs, Strain = Strain.labs, O2 = O2.labs, )) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.spacing.x = unit(0.4, 'cm'),
+        panel.grid.major = element_blank(),
+        panel.spacing.x = unit(0.4, 'cm'),
         axis.text = element_text(size=12),
         axis.text.x = element_text(size=12),
         axis.title = element_text(size=16),
@@ -402,8 +402,8 @@ OLISSpectraMetaPURShort %>%
   ggh4x::facet_nested(cols = vars(Par_ue, E_days), labeller = labeller(Ex_WL = label_both, WL = label_both, E_days = E_days.labs, Photoperiod = Photoperiod.labs, Par_ue = Par_ue.labs, Strain = Strain.labs)) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.spacing.x = unit(0.4, 'cm'),
+        panel.grid.major = element_blank(),
+        panel.spacing.x = unit(0.4, 'cm'),
         axis.text = element_text(size=12),
         axis.text.x = element_text(size=12),
         axis.title = element_text(size=16),
@@ -431,7 +431,7 @@ rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_
 # saveRDS(OLISSpectraMetaPURShort, file.path(DataOut, paste(Project, "Processed_OlisSpectraPlot.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
-```{r Clean df, without absorbance and all nm - smaller df}
+```{r Clean df, create smaller df - without absorbance and all nm}
 OLISAllPURTidy<-OLISSpectraMetaPUR %>% 
   select(-c(Absorbance, nm, Abs440, AbsNorm440, EmJaz439, EmNormJaz439, PURNorm, CountsMean, SumAbNorm, PURNormSum, SumEmNormJaz439)) %>% 
   unique()
@@ -447,9 +447,10 @@ OLISAllPURTidy <- OLISAllPURTidy %>%
   filter(PURPARRatio>0)
 ```
 
-```{r Create facets for plot}
+```{r Create tidy PAR photon dose and facets for plot}
 OLISAllPURTidy <- OLISAllPURTidy %>%
-      mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
+    mutate(PARPhotonDoseTidy=PARPhotonDose/100000) %>% 
+    mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
          Strain=="BA48R"~"PE-rich_048",
         Strain=="BA56G"~"PC-rich_056",
          Strain=="BA77G"~"PC-rich_077"))
@@ -458,63 +459,68 @@ OLISAllPURTidy$facetsPar_ue = factor(OLISAllPURTidy$O2, labels = c("PAR~(µmol~p
 OLISAllPURTidy$facetsPhotoperiod = factor(OLISAllPURTidy$WL, labels = c("Photoperiod~(h)"))
 OLISAllPURTidy$facetsStrain = factor(OLISAllPURTidy$WL, labels = c("Strain"))
 OLISAllPURTidy$facetsPhase = factor(OLISAllPURTidy$WL, labels = c("Phase~of~growth"))
-```
-
-```{r Create df for plot}
-data_vline1 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16,24,24,24,24,24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(347,321.02,240.90,187.92,168,347,245.39,189.48,162.62,168,347,168.39,113.76,111.56,110,154.64,114.68,93.32,93.78,110))
-
-data_vline2 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16,24,24,24,24,24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(346,319.92,240.81,214.41,168,346,216.33,163.44,136.03,168,299.38,166.28,137.32,111.28,109.45,119.35,103.77,100.38,79.20,94.23))
-
-data_vline3 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16,24,24,24,24,24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(345,347,266.84,240.72,168,345,296.45,217.80,191.03,168,345,191.49,114.95,112.75,108,157.85,120.27,110.28,95.79,79.66))
-
-data_vline4 <- data.frame(Par_ue= c(30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900,30, 90, 180, 300, 900),Photoperiod= c(8,8,8,8,8,12,12,12,12,12,16,16,16,16,16,24,24,24,24,24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(344, 345, 266.93, 215.42, 168,344, 244.38,190.39,163.62,168,299.57, 168.85, 137.50, 112.29, 107,138.78, 120.18, 108.08, 98.36, 107))
+OLISAllPURTidy$facetsPARPhotonDose = factor(OLISAllPURTidy$WL, labels = c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"))
 ```
 
 ```{r Test plot, fig.height = 8, fig.width = 8}
-lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
-lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
-
-OLISAllPURTidy %>%
-  ggplot() +
-  geom_point(aes(x = E_hours, y = PURPARRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
-  geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  labs(y = "PUR/PAR ratio", x = "Elapsed time (h)") +
-  scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  coord_cartesian(ylim = c(0, 1.7)) +
-  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
-  theme_bw() 
+# lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
+# lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+# lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+# 
+# OLISAllPURTidy %>%
+#   ggplot() +
+#   geom_point(aes(x = E_hours, y = PURPARRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
+#   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+#   scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+#   coord_cartesian(ylim = c(0, 1.7)) +
+#   ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
+#   theme_bw() 
+# 
+# 
+# OLISAllPURTidy %>%
+#   ggplot() +
+#   geom_point(aes(x = PARPhotonDose, y = PURPARRatio, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
+#   scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab2) +
+#   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab3) +
+#   ggh4x::facet_nested(rows = vars(Strain), labeller = label_parsed) +
+#   theme_bw() 
 ```
 
-```{r Create final PUR/PAR ratio plot, fig.height = 4, fig.width = 8}
+```{r Create final PUR/PAR ratio plot, fig.height = 5, fig.width = 8}
 lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
 lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
 lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
 OLISAllPURTidy %>%
-  filter(PURPARRatio<=1) %>%
-  filter(PARPhotonDose == 432000|
-  PARPhotonDose == 864000|
-  PARPhotonDose == 1944000|
-  PARPhotonDose == 3888000|
-  PARPhotonDose == 6480000|
-  PARPhotonDose == 8640000|
-  PARPhotonDose == 77760000) %>%
+  filter(PARPhotonDoseTidy == 4.32000|
+  PARPhotonDoseTidy == 6.48000|
+  PARPhotonDoseTidy == 8.64000|
+  PARPhotonDoseTidy == 43.20000|
+  PARPhotonDoseTidy == 64.80000|
+  PARPhotonDoseTidy == 86.40000) %>%
   ggplot() +
   geom_point(aes(x = E_hours, y = PURPARRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   labs(y = "PUR/PAR ratio", x = "Elapsed time (h)") +
   scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
   coord_cartesian(ylim = c(0, 1.5)) +
-  ggh4x::facet_nested(cols = vars(PARPhotonDose), labeller = label_parsed) +
-  theme_bw() 
-```
-```{r cleanning the environment}
-rm(data_vline1, data_vline2, data_vline3, data_vline4)
+  ggh4x::facet_nested(cols = vars(facetsPARPhotonDose, PARPhotonDoseTidy), labeller = label_parsed) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="white"),
+        legend.position = c(0.08,0.87),
+        legend.key.height= unit(0.005, 'cm'),
+        legend.spacing.y = unit(-0.005, "cm"),
+        legend.spacing.x = unit(-0.005, "cm"),
+        legend.title = element_blank(),
+        legend.text = element_text(size=10))
 ```
 
 ```{r save rds}
