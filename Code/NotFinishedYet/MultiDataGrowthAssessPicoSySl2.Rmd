@@ -1,0 +1,3363 @@
+---
+title: "MultiDataGrowthAssess"
+author:
+- Laurel Genge
+- Carlie Barnhill
+- Max Berthold
+- Douglas A. Campbell
+- Mireille Savoie
+date: "`r format(Sys.Date())`"
+output:
+  bookdown::html_document2:
+    code_folding: show
+    keep_md: yes
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 6
+    fig_caption: yes
+bibliography: Prochlorococcus_O2_NPQ.bib
+csl: plos-one.csl
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+## Set figure caption font size
+```{css, echo=FALSE}
+p.caption {
+  font-size: 25px;
+}
+```
+
+## Set Chunk Options
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(fig.path='Figs/')
+```
+
+
+# Introduction
+
+# Materials and Methods
+
+## Load Libraries and set project variables
+
+```{r load libraries}
+# libraries; Note check actual dependencies
+library(tidyverse)
+library(lubridate)
+library(stringr)
+library(broom)
+library(knitr)
+library(zoo)
+library(RColorBrewer)
+library(grid)
+library(scales)
+#library(tidyquant)
+#library(data.table)
+#library(googledrive)
+#library(googlesheets4)
+#library(dplyr)
+```
+
+```{r set project variables}
+#"..", takes up a level in the directory path
+Project <- "PICO"
+DataIn <- file.path("..","ProcessedData", "LogGrowthFits")
+
+# PlotsPath <- file.path("..","Plots")
+# ShinyPath <- file.path("..", "ShinyPico", "data")
+DataOut <- file.path("..","GrowthAssessData")
+MetaCatalog <- file.path("..","PicoCatalog.csv")
+
+GrowthFlagError <- 0.3       # percentage of Gmu that std error must be less than
+
+OD720GrowthAmpFlagValue = 0.010 # OD720 absolute change for setting GrowthFlag = 1 and DeclineFlag = 1; did culture show  growth; 
+
+deltaODGrowthAmpFlagValue = 0.0001 # deltaOD absolute change for setting GrowthFlag = 1 and DeclineFlag = 1; did culture show  growth; 
+
+GrowthTerm <- "Gompertz Growth Rate"
+
+
+```
+
+```{r set colours}
+MyWavelengths = c(405, 450, 475, 530, 615, 660, 730, "WW")
+MCMIXColours = c("violet", "darkblue", "dodgerblue", "darkgreen","orange","red","purple", "black")
+
+names(MCMIXColours) <- MyWavelengths
+MCMIXColours
+
+```
+
+## List previously processed data
+
+Note: Split files will not be correct for Par_ue, but Actinic_par should be OK Fix: replace MetaData Par_ue with max(Actinic_par) for each file or split file
+
+```{r previous ProcessedData}
+ProcessedFiles <- list.files(path = DataIn, pattern = Project, full.names = TRUE)
+
+ProcessedFiles
+
+
+```
+
+# Read .Rds, Summarize, Combine to single data frame
+
+## Create function using to read in .Rds, adding source filename as a column
+
+```{r readRDS_plus}
+readRDS_plus <- function(Flnm){readRDS(file = Flnm) %>%
+    mutate(Filename = Flnm)
+}
+```
+
+## Read in ProcessedFiles .Rds
+```{r read selected ProcessedData}
+
+# TestData <- readRDS_plus(Flnm = file.path("../ProcessedData/LogGrowthFits/20200731_PICO_MCMIX004_RUN17_ProcessDataNestGrowth.Rds"))
+ 
+                                    
+LogFitsData <-  ProcessedFiles %>%
+    map_df(~readRDS_plus(Flnm = .)) %>%
+    select(-c("Motivation", "doi", "SourceSalinity", "EndDate", "Salinity",  "InocpH","lognormdeltaOD_Gompertz", "lognormOD720_Gompertz", "OD720_logistic", "deltaOD_logistic","OD720trunc_logistic", "deltaODtrunc_logistic", "OD720trunc_exp", "deltaODtrunc_exp",
+              "lognormOD720_Gompertz_param",
+              "lognormdeltaOD_Gompertz_param",
+              "OD720_logistic_param",
+              "OD720trunc_exp_param",
+              "deltaODtrunc_logistic_param",
+              "OD720trunc_logistic_param",
+              "deltaOD_logistic_param",
+              "deltaODtrunc_exp_param"
+              ))
+
+glimpse(LogFitsData)
+
+```
+
+
+
+
+```{r unnest fits}
+
+# OD720 gompertz fits
+lognormOD720_unnest <- LogFitsData %>%
+   select(c(Filename, CDateTime, Tube, ExpDate, MC, PrimaryOperator, Run, Description, ProjectID, ID, Strain, Inoc_mL, Media_mL, ExpCul, InnocDate, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, Media, Source, Optode, OptodeCh, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ExpEndDate, ExpEndHour, SetActinic_day, tubedata, IsOD720_GLagNeg, lognormOD720_TimetoMax, lognormdeltaOD_TimetoMax, OD720trunc_TimetoMax, deltaODtrunc_TimetoMax, IsdeltaOD_GLagNeg, lognormOD720_GompLag, lognormdeltaOD_GompLag, GrowthAmpOD720, GrowthAmpOD720Flag, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days, GrowthAmpdeltaOD, GrowthAmpdeltaODFlag, GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days, lognormOD720_Gompertz_tidied, lognormOD720_Gompertz_predict)) %>%
+  unnest(cols = c(lognormOD720_Gompertz_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  lognormOD720_Gompertz_tidied_term, values_from = c(lognormOD720_Gompertz_tidied_estimate, lognormOD720_Gompertz_tidied_std.error, lognormOD720_Gompertz_tidied_statistic, lognormOD720_Gompertz_tidied_p.value), names_sep = "_") %>%
+  # rename(OD720_Gmax = lognormOD720_Gompertz_tidied_estimate_Gmax,
+  #        OD720_Gmax_se = lognormOD720_Gompertz_tidied_std.error_Gmax,
+  #        OD720_Gmu_raw = lognormOD720_Gompertz_tidied_estimate_Gmu,
+  #        OD720_Gmu_se = lognormOD720_Gompertz_tidied_std.error_Gmu,
+  #        OD720_GLag = lognormOD720_Gompertz_tidied_estimate_GLag,             
+  #        OD720_GLag_se = lognormOD720_Gompertz_tidied_std.error_GLag)  %>%
+  
+    mutate(OD720_Gmax = lognormOD720_Gompertz_tidied_estimate_Gmax,
+         OD720_Gmax_se = lognormOD720_Gompertz_tidied_std.error_Gmax,
+         OD720_Gmu_raw = lognormOD720_Gompertz_tidied_estimate_Gmu,
+         OD720_Gmu_se = lognormOD720_Gompertz_tidied_std.error_Gmu,
+         OD720_GLag = lognormOD720_Gompertz_tidied_estimate_GLag,             
+         OD720_GLag_se = lognormOD720_Gompertz_tidied_std.error_GLag)  %>%
+    # select(-c(lognormOD720_Gompertz_tidied_estimate_Gmax,
+    #      lognormOD720_Gompertz_tidied_std.error_Gmax,
+    #      lognormOD720_Gompertz_tidied_estimate_Gmu,
+    #      lognormOD720_Gompertz_tidied_std.error_Gmu,
+    #      lognormOD720_Gompertz_tidied_estimate_GLag,             
+    #      lognormOD720_Gompertz_tidied_std.error_GLag)  %>%
+  
+   mutate(OD720_Gmu_corr = if_else(!is.na(OD720_Gmu_raw), OD720_Gmu_raw, 0),
+          OD720_Gmu_se = if_else(!is.na(OD720_Gmu_se), OD720_Gmu_se, 0),
+          OD720_GLag = if_else(!is.na(OD720_GLag), OD720_GLag, 0),
+          OD720_GLag_se = if_else(!is.na(OD720_GLag_se), OD720_GLag_se, 0),
+          OD720_Gmax = if_else(!is.na(OD720_Gmax), OD720_Gmax, 0),
+          OD720_Gmax_se = if_else(!is.na(OD720_Gmax_se), OD720_Gmax_se, 0),
+          GrowthAmpOD720Flag = if_else(GrowthAmpOD720 >= OD720GrowthAmpFlagValue, 1, 0),
+          GrowthAmpOD720Flag_14days = if_else(GrowthAmpOD720_14days >= OD720GrowthAmpFlagValue, 1, 0),
+          OD720_GseGrowthFlag = if_else(OD720_Gmu_se < OD720_Gmu_corr * GrowthFlagError, 1, 0),
+          OD720_Gmu_corr = if_else(GrowthAmpOD720Flag_14days == 1 & OD720_Gmu_corr >= 0, OD720_Gmu_corr, 0)
+          #OD720_Gmu_corr = if_else(OD720_GseGrowthFlag == 1 & GrowthAmpOD720Flag_14days == 1, OD720_Gmu_corr, 0)
+   )
+
+
+# deltaOD gompertz fits
+lognormdeltaOD_unnest <- LogFitsData %>% 
+select(c(Filename, CDateTime, Tube, ExpDate, MC, PrimaryOperator, Run, Description, ProjectID, ID, Strain, Inoc_mL, Media_mL, ExpCul, InnocDate, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, Media, Source, Optode, OptodeCh, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ExpEndDate, ExpEndHour, SetActinic_day, tubedata, IsOD720_GLagNeg, lognormOD720_TimetoMax, lognormdeltaOD_TimetoMax, OD720trunc_TimetoMax, deltaODtrunc_TimetoMax, IsdeltaOD_GLagNeg, lognormOD720_GompLag, lognormdeltaOD_GompLag, GrowthAmpOD720, GrowthAmpOD720Flag, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days, GrowthAmpdeltaOD, GrowthAmpdeltaODFlag, GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days, lognormdeltaOD_Gompertz_tidied, lognormdeltaOD_Gompertz_predict)) %>%
+unnest(cols = c(lognormdeltaOD_Gompertz_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  lognormdeltaOD_Gompertz_tidied_term, values_from = c(lognormdeltaOD_Gompertz_tidied_estimate, lognormdeltaOD_Gompertz_tidied_std.error, lognormdeltaOD_Gompertz_tidied_statistic, lognormdeltaOD_Gompertz_tidied_p.value), names_sep = "_")  %>%
+  # rename(deltaOD_Gmax = lognormdeltaOD_Gompertz_tidied_estimate_Gmax,
+  #        deltaOD_Gmax_se = lognormdeltaOD_Gompertz_tidied_std.error_Gmax,
+  #        deltaOD_Gmu_raw = lognormdeltaOD_Gompertz_tidied_estimate_Gmu,
+  #        deltaOD_Gmu_se = lognormdeltaOD_Gompertz_tidied_std.error_Gmu,
+  #        deltaOD_GLag = lognormdeltaOD_Gompertz_tidied_estimate_GLag,
+  #        deltaOD_GLag_se = lognormdeltaOD_Gompertz_tidied_std.error_GLag) %>%
+  
+    mutate(deltaOD_Gmax = lognormdeltaOD_Gompertz_tidied_estimate_Gmax,
+         deltaOD_Gmax_se = lognormdeltaOD_Gompertz_tidied_std.error_Gmax,
+         deltaOD_Gmu_raw = lognormdeltaOD_Gompertz_tidied_estimate_Gmu,
+         deltaOD_Gmu_se = lognormdeltaOD_Gompertz_tidied_std.error_Gmu,
+         deltaOD_GLag = lognormdeltaOD_Gompertz_tidied_estimate_GLag,
+         deltaOD_GLag_se = lognormdeltaOD_Gompertz_tidied_std.error_GLag) %>%
+  
+   mutate(deltaOD_Gmu_corr = if_else(!is.na(deltaOD_Gmu_raw), deltaOD_Gmu_raw, 0),
+          deltaOD_Gmu_se = if_else(!is.na(deltaOD_Gmu_se), deltaOD_Gmu_se, 0),
+          deltaOD_GLag = if_else(!is.na(deltaOD_GLag), deltaOD_GLag, 0),
+          deltaOD_GLag_se = if_else(!is.na(deltaOD_GLag_se), deltaOD_GLag_se, 0),
+          deltaOD_Gmax = if_else(!is.na(deltaOD_Gmax), deltaOD_Gmax, 0),
+          deltaOD_Gmax_se = if_else(!is.na(deltaOD_Gmax_se), deltaOD_Gmax_se, 0),
+          GrowthAmpdeltaODFlag = if_else(GrowthAmpdeltaOD >= deltaODGrowthAmpFlagValue , 1, 0),
+          GrowthAmpdeltaODFlag_14days = if_else(GrowthAmpdeltaOD_14days >= deltaODGrowthAmpFlagValue, 1, 0),
+          deltaOD_GseGrowthFlag = if_else(deltaOD_Gmu_se < deltaOD_Gmu_corr * GrowthFlagError, 1, 0),
+          deltaOD_Gmu_corr = if_else(GrowthAmpdeltaODFlag_14days == 1 & deltaOD_Gmu_corr >= 0, deltaOD_Gmu_corr, 0)
+          )
+
+# OD720 logistic fits
+OD720_unnest <- LogFitsData %>%
+  select(c(Filename, CDateTime, Tube, ExpDate, MC, PrimaryOperator, Run, Description, ProjectID, ID, Strain, Inoc_mL, Media_mL, ExpCul, InnocDate, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, Media, Source, Optode, OptodeCh, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ExpEndDate, ExpEndHour, SetActinic_day, tubedata, IsOD720_GLagNeg, lognormOD720_TimetoMax, lognormdeltaOD_TimetoMax, OD720trunc_TimetoMax, deltaODtrunc_TimetoMax, IsdeltaOD_GLagNeg, lognormOD720_GompLag, lognormdeltaOD_GompLag, GrowthAmpOD720, GrowthAmpOD720Flag, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days, GrowthAmpdeltaOD, GrowthAmpdeltaODFlag, GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days, OD720_logistic_tidied, OD720_logistic_predict)) %>%
+  unnest(cols = c(OD720_logistic_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  OD720_logistic_tidied_term, values_from = c(OD720_logistic_tidied_estimate, OD720_logistic_tidied_std.error, OD720_logistic_tidied_statistic, OD720_logistic_tidied_p.value), names_sep = "_") %>%
+  # rename(OD720_Lmax = OD720_logistic_tidied_estimate_Lmax,
+  #        OD720_Lmax_se = OD720_logistic_tidied_std.error_Lmax,
+  #        OD720_Lmu_raw = OD720_logistic_tidied_estimate_Lmu,
+  #        OD720_Lmu_se = OD720_logistic_tidied_std.error_Lmu,
+  #        OD720_Lintercept = OD720_logistic_tidied_estimate_Lintercept,             
+  #        OD720_Lintercept_se = OD720_logistic_tidied_std.error_Lintercept)  %>%
+  
+    mutate(OD720_Lmax = OD720_logistic_tidied_estimate_Lmax,
+         OD720_Lmax_se = OD720_logistic_tidied_std.error_Lmax,
+         OD720_Lmu_raw = OD720_logistic_tidied_estimate_Lmu,
+         OD720_Lmu_se = OD720_logistic_tidied_std.error_Lmu,
+         OD720_Lintercept = OD720_logistic_tidied_estimate_Lintercept,             
+         OD720_Lintercept_se = OD720_logistic_tidied_std.error_Lintercept)  %>%
+  
+   mutate(OD720_Lmu_corr = if_else(!is.na(OD720_Lmu_raw), OD720_Lmu_raw, 0),
+          OD720_Lmu_se = if_else(!is.na(OD720_Lmu_se), OD720_Lmu_se, 0),
+          OD720_Lintercept = if_else(!is.na(OD720_Lintercept), OD720_Lintercept, 0),
+          OD720_Lintercept_se = if_else(!is.na(OD720_Lintercept_se), OD720_Lintercept_se, 0),
+          OD720_Lmax = if_else(!is.na(OD720_Lmax), OD720_Lmax, 0),
+          OD720_Lmax_se = if_else(!is.na(OD720_Lmax_se), OD720_Lmax_se, 0),
+          GrowthAmpOD720Flag = if_else(GrowthAmpOD720 >= OD720GrowthAmpFlagValue, 1, 0),
+          GrowthAmpOD720Flag_14days = if_else(GrowthAmpOD720_14days >= OD720GrowthAmpFlagValue, 1, 0),
+          OD720_LseGrowthFlag = if_else(OD720_Lmu_se < OD720_Lmu_corr * GrowthFlagError, 1, 0),
+          OD720_Lmu_corr = if_else(GrowthAmpOD720Flag_14days == 1 & OD720_Lmu_corr >= 0 , OD720_Lmu_corr, 0)
+          )
+
+
+# deltaOD logistic fits
+deltaOD_unnest <- LogFitsData %>%
+   select(c(Filename, CDateTime, Tube, ExpDate, MC, PrimaryOperator, Run, Description, ProjectID, ID, Strain, Inoc_mL, Media_mL, ExpCul, InnocDate, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, Media, Source, Optode, OptodeCh, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ExpEndDate, ExpEndHour, SetActinic_day, tubedata, IsOD720_GLagNeg, lognormOD720_TimetoMax, lognormdeltaOD_TimetoMax, OD720trunc_TimetoMax, deltaODtrunc_TimetoMax, IsdeltaOD_GLagNeg, lognormOD720_GompLag, lognormdeltaOD_GompLag, GrowthAmpOD720, GrowthAmpOD720Flag, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days, GrowthAmpdeltaOD, GrowthAmpdeltaODFlag, GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days, deltaOD_logistic_tidied, deltaOD_logistic_predict)) %>%
+unnest(cols = c(deltaOD_logistic_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  deltaOD_logistic_tidied_term, values_from = c(deltaOD_logistic_tidied_estimate, deltaOD_logistic_tidied_std.error, deltaOD_logistic_tidied_statistic, deltaOD_logistic_tidied_p.value), names_sep = "_")  %>%
+  # rename(deltaOD_Lmax = deltaOD_logistic_tidied_estimate_Lmax,
+  #        deltaOD_Lmax_se = deltaOD_logistic_tidied_std.error_Lmax,
+  #        deltaOD_Lmu_raw = deltaOD_logistic_tidied_estimate_Lmu,
+  #        deltaOD_Lmu_se = deltaOD_logistic_tidied_std.error_Lmu,
+  #        deltaOD_Lintercept = deltaOD_logistic_tidied_estimate_Lintercept,
+  #        deltaOD_Lintercept_se = deltaOD_logistic_tidied_std.error_Lintercept) %>%
+  
+    mutate(deltaOD_Lmax = deltaOD_logistic_tidied_estimate_Lmax,
+         deltaOD_Lmax_se = deltaOD_logistic_tidied_std.error_Lmax,
+         deltaOD_Lmu_raw = deltaOD_logistic_tidied_estimate_Lmu,
+         deltaOD_Lmu_se = deltaOD_logistic_tidied_std.error_Lmu,
+         deltaOD_Lintercept = deltaOD_logistic_tidied_estimate_Lintercept,
+         deltaOD_Lintercept_se = deltaOD_logistic_tidied_std.error_Lintercept) %>%
+  
+   mutate(deltaOD_Lmu_corr = if_else(!is.na(deltaOD_Lmu_raw), deltaOD_Lmu_raw, 0),
+          deltaOD_Lmu_se = if_else(!is.na(deltaOD_Lmu_se), deltaOD_Lmu_se, 0),
+          deltaOD_Lintercept = if_else(!is.na(deltaOD_Lintercept), deltaOD_Lintercept, 0),
+          deltaOD_Lintercept_se = if_else(!is.na(deltaOD_Lintercept_se), deltaOD_Lintercept_se, 0),
+          deltaOD_Lmax = if_else(!is.na(deltaOD_Lmax), deltaOD_Lmax, 0),
+          deltaOD_Lmax_se = if_else(!is.na(deltaOD_Lmax_se), deltaOD_Lmax_se, 0),
+          GrowthAmpdeltaODFlag = if_else(GrowthAmpdeltaOD >= deltaODGrowthAmpFlagValue , 1, 0),
+          GrowthAmpdeltaODFlag_14days = if_else(GrowthAmpdeltaOD_14days >= deltaODGrowthAmpFlagValue, 1, 0),
+          deltaOD_LseGrowthFlag = if_else(deltaOD_Lmu_se < deltaOD_Lmu_corr * GrowthFlagError, 1, 0),
+          deltaOD_Lmu_corr = if_else(GrowthAmpdeltaODFlag_14days == 1 & deltaOD_Lmu_corr >= 0, deltaOD_Lmu_corr, 0)
+          )
+
+# OD720 truncated logistic fits
+OD720truncLog_unnest <- LogFitsData %>%
+   select(c(Filename, CDateTime, Tube, ExpDate, MC, PrimaryOperator, Run, Description, ProjectID, ID, Strain, Inoc_mL, Media_mL, ExpCul, InnocDate, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, Media, Source, Optode, OptodeCh, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ExpEndDate, ExpEndHour, SetActinic_day, tubedata, IsOD720_GLagNeg, lognormOD720_TimetoMax, lognormdeltaOD_TimetoMax, OD720trunc_TimetoMax, deltaODtrunc_TimetoMax, IsdeltaOD_GLagNeg, lognormOD720_GompLag, lognormdeltaOD_GompLag, GrowthAmpOD720, GrowthAmpOD720Flag, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days, GrowthAmpdeltaOD, GrowthAmpdeltaODFlag, GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days, OD720trunc_logistic_tidied, OD720trunc_logistic_predict)) %>%
+  unnest(cols = c(OD720trunc_logistic_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  OD720trunc_logistic_tidied_term, values_from = c(OD720trunc_logistic_tidied_estimate, OD720trunc_logistic_tidied_std.error, OD720trunc_logistic_tidied_statistic, OD720trunc_logistic_tidied_p.value), names_sep = "_") %>%
+  # rename(OD720trunc_Lmax = OD720trunc_logistic_tidied_estimate_Lmax,
+  #        OD720trunc_Lmax_se = OD720trunc_logistic_tidied_std.error_Lmax,
+  #        OD720trunc_Lmu_raw = OD720trunc_logistic_tidied_estimate_Lmu,
+  #        OD720trunc_Lmu_se = OD720trunc_logistic_tidied_std.error_Lmu,
+  #        OD720trunc_Lintercept = OD720trunc_logistic_tidied_estimate_Lintercept,             
+  #        OD720trunc_Lintercept_se = OD720trunc_logistic_tidied_std.error_Lintercept)  %>%
+  
+  
+    mutate(OD720trunc_Lmax = OD720trunc_logistic_tidied_estimate_Lmax,
+         OD720trunc_Lmax_se = OD720trunc_logistic_tidied_std.error_Lmax,
+         OD720trunc_Lmu_raw = OD720trunc_logistic_tidied_estimate_Lmu,
+         OD720trunc_Lmu_se = OD720trunc_logistic_tidied_std.error_Lmu,
+         OD720trunc_Lintercept = OD720trunc_logistic_tidied_estimate_Lintercept,             
+         OD720trunc_Lintercept_se = OD720trunc_logistic_tidied_std.error_Lintercept)  %>%
+  
+   mutate(OD720trunc_Lmu_corr = if_else(!is.na(OD720trunc_Lmu_raw), OD720trunc_Lmu_raw, 0),
+          OD720trunc_Lmu_se = if_else(!is.na(OD720trunc_Lmu_se), OD720trunc_Lmu_se, 0),
+          OD720trunc_Lintercept = if_else(!is.na(OD720trunc_Lintercept), OD720trunc_Lintercept, 0),
+          OD720trunc_Lintercept_se = if_else(!is.na(OD720trunc_Lintercept_se), OD720trunc_Lintercept_se, 0),
+          OD720trunc_Lmax = if_else(!is.na(OD720trunc_Lmax), OD720trunc_Lmax, 0),
+          OD720trunc_Lmax_se = if_else(!is.na(OD720trunc_Lmax_se), OD720trunc_Lmax_se, 0),
+          GrowthAmpOD720Flag = if_else(GrowthAmpOD720 >= OD720GrowthAmpFlagValue, 1, 0),
+          GrowthAmpOD720Flag_14days = if_else(GrowthAmpOD720_14days >= OD720GrowthAmpFlagValue, 1, 0),
+          OD720trunc_LseGrowthFlag = if_else(OD720trunc_Lmu_se < OD720trunc_Lmu_corr * GrowthFlagError, 1, 0),
+          OD720trunc_Lmu_corr = if_else(GrowthAmpOD720Flag_14days == 1 & OD720trunc_Lmu_corr >= 0 , OD720trunc_Lmu_corr, 0)
+          )
+
+
+# deltaOD truncated logistic fits
+deltaODtruncLog_unnest <- LogFitsData %>%
+   select(c(Filename, CDateTime, Tube, ExpDate, MC, PrimaryOperator, Run, Description, ProjectID, ID, Strain, Inoc_mL, Media_mL, ExpCul, InnocDate, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, Media, Source, Optode, OptodeCh, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ExpEndDate, ExpEndHour, SetActinic_day, tubedata, IsOD720_GLagNeg, lognormOD720_TimetoMax, lognormdeltaOD_TimetoMax, OD720trunc_TimetoMax, deltaODtrunc_TimetoMax, IsdeltaOD_GLagNeg, lognormOD720_GompLag, lognormdeltaOD_GompLag, GrowthAmpOD720, GrowthAmpOD720Flag, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days, GrowthAmpdeltaOD, GrowthAmpdeltaODFlag, GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days, deltaODtrunc_logistic_tidied, deltaODtrunc_logistic_predict)) %>%
+unnest(cols = c(deltaODtrunc_logistic_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  deltaODtrunc_logistic_tidied_term, values_from = c(deltaODtrunc_logistic_tidied_estimate, deltaODtrunc_logistic_tidied_std.error, deltaODtrunc_logistic_tidied_statistic, deltaODtrunc_logistic_tidied_p.value), names_sep = "_")  %>%
+  # rename(deltaODtrunc_Lmax = deltaODtrunc_logistic_tidied_estimate_Lmax,
+  #        deltaODtrunc_Lmax_se = deltaODtrunc_logistic_tidied_std.error_Lmax,
+  #        deltaODtrunc_Lmu_raw = deltaODtrunc_logistic_tidied_estimate_Lmu,
+  #        deltaODtrunc_Lmu_se = deltaODtrunc_logistic_tidied_std.error_Lmu,
+  #        deltaODtrunc_Lintercept = deltaODtrunc_logistic_tidied_estimate_Lintercept,
+  #        deltaODtrunc_Lintercept_se = deltaODtrunc_logistic_tidied_std.error_Lintercept) %>%
+  
+  
+    mutate(deltaODtrunc_Lmax = deltaODtrunc_logistic_tidied_estimate_Lmax,
+         deltaODtrunc_Lmax_se = deltaODtrunc_logistic_tidied_std.error_Lmax,
+         deltaODtrunc_Lmu_raw = deltaODtrunc_logistic_tidied_estimate_Lmu,
+         deltaODtrunc_Lmu_se = deltaODtrunc_logistic_tidied_std.error_Lmu,
+         deltaODtrunc_Lintercept = deltaODtrunc_logistic_tidied_estimate_Lintercept,
+         deltaODtrunc_Lintercept_se = deltaODtrunc_logistic_tidied_std.error_Lintercept) %>%
+  
+  
+   mutate(deltaODtrunc_Lmu_corr = if_else(!is.na(deltaODtrunc_Lmu_raw), deltaODtrunc_Lmu_raw, 0),
+          deltaODtrunc_Lmu_se = if_else(!is.na(deltaODtrunc_Lmu_se), deltaODtrunc_Lmu_se, 0),
+          deltaODtrunc_Lintercept = if_else(!is.na(deltaODtrunc_Lintercept), deltaODtrunc_Lintercept, 0),
+          deltaODtrunc_Lintercept_se = if_else(!is.na(deltaODtrunc_Lintercept_se), deltaODtrunc_Lintercept_se, 0),
+          deltaODtrunc_Lmax = if_else(!is.na(deltaODtrunc_Lmax), deltaODtrunc_Lmax, 0),
+          deltaODtrunc_Lmax_se = if_else(!is.na(deltaODtrunc_Lmax_se), deltaODtrunc_Lmax_se, 0),
+          GrowthAmpdeltaODFlag = if_else(GrowthAmpdeltaOD >= deltaODGrowthAmpFlagValue , 1, 0),
+          GrowthAmpdeltaODFlag_14days = if_else(GrowthAmpdeltaOD_14days >= deltaODGrowthAmpFlagValue, 1, 0),
+          deltaODtrunc_LseGrowthFlag = if_else(deltaODtrunc_Lmu_se < deltaODtrunc_Lmu_corr * GrowthFlagError, 1, 0),
+          deltaODtrunc_Lmu_corr = if_else(GrowthAmpdeltaODFlag_14days == 1 & deltaODtrunc_Lmu_corr >= 0, deltaODtrunc_Lmu_corr, 0)
+          )
+
+
+# OD720 truncated exponential fits
+OD720truncExp_unnest <- LogFitsData %>%
+   select(c(Filename, CDateTime, Tube, ExpDate, MC, PrimaryOperator, Run, Description, ProjectID, ID, Strain, Inoc_mL, Media_mL, ExpCul, InnocDate, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, Media, Source, Optode, OptodeCh, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ExpEndDate, ExpEndHour, SetActinic_day, tubedata, IsOD720_GLagNeg, lognormOD720_TimetoMax, lognormdeltaOD_TimetoMax, OD720trunc_TimetoMax, deltaODtrunc_TimetoMax, IsdeltaOD_GLagNeg, lognormOD720_GompLag, lognormdeltaOD_GompLag, GrowthAmpOD720, GrowthAmpOD720Flag, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days, GrowthAmpdeltaOD, GrowthAmpdeltaODFlag, GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days, OD720trunc_exp_tidied, OD720trunc_exp_predict)) %>%
+  unnest(cols = c(OD720trunc_exp_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  OD720trunc_exp_tidied_term, values_from = c(OD720trunc_exp_tidied_estimate, OD720trunc_exp_tidied_std.error, OD720trunc_exp_tidied_statistic, OD720trunc_exp_tidied_p.value), names_sep = "_") %>%
+  # rename(OD720trunc_Emu_raw = OD720trunc_exp_tidied_estimate_Emu,
+  #        OD720trunc_Emu_se = OD720trunc_exp_tidied_std.error_Emu,
+  #        OD720trunc_Eintercept = OD720trunc_exp_tidied_estimate_Eintercept,             
+  #        OD720trunc_Eintercept_se = OD720trunc_exp_tidied_std.error_Eintercept)  %>%
+  
+    mutate(OD720trunc_Emu_raw = OD720trunc_exp_tidied_estimate_Emu,
+         OD720trunc_Emu_se = OD720trunc_exp_tidied_std.error_Emu,
+         OD720trunc_Eintercept = OD720trunc_exp_tidied_estimate_Eintercept,             
+         OD720trunc_Eintercept_se = OD720trunc_exp_tidied_std.error_Eintercept)  %>%
+  
+   mutate(OD720trunc_Emu_corr = if_else(!is.na(OD720trunc_Emu_raw), OD720trunc_Emu_raw, 0),
+          OD720trunc_Emu_se = if_else(!is.na(OD720trunc_Emu_se), OD720trunc_Emu_se, 0),
+          OD720trunc_Eintercept = if_else(!is.na(OD720trunc_Eintercept), OD720trunc_Eintercept, 0),
+          OD720trunc_Eintercept_se = if_else(!is.na(OD720trunc_Eintercept_se), OD720trunc_Eintercept_se, 0),
+          GrowthAmpOD720Flag = if_else(GrowthAmpOD720 >= OD720GrowthAmpFlagValue, 1, 0),
+          GrowthAmpOD720Flag_14days = if_else(GrowthAmpOD720_14days >= OD720GrowthAmpFlagValue, 1, 0),
+          OD720trunc_EseGrowthFlag = if_else(OD720trunc_Emu_se < OD720trunc_Emu_corr * GrowthFlagError, 1, 0),
+          OD720trunc_Emu_corr = if_else(GrowthAmpOD720Flag_14days == 1 & OD720trunc_Emu_corr >= 0 , OD720trunc_Emu_corr, 0)
+          )
+
+
+# deltaOD truncated exponential fits
+deltaODtruncExp_unnest <- LogFitsData %>%
+   select(c(Filename, CDateTime, Tube, ExpDate, MC, PrimaryOperator, Run, Description, ProjectID, ID, Strain, Inoc_mL, Media_mL, ExpCul, InnocDate, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, Media, Source, Optode, OptodeCh, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ExpEndDate, ExpEndHour, SetActinic_day, tubedata, IsOD720_GLagNeg, lognormOD720_TimetoMax, lognormdeltaOD_TimetoMax, OD720trunc_TimetoMax, deltaODtrunc_TimetoMax, IsdeltaOD_GLagNeg, lognormOD720_GompLag, lognormdeltaOD_GompLag, GrowthAmpOD720, GrowthAmpOD720Flag, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days, GrowthAmpdeltaOD, GrowthAmpdeltaODFlag, GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days, deltaODtrunc_exp_tidied, deltaODtrunc_exp_predict)) %>%
+unnest(cols = c(deltaODtrunc_exp_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  deltaODtrunc_exp_tidied_term, values_from = c(deltaODtrunc_exp_tidied_estimate, deltaODtrunc_exp_tidied_std.error, deltaODtrunc_exp_tidied_statistic, deltaODtrunc_exp_tidied_p.value), names_sep = "_")  %>%
+  # rename(deltaODtrunc_Emu_raw = deltaODtrunc_exp_tidied_estimate_Emu,
+  #        deltaODtrunc_Emu_se = deltaODtrunc_exp_tidied_std.error_Emu,
+  #        deltaODtrunc_Eintercept = deltaODtrunc_exp_tidied_estimate_Eintercept,
+  #        deltaODtrunc_Eintercept_se = deltaODtrunc_exp_tidied_std.error_Eintercept) %>%
+  
+    mutate(deltaODtrunc_Emu_raw = deltaODtrunc_exp_tidied_estimate_Emu,
+         deltaODtrunc_Emu_se = deltaODtrunc_exp_tidied_std.error_Emu,
+         deltaODtrunc_Eintercept = deltaODtrunc_exp_tidied_estimate_Eintercept,
+         deltaODtrunc_Eintercept_se = deltaODtrunc_exp_tidied_std.error_Eintercept) %>%
+  
+  
+   mutate(deltaODtrunc_Emu_corr = if_else(!is.na(deltaODtrunc_Emu_raw), deltaODtrunc_Emu_raw, 0),
+          deltaODtrunc_Emu_se = if_else(!is.na(deltaODtrunc_Emu_se), deltaODtrunc_Emu_se, 0),
+          deltaODtrunc_Eintercept = if_else(!is.na(deltaODtrunc_Eintercept), deltaODtrunc_Eintercept, 0),
+          deltaODtrunc_Eintercept_se = if_else(!is.na(deltaODtrunc_Eintercept_se), deltaODtrunc_Eintercept_se, 0),
+          GrowthAmpdeltaODFlag = if_else(GrowthAmpdeltaOD >= deltaODGrowthAmpFlagValue , 1, 0),
+          GrowthAmpdeltaODFlag_14days = if_else(GrowthAmpdeltaOD_14days >= deltaODGrowthAmpFlagValue, 1, 0),
+          deltaODtrunc_EseGrowthFlag = if_else(deltaODtrunc_Emu_se < deltaODtrunc_Emu_corr * GrowthFlagError, 1, 0),
+          deltaODtrunc_Emu_corr = if_else(GrowthAmpdeltaODFlag_14days == 1 & deltaODtrunc_Emu_corr >= 0, deltaODtrunc_Emu_corr, 0)
+          )
+
+glimpse(lognormdeltaOD_unnest)
+```
+
+
+
+```{r combine unnested fits for PICO Shiny App}
+
+# OD720 gompertz fits
+lognormOD720_unnest <- lognormOD720_unnest %>%
+select(-c(
+            lognormOD720_Gompertz_tidied_statistic_GLag,
+            lognormOD720_Gompertz_tidied_statistic_Gmax,
+            lognormOD720_Gompertz_tidied_statistic_Gmu,
+            lognormOD720_Gompertz_tidied_p.value_GLag,
+            lognormOD720_Gompertz_tidied_p.value_Gmax,
+            lognormOD720_Gompertz_tidied_p.value_Gmu)
+       )
+
+
+# lognormOD720_Gompertz_tidied_estimate_NA,
+#             lognormOD720_Gompertz_tidied_p.value_NA,
+#             lognormOD720_Gompertz_tidied_statistic_NA,
+#             lognormOD720_Gompertz_tidied_std.error_NA,
+
+# deltaOD gompertz fits
+lognormdeltaOD_unnest <- lognormdeltaOD_unnest %>%
+  select(-c(
+            lognormdeltaOD_Gompertz_tidied_statistic_GLag,
+            lognormdeltaOD_Gompertz_tidied_statistic_Gmax,
+            lognormdeltaOD_Gompertz_tidied_statistic_Gmu,
+            lognormdeltaOD_Gompertz_tidied_p.value_GLag,
+            lognormdeltaOD_Gompertz_tidied_p.value_Gmax,
+            lognormdeltaOD_Gompertz_tidied_p.value_Gmu)
+         )
+# 
+# lognormdeltaOD_Gompertz_tidied_estimate_NA,
+#             lognormdeltaOD_Gompertz_tidied_p.value_NA,
+#             lognormdeltaOD_Gompertz_tidied_statistic_NA,
+#             lognormdeltaOD_Gompertz_tidied_std.error_NA,
+
+# OD720 logistic fits
+OD720_unnest <- OD720_unnest %>%
+select(-c(# OD720_logistic_tidied_estimate_NA,
+           # OD720_logistic_tidied_p.value_NA,
+           # OD720_logistic_tidied_statistic_NA,
+           # OD720_logistic_tidied_std.error_NA,
+            OD720_logistic_tidied_statistic_Lintercept,
+            OD720_logistic_tidied_statistic_Lmax,
+            OD720_logistic_tidied_statistic_Lmu,
+            OD720_logistic_tidied_p.value_Lintercept,
+            OD720_logistic_tidied_p.value_Lmax,
+            OD720_logistic_tidied_p.value_Lmu)
+       )
+
+# deltaOD logistic fits
+deltaOD_unnest <- deltaOD_unnest %>%
+  select(-c(#deltaOD_logistic_tidied_p.value_NA,
+            # deltaOD_logistic_tidied_statistic_NA,
+            # deltaOD_logistic_tidied_std.error_NA,
+            deltaOD_logistic_tidied_statistic_Lintercept,
+            deltaOD_logistic_tidied_statistic_Lmax,
+            deltaOD_logistic_tidied_statistic_Lmu,
+            deltaOD_logistic_tidied_p.value_Lintercept,
+            deltaOD_logistic_tidied_p.value_Lmax,
+            deltaOD_logistic_tidied_p.value_Lmu)
+         )
+
+
+
+
+
+
+# OD720 truncated logistic fits
+OD720truncLog_unnest <- OD720truncLog_unnest %>%
+select(-c(
+            OD720trunc_logistic_tidied_statistic_Lintercept,
+            OD720trunc_logistic_tidied_statistic_Lmax,
+            OD720trunc_logistic_tidied_statistic_Lmu,
+            OD720trunc_logistic_tidied_p.value_Lintercept,
+            OD720trunc_logistic_tidied_p.value_Lmax,
+            OD720trunc_logistic_tidied_p.value_Lmu)
+       )
+
+
+# OD720trunc_logistic_tidied_estimate_NA,
+#            OD720trunc_logistic_tidied_p.value_NA,
+#            OD720trunc_logistic_tidied_statistic_NA,
+#            OD720trunc_logistic_tidied_std.error_NA,
+
+# deltaOD truncated logistic fits
+deltaODtruncLog_unnest <- deltaODtruncLog_unnest %>%
+  select(-c(
+            deltaODtrunc_logistic_tidied_statistic_Lintercept,
+            deltaODtrunc_logistic_tidied_statistic_Lmax,
+            deltaODtrunc_logistic_tidied_statistic_Lmu,
+            deltaODtrunc_logistic_tidied_p.value_Lintercept,
+            deltaODtrunc_logistic_tidied_p.value_Lmax,
+            deltaODtrunc_logistic_tidied_p.value_Lmu)
+         )
+
+
+# deltaODtrunc_logistic_tidied_estimate_NA,
+#             deltaODtrunc_logistic_tidied_p.value_NA,
+#             deltaODtrunc_logistic_tidied_statistic_NA,
+#             deltaODtrunc_logistic_tidied_std.error_NA,
+
+# OD720 truncated exponential fits
+OD720truncExp_unnest <- OD720truncExp_unnest %>%
+select(-c(
+            OD720trunc_exp_tidied_statistic_Eintercept,
+            OD720trunc_exp_tidied_statistic_Emu,
+            OD720trunc_exp_tidied_p.value_Eintercept,
+            OD720trunc_exp_tidied_p.value_Emu)
+       )
+
+
+# OD720trunc_exp_tidied_estimate_NA,
+#            OD720trunc_exp_tidied_p.value_NA,
+#            OD720trunc_exp_tidied_statistic_NA,
+#            OD720trunc_exp_tidied_std.error_NA,
+
+# deltaOD truncated exponential fits
+deltaODtruncExp_unnest <- deltaODtruncExp_unnest %>%
+  select(-c(
+            deltaODtrunc_exp_tidied_statistic_Eintercept,
+            deltaODtrunc_exp_tidied_statistic_Emu,
+            deltaODtrunc_exp_tidied_p.value_Eintercept,
+            deltaODtrunc_exp_tidied_p.value_Emu)
+         )
+
+# deltaODtrunc_exp_tidied_estimate_NA,
+#             deltaODtrunc_exp_tidied_p.value_NA,
+#             deltaODtrunc_exp_tidied_statistic_NA,
+#             deltaODtrunc_exp_tidied_std.error_NA,
+
+# Join Full Growth Rate Data
+UnnestedGompertzData <- left_join(x = lognormOD720_unnest, y = lognormdeltaOD_unnest)
+
+UnnestedLogData <- left_join(x = OD720_unnest, y = deltaOD_unnest)
+
+UnnestedFullData <- left_join(x = UnnestedLogData, y = UnnestedGompertzData)
+
+
+# Join Truncated Growth Rate Data
+UnnestedTruncLogData <- left_join(x = OD720truncLog_unnest, y =  deltaODtruncLog_unnest)
+
+UnnestedTruncExpData <- left_join(x = OD720truncExp_unnest, y =  deltaODtruncExp_unnest)
+
+UnnestedTruncData <- left_join(x = UnnestedTruncLogData, y = UnnestedTruncExpData)
+
+#combine Full and Truncated unnested data
+UnnestedFitsData <- left_join(x = UnnestedFullData, y = UnnestedTruncData)
+
+#remove redundant objects
+remove(lognormOD720_unnest,
+       lognormdeltaOD_unnest,
+       OD720_unnest,
+       deltaOD_unnest,
+       UnnestedGompertzData,
+       UnnestedLogData,
+       OD720truncLog_unnest,
+       deltaODtruncLog_unnest,
+       OD720truncExp_unnest,
+       deltaODtruncExp_unnest,
+       UnnestedTruncLogData,
+       UnnestedTruncExpData,
+       UnnestedTruncData,
+       UnnestedFullData
+       )
+
+glimpse(UnnestedFitsData)
+
+```
+
+
+
+```{r, pivot Unnested data longer for GAM}
+
+# OD720 pivot longer Gmax, Gmu, Glag, Lmu, Lmax and Lintercept estimates
+Pivot_Longer_OD720_est <- UnnestedFitsData %>%
+  select(c(Filename, Tube, ID, Run, PrimaryOperator, Strain, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, IsOD720_GLagNeg, lognormOD720_TimetoMax, lognormOD720_GompLag ,GrowthAmpOD720, GrowthAmpOD720Flag, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days, OD720_GseGrowthFlag, OD720_LseGrowthFlag, OD720_Gmu_corr, OD720_Gmax, OD720_GLag, OD720_Lmu_corr, OD720_Lmax, OD720_Lintercept
+            )) %>%
+   pivot_longer(c(OD720_Gmu_corr, OD720_Gmax, OD720_GLag, OD720_Lmu_corr, OD720_Lmax, OD720_Lintercept), names_to = c("Wavelength", "term"), values_to = c("estimate"), names_sep = '\\_')
+
+
+# OD720 pivot longer Gmax, Gmu, Glag , Lmu, Lmax and Lintercept standard error
+Pivot_Longer_OD720_se <- UnnestedFitsData %>%
+  select(c(Filename, Tube, ID, Run, PrimaryOperator, Strain, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, IsOD720_GLagNeg, lognormOD720_TimetoMax, lognormOD720_GompLag ,GrowthAmpOD720, GrowthAmpOD720Flag, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days, OD720_GseGrowthFlag, OD720_LseGrowthFlag,  OD720_Gmu_se, OD720_Gmax_se, OD720_GLag_se, OD720_Lmu_se, OD720_Lmax_se, OD720_Lintercept_se
+            )) %>%
+   pivot_longer(c(OD720_Gmu_se, OD720_Gmax_se, OD720_GLag_se, OD720_Lmu_se, OD720_Lmax_se, OD720_Lintercept_se), names_to = c("Wavelength", "term"), values_to = c("se"), names_sep = '\\_') 
+
+# Join OD720 estimate and se DF 
+Longer_OD720_Joined <- full_join(Pivot_Longer_OD720_est, Pivot_Longer_OD720_se)
+
+remove(Pivot_Longer_OD720_est, Pivot_Longer_OD720_se)
+
+
+# rename common columns for full join
+Longer_OD720_Joined <- Longer_OD720_Joined %>%
+  # rename(Is_GLagNeg = 'IsOD720_GLagNeg',
+  #        lognorm_TimetoMax = 'lognormOD720_TimetoMax',
+  #        lognorm_GompLag = 'lognormOD720_GompLag',
+  #        GrowthAmp = 'GrowthAmpOD720',
+  #        GrowthAmpFlag = 'GrowthAmpOD720Flag',
+  #        GrowthAmp_14days = 'GrowthAmpOD720_14days',
+  #        GrowthAmp_14daysFlag = 'GrowthAmpOD720Flag_14days',
+  #        Gmu_seFlag = 'OD720_GseGrowthFlag',
+  #        Lmu_seFlag = 'OD720_LseGrowthFlag'
+  #        )
+
+  mutate(Is_GLagNeg = 'IsOD720_GLagNeg',
+         lognorm_TimetoMax = 'lognormOD720_TimetoMax',
+         lognorm_GompLag = 'lognormOD720_GompLag',
+         GrowthAmp = 'GrowthAmpOD720',
+         GrowthAmpFlag = 'GrowthAmpOD720Flag',
+         GrowthAmp_14days = 'GrowthAmpOD720_14days',
+         GrowthAmp_14daysFlag = 'GrowthAmpOD720Flag_14days',
+         Gmu_seFlag = 'OD720_GseGrowthFlag',
+         Lmu_seFlag = 'OD720_LseGrowthFlag'
+         ) %>% 
+  select(-c('IsOD720_GLagNeg',
+         'lognormOD720_TimetoMax',
+         'lognormOD720_GompLag',
+         'GrowthAmpOD720',
+         'GrowthAmpOD720Flag',
+         'GrowthAmpOD720_14days',
+         'GrowthAmpOD720Flag_14days',
+         'OD720_GseGrowthFlag',
+         'OD720_LseGrowthFlag'
+         ))
+
+
+
+# deltaOD pivot longer Gmax, Gmu, Glag, Lmu, Lmax and Lintercept estimates
+Pivot_Longer_deltaOD_est <- UnnestedFitsData %>%
+  select(c(Filename, Tube, ID, Run, PrimaryOperator, Strain, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, IsdeltaOD_GLagNeg, lognormdeltaOD_TimetoMax, lognormdeltaOD_GompLag ,GrowthAmpdeltaOD, GrowthAmpdeltaODFlag, GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days, deltaOD_GseGrowthFlag, deltaOD_LseGrowthFlag, deltaOD_Gmu_corr, deltaOD_Gmax, deltaOD_GLag, deltaOD_Lmu_corr, deltaOD_Lmax, deltaOD_Lintercept
+            )) %>%
+   pivot_longer(c(deltaOD_Gmu_corr, deltaOD_Gmax, deltaOD_GLag, deltaOD_Lmu_corr, deltaOD_Lmax, deltaOD_Lintercept), names_to = c("Wavelength", "term"), values_to = c("estimate"), names_sep = '\\_') 
+
+# deltaOD pivot longer Gmax, Gmu, Glag , Lmu, Lmax and Lintercept standard error
+Pivot_Longer_deltaOD_se <- UnnestedFitsData %>%
+  select(c(Filename, Tube, ID, Run, PrimaryOperator, Strain, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, IsdeltaOD_GLagNeg, lognormdeltaOD_TimetoMax, lognormdeltaOD_GompLag ,GrowthAmpdeltaOD, GrowthAmpdeltaODFlag, GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days, deltaOD_GseGrowthFlag, deltaOD_LseGrowthFlag,  deltaOD_Gmu_se, deltaOD_Gmax_se, deltaOD_GLag_se, deltaOD_Lmu_se, deltaOD_Lmax_se, deltaOD_Lintercept_se
+            )) %>%
+   pivot_longer(c(deltaOD_Gmu_se, deltaOD_Gmax_se, deltaOD_GLag_se, deltaOD_Lmu_se, deltaOD_Lmax_se, deltaOD_Lintercept_se), names_to = c("Wavelength", "term"), values_to = c("se"), names_sep = '\\_') 
+
+# Join deltaOD estimate and se DF 
+Longer_deltaOD_Joined <- full_join(Pivot_Longer_deltaOD_est, Pivot_Longer_deltaOD_se)
+
+remove(Pivot_Longer_deltaOD_est, Pivot_Longer_deltaOD_se)
+
+
+# rename common columns for full join
+Longer_deltaOD_Joined <- Longer_deltaOD_Joined %>%
+  # rename(Is_GLagNeg = 'IsdeltaOD_GLagNeg',
+  #        lognorm_TimetoMax = 'lognormdeltaOD_TimetoMax',
+  #        lognorm_GompLag = 'lognormdeltaOD_GompLag',
+  #        GrowthAmp = 'GrowthAmpdeltaOD',
+  #        GrowthAmpFlag = 'GrowthAmpdeltaODFlag',
+  #        GrowthAmp_14days = 'GrowthAmpdeltaOD_14days',
+  #        GrowthAmp_14daysFlag = 'GrowthAmpdeltaODFlag_14days',
+  #        Gmu_seFlag = 'deltaOD_GseGrowthFlag',
+  #        Lmu_seFlag = 'deltaOD_LseGrowthFlag'
+  #        )
+
+  mutate(Is_GLagNeg = 'IsdeltaOD_GLagNeg',
+         lognorm_TimetoMax = 'lognormdeltaOD_TimetoMax',
+         lognorm_GompLag = 'lognormdeltaOD_GompLag',
+         GrowthAmp = 'GrowthAmpdeltaOD',
+         GrowthAmpFlag = 'GrowthAmpdeltaODFlag',
+         GrowthAmp_14days = 'GrowthAmpdeltaOD_14days',
+         GrowthAmp_14daysFlag = 'GrowthAmpdeltaODFlag_14days',
+         Gmu_seFlag = 'deltaOD_GseGrowthFlag',
+         Lmu_seFlag = 'deltaOD_LseGrowthFlag'
+         ) %>% 
+  select(-c('IsdeltaOD_GLagNeg',
+         'lognormdeltaOD_TimetoMax',
+         'lognormdeltaOD_GompLag',
+         'GrowthAmpdeltaOD',
+         'GrowthAmpdeltaODFlag',
+         'GrowthAmpdeltaOD_14days',
+         'GrowthAmpdeltaODFlag_14days',
+         'deltaOD_GseGrowthFlag',
+         'deltaOD_LseGrowthFlag'
+         ))
+
+#Join OD720 and deltaOD fits data
+LongerFitsData <- rbind(Longer_OD720_Joined, Longer_deltaOD_Joined)
+
+remove(Longer_OD720_Joined, Longer_deltaOD_Joined)
+  
+glimpse(LongerFitsData)
+
+```
+
+
+# Save assembled spectra data set
+```{r save Olis}
+
+saveRDS(UnnestedFitsData, file.path(DataOut, paste(Project, "MultiAssesment_RUN121.Rds", sep = "_"), fsep = .Platform$file.sep))
+
+```
+
+
+
+```{r save files for GAM and Shiny App}
+
+# saveRDS(object = LongerFitsData, file = file.path(DataOut, paste(Project, "LongerFitsData.Rds",  sep = "_")), ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
+# 
+# write_csv(LongerFitsData, file = file.path(DataOut, paste(Project, "LongerFitsData",".csv",sep = ""),fsep = .Platform$file.sep))
+# 
+# saveRDS(object = UnnestedFitsData, file = file.path(DataOut, paste(Project, "UnnestedFitsData.Rds",  sep = "_")), ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
+# 
+# 
+# saveRDS(UnnestedFitsData, file = file.path(ShinyPath, paste(Project, "GrowthLogs", ".Rds",sep = "_"),fsep = .Platform$file.sep))
+
+
+```
+
+```{r WWphotoperiod plot Gompertz&logistic OD720Plots and delta, fig.height = 6, fig.width = 8}
+
+OD720_GmuSummaryGrowthPlot <- UnnestedFitsData %>%
+  filter(
+          OD720_Gmu_corr == 0 |
+          OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  filter(Run != "75") %>%
+  filter(WL == "WW") %>%
+  filter(Par_ue != "600") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+   labs(y = "Gompertz Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ #geom_text(aes(x = Par_ue, y = OD720_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  # scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  # coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, WL), rows = vars(Photoperiod),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+OD720_GmuSummaryGrowthPlot
+
+
+
+OD720_LmuSummaryGrowthPlot <- UnnestedFitsData %>%
+  filter(
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  filter(Run != "75") %>%
+  filter(WL == "WW") %>%
+  filter(Par_ue != "600") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+   labs(y = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ #geom_text(aes(x = Par_ue, y = OD720_Lmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  # coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, WL), rows = vars(Photoperiod),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+OD720_LmuSummaryGrowthPlot
+
+
+
+deltaOD_GmuSummaryGrowthPlot <- UnnestedFitsData %>%
+   filter(
+          deltaOD_Gmu_corr == 0 |
+          deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  filter(Run != "75") %>%
+  filter(WL == "WW") %>%
+  filter(Par_ue != "600") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+labs(y = "Gompertz Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ #geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Gmu_corr - deltaOD_Gmu_se, ymax = deltaOD_Gmu_corr + deltaOD_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  #scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  #coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, WL), rows = vars(Photoperiod),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+deltaOD_GmuSummaryGrowthPlot
+
+
+
+
+deltaOD_LmuSummaryGrowthPlot <- UnnestedFitsData %>%
+   filter(
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  filter(Run != "75") %>%
+  filter(WL == "WW") %>%
+  filter(Par_ue != "600") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+labs(y = "Logistic Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ #geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  #scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  #coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, WL), rows = vars(Photoperiod),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+deltaOD_LmuSummaryGrowthPlot
+```
+
+
+```{r cca Gompertz&logistic OD720Plots and delta, fig.height = 6, fig.width = 8}
+OD720_GmuSummaryGrowthPlot <- UnnestedFitsData %>%
+  filter(
+          OD720_Gmu_corr == 0 |
+          OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(Photoperiod == "12") %>%
+  filter(WL != "WW") %>%
+  filter(WL != "450") %>%
+  filter(WL != "620") %>%
+  filter(Par_ue != "180") %>%
+    filter(Run != "56") %>%
+    filter(Run != "70") %>%
+  
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+   labs(y = "Gompertz Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ #geom_text(aes(x = Par_ue, y = OD720_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  # scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  # coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, WL), rows = vars(Photoperiod),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+OD720_GmuSummaryGrowthPlot
+
+
+
+OD720_LmuSummaryGrowthPlot <- UnnestedFitsData %>%
+  filter(
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(Photoperiod == "12") %>%
+  filter(WL != "WW") %>%
+  filter(WL != "450") %>%
+  filter(WL != "620") %>%
+  filter(Par_ue != "180") %>%
+    #   filter(Run != "56") %>%
+    # filter(Run != "70") %>%
+  
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+   labs(y = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Lmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  # coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, WL), rows = vars(Photoperiod),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+OD720_LmuSummaryGrowthPlot
+
+
+
+deltaOD_GmuSummaryGrowthPlot <- UnnestedFitsData %>%
+   filter(
+          deltaOD_Gmu_corr == 0 |
+          deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(Photoperiod == "12") %>%
+  filter(WL != "WW") %>%
+  filter(WL != "450") %>%
+  filter(WL != "620") %>%
+  filter(Par_ue != "180") %>%
+      filter(Run != "56") %>%
+    filter(Run != "70") %>%
+      filter(Run != "63") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+labs(y = "Gompertz Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ #geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Gmu_corr - deltaOD_Gmu_se, ymax = deltaOD_Gmu_corr + deltaOD_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  #scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  #coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, WL), rows = vars(Photoperiod),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+deltaOD_GmuSummaryGrowthPlot
+
+
+
+
+deltaOD_LmuSummaryGrowthPlot <- UnnestedFitsData %>%
+   filter(
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(Photoperiod == "12") %>%
+  filter(WL != "WW") %>%
+  filter(WL != "450") %>%
+  filter(WL != "620") %>%
+  filter(Par_ue != "180") %>%
+      filter(Run != "56") %>%
+    filter(Run != "70") %>%
+      filter(Run != "63") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+labs(y = "Logistic Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ #geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  #scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  #coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, WL), rows = vars(Photoperiod),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+deltaOD_LmuSummaryGrowthPlot
+
+```
+
+```{r cca Gompertz&logistic OD720Plots and delta, fig.height = 6, fig.width = 8}
+
+OD720_LmuSummaryGrowthPlot <- UnnestedFitsData %>%
+  filter(
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(Photoperiod == "12") %>%
+  filter(WL != "WW") %>%
+  filter(WL != "450") %>%
+  filter(WL != "620") %>%
+  filter(Par_ue != "180") %>%
+    filter(Par_ue == "60"|
+          Par_ue != "300") %>%
+    filter(Run != "56") %>%
+    filter(Run != "59") %>%
+  ggplot() +
+  geom_point(aes(x = WL, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = WL, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+   labs(y = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Wavelength (nm)") +
+ #geom_text(aes(x = WL, y = OD720_Lmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = WL, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  # coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Par_ue), rows = vars(Strain),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, Par_ue = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+OD720_LmuSummaryGrowthPlot
+
+
+
+
+deltaOD_LmuSummaryGrowthPlot <- UnnestedFitsData %>%
+   filter(
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(Photoperiod == "12") %>%
+  filter(WL != "WW") %>%
+  filter(WL != "450") %>%
+  filter(WL != "620") %>%
+  filter(Par_ue != "180") %>%
+    filter(Par_ue == "60"|
+          Par_ue != "300") %>%
+    filter(Run != "56") %>%
+    filter(Run != "59") %>%
+  ggplot() +
+  geom_point(aes(x = WL, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = WL, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+labs(y = "Logistic Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Wavelength (nm)") +
+ #geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = WL, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  #scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  #coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Par_ue), rows = vars(Strain),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, Par_ue = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+deltaOD_LmuSummaryGrowthPlot
+```
+
+```{r}
+UnnestedFitsDatamean <- UnnestedFitsData %>%
+  group_by(Strain, Par_ue, WL) %>%
+  
+  summarize(Filename, Run, ID, Strain, Par_ue, Photoperiod, O2, WL, OD720_Lmu_corr, deltaOD_Lmu_corr,               OD720_LseGrowthFlag, deltaOD_LseGrowthFlag, GrowthAmpOD720Flag_14days,          GrowthAmpdeltaODFlag_14days, 
+            meanOD720_Lmu_corr = mean(OD720_Lmu_corr), 
+            meandeltaOD_Lmu_corr = mean(deltaOD_Lmu_corr),
+            seOD720_Lmu_corr = sd(OD720_Lmu_corr)/n()^(1/2), 
+            sedeltaOD_Lmu_corr = sd(deltaOD_Lmu_corr)/n()^(1/2), 
+            sdOD720_Lmu_corr = sd(OD720_Lmu_corr),
+            sddeltaOD_Lmu_corr = sd(deltaOD_Lmu_corr)) %>%
+
+# mutate(ActinicLight = as.numeric(ActinicLight)) %>% 
+# mutate(meanO2_umolL = as.numeric(meanO2_umolL)) %>% 
+# mutate(O2_umolL = as.numeric(O2_umolL)) %>%
+
+  ungroup() 
+```
+
+```{r prelimplot, fig.height = 6, fig.width = 8, warning = FALSE}
+
+
+
+OD720_LmuSummaryGrowthPlot2 <- UnnestedFitsData %>%
+  # filter(
+  #         OD720_Lmu_corr == 0 |
+  #         OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  # filter(Strain == "BA127R" |
+  #        Strain == "BA77G") %>%
+  # filter(Photoperiod == "12") %>%
+  # filter(WL != "WW") %>%
+  # filter(WL != "450") %>%
+  # filter(WL != "620") %>%
+  # filter(Par_ue != "180") %>%
+  #   filter(Par_ue == "60"|
+  #         Par_ue != "300") %>%
+  #   filter(Run != "56") %>%
+  #   filter(Run != "59") %>%
+  ggplot() +
+  geom_point(aes(x = WL, y = deltaOD_Lmu_corr, ), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  #geom_line(aes(x = WL, y = meanOD720_Lmu_corr, ), size = 0.1, alpha = 0.4, color = 'black') +
+ #geom_text(aes(x = WL, y = OD720_Lmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  # geom_errorbar(aes(x = WL, ymin = meanOD720_Lmu_corr - seOD720_Lmu_corr, ymax = meanOD720_Lmu_corr + seOD720_Lmu_corr), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  #    labs(y = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Wavelength (nm)") +
+  # scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  # coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Par_ue), rows = vars(Strain),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, Par_ue = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+OD720_LmuSummaryGrowthPlot2
+
+
+
+
+
+
+OD720_LmuSummaryGrowthPlot2 <- UnnestedFitsDatamean %>%
+  filter(
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(Photoperiod == "12") %>%
+  filter(WL != "WW") %>%
+  filter(WL != "450") %>%
+  filter(WL != "620") %>%
+  filter(Par_ue != "180") %>%
+    filter(Par_ue == "60"|
+          Par_ue != "300") %>%
+    filter(Run != "56") %>%
+    filter(Run != "59") %>%
+  ggplot() +
+  geom_point(aes(x = WL, y = meanOD720_Lmu_corr, ), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = WL, y = meanOD720_Lmu_corr, ), size = 0.1, alpha = 0.4, color = 'black') +
+ #geom_text(aes(x = WL, y = OD720_Lmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = WL, ymin = meanOD720_Lmu_corr - seOD720_Lmu_corr, ymax = meanOD720_Lmu_corr + seOD720_Lmu_corr), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+     labs(y = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Wavelength (nm)") +
+  # scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  # coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Par_ue), rows = vars(Strain),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, Par_ue = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+OD720_LmuSummaryGrowthPlot2
+
+
+
+deltaOD_LmuSummaryGrowthPlot2 <- UnnestedFitsDatamean %>%
+   filter(
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(Photoperiod == "12") %>%
+  filter(WL != "WW") %>%
+  filter(WL != "450") %>%
+  filter(WL != "620") %>%
+  filter(Par_ue != "180") %>%
+    filter(Par_ue == "60"|
+          Par_ue != "300") %>%
+    filter(Run != "56") %>%
+    filter(Run != "59") %>%
+  ggplot() +
+  geom_point(aes(x = WL, y = meandeltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_line(aes(x = WL, y = meandeltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'black') +
+labs(y = "Logistic Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Wavelength (nm)") +
+ #geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = WL, ymin = meandeltaOD_Lmu_corr - sedeltaOD_Lmu_corr, ymax = meandeltaOD_Lmu_corr + sedeltaOD_Lmu_corr), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  #scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  #coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Par_ue), rows = vars(Strain),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, Par_ue = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+deltaOD_LmuSummaryGrowthPlot2
+
+```
+
+```{r prelimplot, fig.height = 6, fig.width = 8, warning = FALSE}
+OD720_LmuSummaryGrowthPlot2 <- UnnestedFitsDatamean %>%
+  filter(
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(Photoperiod == "12") %>%
+  filter(WL != "WW") %>%
+  filter(WL != "450") %>%
+  filter(WL != "620") %>%
+  filter(Par_ue != "180") %>%
+    filter(Par_ue == "60"|
+          Par_ue != "300") %>%
+    filter(Run != "56") %>%
+    filter(Run != "59") %>%
+  ggplot() +
+  geom_point(aes(x = WL, y = meanOD720_Lmu_corr, ), size = 3, alpha = 0.5, show.legend = TRUE, color = 'black') +
+  geom_point(aes(x = WL, y = meandeltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5, show.legend = TRUE, color = 'darkgreen') +
+  geom_line(aes(x = WL, y = meanOD720_Lmu_corr, ), size = 0.1, alpha = 0.4, color = 'black') +
+  geom_line(aes(x = WL, y = meandeltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4, color = 'darkgreen') +
+ #geom_text(aes(x = WL, y = OD720_Lmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = WL, ymin = meanOD720_Lmu_corr - seOD720_Lmu_corr, ymax = meanOD720_Lmu_corr + seOD720_Lmu_corr), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  geom_errorbar(aes(x = WL, ymin = meandeltaOD_Lmu_corr - sedeltaOD_Lmu_corr, ymax = meandeltaOD_Lmu_corr + sedeltaOD_Lmu_corr), size = 0.3, color = 'darkgreen', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  labs(y = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")" "and" "("~"Delta OD"~h^-1~")", x = "Wavelength (nm)") +
+  # scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  # coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Par_ue), rows = vars(Strain),
+                     labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, Par_ue = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+OD720_LmuSummaryGrowthPlot2
+```
+
+
+```{r}
+# OD720_LmuSummaryGrowthPlot2 <- UnnestedFitsDatamean %>%
+#   filter(
+#           OD720_Lmu_corr == 0 |
+#           OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+#   filter(Strain == "BA127R" |
+#          Strain == "BA77G") %>%
+#   filter(Photoperiod == "12") %>%
+#   filter(WL != "WW") %>%
+#   filter(WL != "450") %>%
+#   filter(WL != "620") %>%
+#   filter(Par_ue != "180") %>%
+#     filter(Par_ue == "60"|
+#           Par_ue != "300") %>%
+#     filter(Run != "56") %>%
+#     filter(Run != "59") %>%
+#   pivot_longer(c(meanOD720_Lmu_corr, meandeltaOD_Lmu_corr), names_to = "LogisticGrowthRateType", values_to = c("LogisticGrowthRate") %>%
+#   pivot_longer(c(seOD720_Lmu_corr, sedeltaOD_Lmu_corr), names_to = "GrowthRateTypeSE", values_to = "GrowthRateSE") %>%
+#   pivot_longer(c(sdOD720_Lmu_corr, sddeltaOD_Lmu_corr), names_to = "GrowthRateTypeSD", values_to = "GrowthRateSD") %>%
+#   ggplot() +
+#   geom_point(aes(x = WL, y = LogisticGrowthRate, color = as.factor(LogisticGrowthRateType)), size = 3, alpha = 0.5, show.legend = TRUE) +
+#     # geom_point(aes(x = WL, y = meandeltaOD_Lmu_corr, ), size = 3, alpha = 0.5, show.legend = TRUE, color = 'green') +
+#   geom_line(aes(x = WL, y = LogisticGrowthRate, color = as.factor(LogisticGrowthRateType)), size = 0.1, alpha = 0.4) +
+#     # geom_line(aes(x = WL, y = meandeltaOD_Lmu_corr, ), size = 0.1, alpha = 0.4, color = 'green') +
+#    labs(y = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Wavelength (nm)") +
+#  #geom_text(aes(x = WL, y = OD720_Lmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+#   geom_errorbar(aes(x = WL, ymin = LogisticGrowthRate - GrowthRateSE, ymax = LogisticGrowthRate + GrowthRateSE, color = as.factor(LogisticGrowthRateType)), size = 0.3, data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+#   # geom_errorbar(aes(x = WL, ymin = meandeltaOD_Lmu_corr - sedeltaOD_Lmu_corr, ymax = meandeltaOD_Lmu_corr + sedeltaOD_Lmu_corr), size = 0.3, color = 'green', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+#   scale_y_continuous(breaks=seq(0, 0.06, by = 0.01)) +
+#   coord_cartesian(ylim = c (0, 0.06)) +
+#  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+#   # coord_cartesian(ylim = c (-0.03, 0.07)) +
+#   # scale_colour_manual(values = MCMIXColours) +
+#   # guides(colour = FALSE) +
+#  ggh4x::facet_nested(cols = vars(Par_ue), rows = vars(Strain),
+#                      labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, Par_ue = label_both)) +
+#   # scale_color_discrete(labels = c("OD720", "DeltaOD")) +
+#   theme_bw() +
+#   labs(colour = "Actinic PAR (nm)")
+# OD720_LmuSummaryGrowthPlot2
+```
+
+
+```{r color light GompertzOD720Plots and LogisticOD720Plots and delta, fig.height = 6, fig.width = 8}
+O2.labs <- c("Oxygen level: high", "Oxygen level: low", "Oxygen level: high")
+names(O2.labs) <- c("21", "0", "21")
+
+OD720_GmuSummaryGrowthPlot <- UnnestedFitsData %>%
+  mutate(WLNum = if_else(WL == "WW", 750, as.numeric(WL))) %>%
+  filter(OD720_Gmu_corr == 0 |
+          OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(WL != "WW") %>%
+  filter(Run != "56") %>%
+  filter(Run != "59") %>%
+  filter(Run != "63") %>%
+  filter(Run != "68") %>%
+  filter(Run != "70") %>%
+  ggplot() +
+  geom_point(aes(x = WLNum, y = OD720_Gmu_corr, colour = 'black'), size = 3) +
+  geom_line(aes(x = WLNum, y = OD720_Gmu_corr), color = 'black') +
+   labs(y = "Gompertz Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Wavelength (nm)") +
+    geom_errorbar(aes(x = WLNum, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  coord_cartesian(xlim = c (400, 800)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, O2), rows = vars(Photoperiod),
+                     labeller = labeller(Strain = label_value, Photoperiod = label_both, O2 = O2.labs)) +
+  theme_bw()
+OD720_GmuSummaryGrowthPlot
+
+
+
+OD720_LmuSummaryGrowthPlot <- UnnestedFitsData %>%
+  mutate(WLNum = if_else(WL == "WW", 750, as.numeric(WL))) %>%
+  filter(OD720_Gmu_corr == 0 |
+          OD720_Gmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(WL != "WW") %>%
+  filter(Run != "56") %>%
+  filter(Run != "59") %>%
+  filter(Run != "63") %>%
+  filter(Run != "68") %>%
+  filter(Run != "70") %>%
+  ggplot() +
+  geom_point(aes(x = WLNum, y = OD720_Lmu_corr, colour = 'black'), size = 3) +
+  geom_line(aes(x = WLNum, y = OD720_Lmu_corr), color = 'black') +
+   labs(y = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Wavelength (nm)") +
+  geom_errorbar(aes(x = WLNum, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  coord_cartesian(xlim = c (400, 800)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, O2), rows = vars(Photoperiod),
+                     labeller = labeller(Strain = label_value, Photoperiod = label_both, O2 = O2.labs)) +
+
+  theme_bw()
+OD720_LmuSummaryGrowthPlot
+
+
+deltaOD_GmuSummaryGrowthPlot <- UnnestedFitsData %>%
+    mutate(WLNum = if_else(WL == "WW", 750, as.numeric(WL))) %>%
+   filter(
+          deltaOD_Gmu_corr == 0 |
+          deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(WL != "WW") %>%
+  filter(Run != "56") %>%
+  filter(Run != "59") %>%
+  filter(Run != "63") %>%
+  filter(Run != "68") %>%
+  filter(Run != "70") %>%
+  ggplot() +
+  geom_point(aes(x = WLNum, y = deltaOD_Gmu_corr, colour = 'black'), size = 3) +
+  geom_line(aes(x = WLNum, y = deltaOD_Gmu_corr), color = 'black') +
+labs(y = "Gompertz Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ #geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = WLNum, ymin = deltaOD_Gmu_corr - deltaOD_Gmu_se, ymax = deltaOD_Gmu_corr + deltaOD_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  coord_cartesian(xlim = c (400, 800)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, O2), rows = vars(Photoperiod),
+                     labeller = labeller(Strain = label_value, Photoperiod = label_both, O2 = O2.labs)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+deltaOD_GmuSummaryGrowthPlot
+
+
+
+
+deltaOD_LmuSummaryGrowthPlot <- UnnestedFitsData %>%
+  mutate(WLNum = if_else(WL == "WW", 750, as.numeric(WL))) %>%
+   filter(
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA77G") %>%
+  filter(WL != "WW") %>%
+  filter(Run != "56") %>%
+  filter(Run != "59") %>%
+  filter(Run != "63") %>%
+  filter(Run != "68") %>%
+  filter(Run != "70") %>%
+  ggplot() +
+  geom_point(aes(x = WLNum, y = deltaOD_Lmu_corr, colour = 'black'), size = 3) +
+  geom_line(aes(x = WLNum, y = deltaOD_Lmu_corr), color = 'black') +
+labs(y = "Logistic Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ #geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = WLNum, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  #scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  #coord_cartesian(xlim = c (0, 200)) +
+ coord_cartesian(xlim = c (400, 800)) +
+  scale_colour_manual(values = MCMIXColours) +
+  guides(colour = FALSE) +
+ ggh4x::facet_nested(cols = vars(Strain, O2), rows = vars(Photoperiod),
+                     labeller = labeller(Strain = label_value, Photoperiod = label_both, O2 = O2.labs)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+deltaOD_LmuSummaryGrowthPlot
+
+```
+
+
+
+Plot Gompertz vs. Logistic Growth Rates
+```{r CompareFits, fig.height= 6, fig.width= 8}
+
+CompareOD720GrowthPlot <- UnnestedFitsData %>%
+  filter(OD720_Gmu_corr == 0 |
+          OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1,
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1 ) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  ggplot(aes(x = OD720_Lmu_corr, y = OD720_Gmu_corr, colour = WL)) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+  geom_errorbar(aes(xmin = OD720_Lmu_corr - OD720_Lmu_se, xmax = OD720_Lmu_corr + OD720_Lmu_se, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  #geom_text(aes(x = OD720_Lmu_corr, y = OD720_Gmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (-0.1, 0.3), ylim = c(-0.1, 0.3) ) +
+ # coord_cartesian() +
+ # scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(y = "Gompertz Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")") +
+   ggh4x::facet_nested(cols = vars(Strain), rows = vars(Photoperiod), 
+                    labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+CompareOD720GrowthPlot
+
+
+
+
+UnnestedFitsData %>%
+  filter(deltaOD_Gmu_corr == 0 |
+        deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1,
+        deltaOD_Lmu_corr == 0 |
+        deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1 ) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  ggplot(aes(x = deltaOD_Lmu_corr, y = deltaOD_Gmu_corr, colour = WL)) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+  geom_errorbar(aes(xmin = deltaOD_Lmu_corr - deltaOD_Lmu_se, xmax = deltaOD_Lmu_corr + deltaOD_Lmu_se, ymin = deltaOD_Gmu_corr - deltaOD_Gmu_se, ymax = deltaOD_Gmu_corr + deltaOD_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  #geom_text(aes(x = deltaOD_Lmu_corr, y = deltaOD_Gmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (-0.1, 0.3), ylim = c(-0.1, 0.3) ) +
+ # coord_cartesian() +
+ # scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(y = "Gompertz Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Logistic Growth Rate" ~ "("~"Delta OD"~h^-1~")") +
+   ggh4x::facet_nested(cols = vars(Strain), rows = vars(Photoperiod), 
+                    labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+CompareOD720DeltaGrowthPlot <- UnnestedFitsData %>%
+  # filter(OD720_Gmu_corr == 0 |
+  #         OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1,
+  #         OD720_Lmu_corr == 0 |
+  #         OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1 ) %>%
+  # 
+  # filter(deltaOD_Gmu_corr == 0 |
+  #       deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1,
+  #       deltaOD_Lmu_corr == 0 |
+  #       deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1 ) %>%
+  
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  ggplot(aes(x = OD720_Lmu_corr, y = deltaOD_Lmu_corr, colour = WL)) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+  #geom_errorbar(aes(xmin = OD720_Lmu_corr - OD720_Lmu_se, xmax = OD720_Lmu_corr + OD720_Lmu_se, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  #geom_text(aes(x = OD720_Lmu_corr, y = OD720_Gmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (-0.1, 0.3), ylim = c(-0.1, 0.3) ) +
+ # coord_cartesian() +
+ # scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(y = "Logistic Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")") +
+   ggh4x::facet_nested(cols = vars(Strain), rows = vars(Photoperiod), 
+                    labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+CompareOD720DeltaGrowthPlot
+
+
+
+CompareOD720DeltaGrowthPlot <- UnnestedFitsData %>%
+  # filter(OD720_Gmu_corr == 0 |
+  #         OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1,
+  #         OD720_Lmu_corr == 0 |
+  #         OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1 ) %>%
+  # 
+  # filter(deltaOD_Gmu_corr == 0 |
+  #       deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1,
+  #       deltaOD_Lmu_corr == 0 |
+  #       deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1 ) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  filter(WL == "WW") %>%
+  ggplot(aes(x = OD720_Lmu_corr, y = deltaOD_Lmu_corr, colour = WL)) +
+  #theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+  #geom_errorbar(aes(xmin = OD720_Lmu_corr - OD720_Lmu_se, xmax = OD720_Lmu_corr + OD720_Lmu_se, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  #geom_text(aes(x = OD720_Lmu_corr, y = OD720_Gmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (-0.1, 0.3), ylim = c(-0.1, 0.3) ) +
+ # coord_cartesian() +
+ # scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(y = "Logistic Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")") +
+  guides(colour = FALSE) + 
+  ggh4x::facet_nested(cols = vars(Strain), rows = vars(Photoperiod), 
+                    labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+CompareOD720DeltaGrowthPlot
+
+
+
+```
+
+```{r photon dose fig.height= 6, fig.width= 8}
+
+PhotondoseGrowthPlot <- UnnestedFitsData %>%
+  filter(
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  filter(WL == "WW") %>%
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = OD720_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = OD720_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+  labs(y = "Logistic Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Photon dose (µmol photons" ~m^-2 ~d^-1~")") +
+ #geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  #coord_cartesian(xlim = c (10000, 100000)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  scale_x_continuous(trans = log_trans(base = 10), breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x)))+
+  #facet_grid (cols = vars(Strain)) +
+  #guides(colour = FALSE) + 
+  ggh4x::facet_nested(cols = vars(Strain)) +
+  theme_bw() +
+  labs(colour = "Photoperiod")
+PhotondoseGrowthPlot
+
+
+
+PhotondoseGrowthPlot <- UnnestedFitsData %>%
+  filter(
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  filter(WL == "WW") %>%
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(y = "Logistic Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Photon dose (µmol photons" ~m^-2 ~d^-1~")") +
+ #geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  #coord_cartesian(xlim = c (10000, 100000)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  scale_x_continuous(trans = log_trans(base = 10), breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x)))+
+  #facet_grid (cols = vars(Strain)) +
+  #guides(colour = FALSE) + 
+  ggh4x::facet_nested(cols = vars(Strain)) +
+  theme_bw() +
+  labs(colour = "Photoperiod")
+PhotondoseGrowthPlot
+
+
+
+PhotondoseGrowthPlot <- UnnestedFitsData %>%
+  filter(
+          OD720_Gmu_corr == 0 |
+          OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  filter(WL == "WW") %>%
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = OD720_Gmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = OD720_Gmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+  labs(y = "Gompertz Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Photon dose (µmol photons" ~m^-2 ~d^-1~")") +
+ #geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), colour = "black", data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  #coord_cartesian(xlim = c (10000, 100000)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  scale_x_continuous(trans = log_trans(base = 10), breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x)))+
+  #facet_grid (cols = vars(Strain)) +
+  #guides(colour = FALSE) + 
+  ggh4x::facet_nested(cols = vars(Strain)) +
+  theme_bw() +
+  labs(colour = "Photoperiod")
+PhotondoseGrowthPlot
+
+
+
+PhotondoseGrowthPlot <- UnnestedFitsData %>%
+  filter(
+          deltaOD_Gmu_corr == 0 |
+          deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1) %>%
+  filter(Strain != "BA120R",
+         Strain != "BA124G",
+         Strain != "BA132R",
+         Strain != "BA60G",
+         Strain != "MIT9313",
+         Strain != "MED4",
+         Strain != "SS120") %>%
+  filter(WL == "WW") %>%
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Gmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Gmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(y = "Gompertz Growth Rate" ~ "("~"Delta OD"~h^-1~")", x = "Photon dose (µmol photons" ~m^-2 ~d^-1~")") +
+ #geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Gmu_corr - deltaOD_Gmu_se, ymax = deltaOD_Gmu_corr + deltaOD_Gmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  #coord_cartesian(xlim = c (10000, 100000)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  scale_x_continuous(trans = log_trans(base = 10), breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x)))+
+  #facet_grid (cols = vars(Strain)) +
+  #guides(colour = FALSE) + 
+  ggh4x::facet_nested(cols = vars(Strain)) +
+  theme_bw() +
+  labs(colour = "Photoperiod")
+PhotondoseGrowthPlot
+
+
+```
+
+
+```{r photon dose fig.height= 6, fig.width= 8 inna wersja}
+lognormOD720_unnest %>%
+   #filter(Strain == "BA127R") %>%
+  filter(Strain == "BA127R" |
+         Strain == "BA48R" |
+         Strain == "BA77G" |
+         Strain == "BA56G") %>%
+
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = OD720_Gmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = OD720_Gmu_corr, colour = as.factor(Photoperiod)), size = 0.3, color = 'black') +
+   labs(y = "Gompertz Growth Rate" ~ "("~OD[720]~h^-1~")", x = "Photon dose" ~ day^-1) +
+ #geom_text(aes(x = SetActinic_day, y = OD720_Gmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  # geom_errorbar(aes(x = SetActinic_day, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag & OD720GmuGrowthFlag == 1)) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), data = . %>% filter(GrowthAmpOD720Flag & OD720GmuGrowthFlag == 1)) +
+  #scale_x_continuous(breaks=seq(8, 16, by = 4)) +
+  #coord_cartesian(xlim = c (8, 16)) +
+  #scale_x_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  
+  scale_x_continuous(trans = log_trans(base = 10), breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x)))+
+  
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+     #facet_grid (cols = vars(O2), rows = vars(SetActinic_day)) +
+  
+     ggh4x::facet_nested(cols = vars(Strain, WL), rows = vars(Par_ue),
+                labeller = labeller(Par_ue = label_both, WL = label_both, Strain = label_value, Photoperiod = label_both)) +
+  theme_bw() +
+  labs(colour = "Photoperiod")
+
+```
+
+
+
+```{r save summary growth plots}
+
+ggsave(file = file.path(PlotsPath, paste("CompareGompLog_deltaODGrowthPlot",".png",sep = "")), plot = CompareGompLog_deltaODGrowthPlot, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+# 
+# ggsave(file = file.path(PlotsPath, paste("deltaOD_GmuSummaryGrowthPlot",".png",sep = "")), plot = deltaOD_GmuSummaryGrowthPlot, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+
+```
+
+
+Compare truncated runs
+```{r CompareTruncated, fig.height= 15, fig.width= 15}
+
+ UnnestedFitsData %>%
+  filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+           WL == 450 |
+           WL == 530 |
+           WL == 660 |
+           WL == "WW",
+         Run >= 25) %>%
+  ggplot(aes(x = OD720_Lmu_corr, y = OD720trunc_Lmu_corr, colour = WL)) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+  geom_errorbar(aes(xmin = OD720_Lmu_corr - OD720_Lmu_se, xmax = OD720_Lmu_corr + OD720_Lmu_se, ymin = OD720trunc_Lmu_corr - OD720trunc_Lmu_se, ymax = OD720trunc_Lmu_corr + OD720trunc_Lmu_se), size = 0.05, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  geom_text(aes(x = OD720_Lmu_corr, y = OD720trunc_Lmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (0, 0.05), ylim = c(0, 0.05) ) +
+ # coord_cartesian() +
+  scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm)  All Growth Data From Runs >= #25", y = "Corrected Truncated Logistic Growth Rate (OD720trunc_Lmu)", x = "Corrected Logistic Growth Rate (OD720_Lmu)") +
+   ggh4x::facet_nested(cols = vars(O2, WL), rows = vars(Strain), 
+                    labeller = labeller(WL = label_both, Strain = label_value, O2 = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+UnnestedFitsData %>%
+  filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+           WL == 450 |
+           WL == 530 |
+           WL == 660 |
+           WL == "WW",
+         Run >= 25) %>%
+  ggplot(aes(x = deltaOD_Lmu_corr, y = deltaODtrunc_Lmu_corr, colour = WL)) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+   geom_errorbar(aes(xmin = deltaOD_Lmu_corr - deltaOD_Lmu_se, xmax = deltaOD_Lmu_corr + deltaOD_Lmu_se, ymin = deltaODtrunc_Lmu_corr - deltaODtrunc_Lmu_se, ymax = deltaODtrunc_Lmu_corr + deltaODtrunc_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  geom_text(aes(x = deltaOD_Lmu_corr, y = deltaODtrunc_Lmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (0, 0.05), ylim = c(0, 0.05) ) +
+ # coord_cartesian() +
+  scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm) All Growth Data From Runs >= #25", y = "Corrected Truncated Logistic Growth Rate (deltaODtrunc_Lmu)", x = "Corrected Logistic Growth Rate (deltaOD_Lmu)") +
+   ggh4x::facet_nested(cols = vars(O2, WL), rows = vars(Strain), 
+                    labeller = labeller(WL = label_both, Strain = label_value, O2 = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+
+UnnestedFitsData %>%
+  filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+           WL == 450 |
+           WL == 530 |
+           WL == 660 |
+           WL == "WW",
+          Run >= 25,
+          OD720trunc_Lmu_corr == 0 |
+          OD720trunc_Lmu_corr != 0 & OD720trunc_LseGrowthFlag == 1,
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1 ) %>%
+  ggplot(aes(x = OD720_Lmu_corr, y = OD720trunc_Lmu_corr, colour = WL)) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+  geom_errorbar(aes(xmin = OD720_Lmu_corr - OD720_Lmu_se, xmax = OD720_Lmu_corr + OD720_Lmu_se, ymin = OD720trunc_Lmu_corr - OD720trunc_Lmu_se, ymax = OD720trunc_Lmu_corr + OD720trunc_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  geom_text(aes(x = OD720_Lmu_corr, y = OD720trunc_Lmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (0, 0.05), ylim = c(0, 0.05) ) +
+ # coord_cartesian() +
+  scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm) Standard Error Filtered Showing Runs >= #25", y = "Corrected Truncated Logistic Growth Rate  (OD720trunc_Lmu)", x = "Corrected Logistic Growth Rate (OD720_Lmu)") +
+   ggh4x::facet_nested(cols = vars(O2, WL), rows = vars(Strain), 
+                    labeller = labeller(WL = label_both, Strain = label_value, O2 = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+
+UnnestedFitsData %>%
+  filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+           WL == 450 |
+           WL == 530 |
+           WL == 660 |
+           WL == "WW",
+          Run >= 25,
+          deltaODtrunc_Lmu_corr == 0 |
+          deltaODtrunc_Lmu_corr != 0 & deltaODtrunc_LseGrowthFlag == 1,
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1 ) %>%
+  ggplot(aes(x = deltaOD_Lmu_corr, y = deltaODtrunc_Lmu_corr, colour = WL)) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+  geom_errorbar(aes(xmin = deltaOD_Lmu_corr - deltaOD_Lmu_se, xmax = deltaOD_Lmu_corr + deltaOD_Lmu_se, ymin = deltaODtrunc_Lmu_corr - deltaODtrunc_Lmu_se, ymax = deltaODtrunc_Lmu_corr + deltaODtrunc_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  geom_text(aes(x = deltaOD_Lmu_corr, y = deltaODtrunc_Lmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (0, 0.05), ylim = c(0, 0.05) ) +
+ # coord_cartesian() +
+  scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm) Standard Error Filtered Showing Runs >= #25", y = "Corrected Truncated Logistic Growth Rate  (deltaODtrunc_Lmu)", x = "Corrected Logistic Growth Rate (deltaOD_Lmu)") +
+   ggh4x::facet_nested(cols = vars(O2, WL), rows = vars(Strain), 
+                    labeller = labeller(WL = label_both, Strain = label_value, O2 = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+UnnestedFitsData %>%
+  filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+           WL == 450 |
+           WL == 530 |
+           WL == 660 |
+           WL == "WW",
+          Run >= 25) %>%
+  ggplot(aes(x = deltaOD_Lmu_corr, y = deltaODtrunc_Lmu_corr, colour = WL)) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+  geom_errorbar(aes(xmin = deltaOD_Lmu_corr - deltaOD_Lmu_se, xmax = deltaOD_Lmu_corr + deltaOD_Lmu_se, ymin = deltaODtrunc_Lmu_corr - deltaODtrunc_Lmu_se, ymax = deltaODtrunc_Lmu_corr + deltaODtrunc_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  geom_text(aes(x = deltaOD_Lmu_corr, y = deltaODtrunc_Lmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (0, 0.05), ylim = c(0, 0.05) ) +
+ # coord_cartesian() +
+  scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm)  All Growth Data From Runs >= #25", y = "Corrected Truncated Logistic Growth Rate  (deltaODtrunc_Lmu)", x = "Corrected Logistic Growth Rate (deltaOD_Lmu)") +
+  #facet_grid(rows = vars(Strain), cols = vars(O2, WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+TruncatedComparedeltaOD <- UnnestedFitsData %>%
+  filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+           WL == 450 |
+           WL == 530 |
+           WL == 660 |
+           WL == "WW",
+          Run >= 25,
+          deltaODtrunc_Lmu_corr == 0 |
+          deltaODtrunc_Lmu_corr != 0 & deltaODtrunc_LseGrowthFlag == 1,
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  ggplot(aes(x = deltaOD_Lmu_corr, y = deltaODtrunc_Lmu_corr, colour = WL)) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+  geom_errorbar(aes(xmin = deltaOD_Lmu_corr - deltaOD_Lmu_se, xmax = deltaOD_Lmu_corr + deltaOD_Lmu_se, ymin = deltaODtrunc_Lmu_corr - deltaODtrunc_Lmu_se, ymax = deltaODtrunc_Lmu_corr + deltaODtrunc_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  geom_text(aes(x = deltaOD_Lmu_corr, y = deltaODtrunc_Lmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (0, 0.05), ylim = c(0, 0.05) ) +
+ # coord_cartesian() +
+  scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm) Standard Error Filtered From Runs >= #25 ", y = "Corrected Truncated Logistic Growth Rate  (deltaODtrunc_Lmu)", x = "Corrected Logistic Growth Rate (deltaOD_Lmu)") +
+  #facet_grid(rows = vars(Strain), cols = vars(O2, WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+TruncatedComparedeltaOD
+
+
+TruncGompComparedeltaOD <- UnnestedFitsData %>%
+  filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+           WL == 450 |
+           WL == 530 |
+           WL == 660 |
+           WL == "WW",
+          Run >= 25,
+          deltaODtrunc_Lmu_corr == 0 |
+          deltaODtrunc_Lmu_corr != 0 & deltaODtrunc_LseGrowthFlag == 1,
+          deltaOD_Gmu_corr == 0 |
+          deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1) %>%
+  ggplot(aes(x = deltaOD_Gmu_corr, y = deltaODtrunc_Lmu_corr, colour = WL)) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run))) +
+  geom_errorbar(aes(xmin = deltaOD_Gmu_corr - deltaOD_Gmu_se, xmax = deltaOD_Gmu_corr + deltaOD_Gmu_se, ymin = deltaODtrunc_Lmu_corr - deltaODtrunc_Lmu_se, ymax = deltaODtrunc_Lmu_corr + deltaODtrunc_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days == 1)) +
+  scale_colour_manual(values = MCMIXColours) +
+  geom_text(aes(x = deltaOD_Gmu_corr, y = deltaODtrunc_Lmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1, xlim = c (0, 0.05), ylim = c(0, 0.05) ) +
+ # coord_cartesian() +
+  scale_x_continuous(breaks=seq(0, 0.05, by = 0.01)) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm) Standard Error Filtered From Runs >= #25", y = "Corrected Truncated Logistic Growth Rate  (deltaODtrunc_Lmu)", x = "Corrected Gompertz Growth Rate (deltaOD_Gmu)") +
+  #facet_grid(rows = vars(Strain), cols = vars(O2, WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+TruncGompComparedeltaOD
+
+```
+
+```{r save truncated compare growth plots}
+
+ggsave(file = file.path(PlotsPath, paste("TruncatedComparedeltaOD",".png",sep = "")), plot = TruncatedComparedeltaOD, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+ggsave(file = file.path(PlotsPath, paste("TruncGompComparedeltaOD",".png",sep = "")), plot = TruncGompComparedeltaOD, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+
+```
+
+```{r GompertzOD720Plots, fig.height= 10, fig.width= 10}
+
+UnnestedFitsData %>%
+   filter(Strain == "SS120") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+ geom_line(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "OD720" ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Gmu_corr, label= Run), alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = (OD720_Gmu_corr - OD720_Gmu_se), ymax = (OD720_Gmu_corr + OD720_Gmu_se)), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(0,0.15, by = 0.05)) +
+  # coord_cartesian(ylim = c (0, 0.15)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                      labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+UnnestedFitsData %>%
+   filter(Strain == "SS120",
+          OD720_Gmu_corr == 0 |
+          OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+ geom_line(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "OD720" ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Gmu_corr, label= Run), alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = (OD720_Gmu_corr - OD720_Gmu_se), ymax = (OD720_Gmu_corr + OD720_Gmu_se)), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                      labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "OD720" ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Gmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  # geom_errorbar(aes(x = Par_ue, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(OD720_GseGrowthFlag & OD720_GseGrowthFlag == 1)) +
+   geom_errorbar(aes(x = Par_ue, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(0,0.15, by = 0.05)) +
+  # coord_cartesian(ylim = c (0, 0.15)) +
+  scale_colour_manual(values = MCMIXColours) + 
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                      labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313",
+          OD720_Gmu_corr == 0 |
+          OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "OD720" ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Gmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  # geom_errorbar(aes(x = Par_ue, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+   geom_errorbar(aes(x = Par_ue, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(OD720_Gmu_corr  != 0)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) + 
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                      labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313",
+          Run == 27|
+          Run == 36|
+          Run == 14|
+          Run == 4) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "OD720" ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Gmu_corr, label= Run), alpha = 0.5, hjust=0, vjust=0) +
+   geom_errorbar(aes(x = Par_ue, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  # scale_y_continuous(breaks=seq(-0.0, 0.045, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.0, 0.045)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MED4") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "OD720" ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Gmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MED4",
+          OD720_Gmu_corr == 0 |
+          OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "OD720" ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Gmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+OD720_GmuSummaryGrowthPlot <- UnnestedFitsData %>%
+  filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+          OD720_Gmu_corr == 0 |
+          OD720_Gmu_corr != 0 & OD720_GseGrowthFlag == 1) %>%
+  # filter(Strain == "BA127R" |
+  #        Strain == "BA48R" |
+  #        Strain == "BA77G" |
+  #        Strain == "BA56G") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+  geom_line(aes(x = Par_ue, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "OD720" ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+  # scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  # coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(O2, Photoperiod), rows = vars(Strain), 
+                     labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+OD720_GmuSummaryGrowthPlot
+
+```
+
+```{r LogisticOD720Plots, fig.height= 10, fig.width= 10}
+
+UnnestedFitsData %>%
+   filter(Strain == "SS120") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+ geom_line(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "OD720" ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Lmu_corr, label= Run), alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = (OD720_Lmu_corr - OD720_Lmu_se), ymax = (OD720_Lmu_corr + OD720_Lmu_se)), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+    scale_y_continuous(breaks=seq(0, 6, by = 2)) +
+  coord_cartesian(ylim = c (0, 6)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                      labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+UnnestedFitsData %>%
+   filter(Strain == "SS120",
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+ geom_line(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "OD720" ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Lmu_corr, label= Run), alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = (OD720_Lmu_corr - OD720_Lmu_se), ymax = (OD720_Lmu_corr + OD720_Lmu_se)), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                      labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "OD720" ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Lmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  # geom_errorbar(aes(x = Par_ue, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(OD720_LseGrowthFlag & OD720_LseGrowthFlag == 1)) +
+   geom_errorbar(aes(x = Par_ue, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+    scale_y_continuous(breaks=seq(0, 6, by = 2)) +
+  coord_cartesian(ylim = c (0, 6)) +
+  scale_colour_manual(values = MCMIXColours) + 
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                      labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313",
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "OD720" ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Lmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  # geom_errorbar(aes(x = Par_ue, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(OD720_LseGrowthFlag & OD720_LseGrowthFlag == 1)) +
+   geom_errorbar(aes(x = Par_ue, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) + 
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                      labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313",
+          Run == 27|
+          Run == 36|
+          Run == 14|
+          Run == 4) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "OD720" ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Lmu_corr, label= Run), alpha = 0.5, hjust=0, vjust=0) +
+   geom_errorbar(aes(x = Par_ue, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  # scale_y_continuous(breaks=seq(-0.0, 0.045, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.0, 0.045)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MED4") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "OD720" ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Lmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MED4",
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "OD720" ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Lmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+OD720_LmuSummaryGrowthPlot <- UnnestedFitsData %>%
+  filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+          OD720_Lmu_corr == 0 |
+          OD720_Lmu_corr != 0 & OD720_LseGrowthFlag == 1) %>%
+  # filter(Strain == "BA127R" |
+  #        Strain == "BA48R" |
+  #        Strain == "BA77G" |
+  #        Strain == "BA56G") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+  geom_line(aes(x = Par_ue, y = OD720_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "OD720" ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = OD720_Lmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = OD720_Lmu_corr - OD720_Lmu_se, ymax = OD720_Lmu_corr + OD720_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpOD720Flag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  # coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(O2, Photoperiod), rows = vars(Strain), 
+                     labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+OD720_LmuSummaryGrowthPlot
+
+```
+
+
+
+```{r GompertzdeltaODPlots, fig.height= 10, fig.width= 10}
+
+UnnestedFitsData %>%
+   filter(Strain == "SS120") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "deltaOD [~Chl] " ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run), alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = (deltaOD_Gmu_corr - deltaOD_Gmu_se), ymax = (deltaOD_Gmu_corr + deltaOD_Gmu_se)), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+
+SS120deltaODGmuMatrixPlot <- UnnestedFitsData %>%
+   filter(Strain == "SS120",
+          WL == 450 |
+            WL == 530 |
+            WL == 660|
+           WL == "WW",
+          deltaOD_Gmu_corr == 0 |
+          deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "deltaOD [~Chl] " ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run), alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = (deltaOD_Gmu_corr - deltaOD_Gmu_se), ymax = (deltaOD_Gmu_corr + deltaOD_Gmu_se)), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+    scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+SS120deltaODGmuMatrixPlot
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+ labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "deltaOD [~Chl] " ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Gmu_corr - deltaOD_Gmu_se, ymax = deltaOD_Gmu_corr + deltaOD_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(0, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (0, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+MIT9313deltaODGmuMatrixPlot <- UnnestedFitsData %>%
+   filter(Strain == "MIT9313",
+          WL == 450 |
+            WL == 530 |
+            WL == 660|
+           WL == "WW",
+          deltaOD_Gmu_corr == 0 |
+          deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+ labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "deltaOD [~Chl] " ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Gmu_corr - deltaOD_Gmu_se, ymax = deltaOD_Gmu_corr + deltaOD_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+    scale_y_continuous(breaks=seq(0, 0.07, by = 0.01)) +
+  coord_cartesian(ylim = c (0, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+MIT9313deltaODGmuMatrixPlot
+ 
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MED4") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "deltaOD [~Chl] " ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Gmu_corr - deltaOD_Gmu_se, ymax = deltaOD_Gmu_corr + deltaOD_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(0, 0.115, by = 0.01)) +
+  # coord_cartesian(ylim = c (0, 0.115)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, O2 = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+
+MED4deltaODGmuMatrixPlot <- UnnestedFitsData %>%
+   filter(Strain == "MED4",
+          WL == 450 |
+            WL == 530 |
+            WL == 660|
+           WL == "WW",
+          deltaOD_Gmu_corr == 0 |
+          deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "deltaOD [~Chl] " ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Gmu_corr - deltaOD_Gmu_se, ymax = deltaOD_Gmu_corr + deltaOD_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(0, 0.115, by = 0.01)) +
+  # coord_cartesian(ylim = c (0, 0.115)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, O2 = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+MED4deltaODGmuMatrixPlot
+
+deltaOD_GmuSummaryGrowthPlot <- UnnestedFitsData %>%
+   filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+         WL == 450 |
+            WL == 530 |
+            WL == 660 |
+           WL == "WW",
+          deltaOD_Gmu_corr == 0 |
+          deltaOD_Gmu_corr != 0 & deltaOD_GseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+  geom_line(aes(x = Par_ue, y = deltaOD_Gmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "deltaOD [~Chl] " ~ "Gompertz Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Gmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Gmu_corr - deltaOD_Gmu_se, ymax = deltaOD_Gmu_corr + deltaOD_Gmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Photoperiod), rows = vars(Strain), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+deltaOD_GmuSummaryGrowthPlot
+
+#plotly::ggplotly(deltaOD_GmuSummaryGrowthPlot)
+
+
+```
+
+```{r save summary growth plots}
+
+
+ggsave(file = file.path(PlotsPath, paste("MIT9313deltaODGmuMatrixPlot",".png",sep = "")), plot = MIT9313deltaODGmuMatrixPlot, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+ggsave(file = file.path(PlotsPath, paste("SS120deltaODGmuMatrixPlot",".png",sep = "")), plot = SS120deltaODGmuMatrixPlot, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+ggsave(file = file.path(PlotsPath, paste("MED4deltaODGmuMatrixPlot",".png",sep = "")), plot = MED4deltaODGmuMatrixPlot, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+```
+
+
+```{r LogisticdeltaODPlots, fig.height= 10, fig.width= 10}
+
+UnnestedFitsData %>%
+   filter(Strain == "SS120") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run), alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = (deltaOD_Lmu_corr - deltaOD_Lmu_se), ymax = (deltaOD_Lmu_corr + deltaOD_Lmu_se)), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+
+SS120deltaODLmuMatrixPlot <- UnnestedFitsData %>%
+   filter(Strain == "SS120",
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run), alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = (deltaOD_Lmu_corr - deltaOD_Lmu_se), ymax = (deltaOD_Lmu_corr + deltaOD_Lmu_se)), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+SS120deltaODLmuMatrixPlot
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+ labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(0, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (0, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+MIT9313deltaODLmuMatrixPlot <- UnnestedFitsData %>%
+   filter(Strain == "MIT9313",
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+ labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(0, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (0, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+ 
+MIT9313deltaODLmuMatrixPlot
+
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MED4") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(0, 0.115, by = 0.01)) +
+  # coord_cartesian(ylim = c (0, 0.115)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, O2 = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+
+MED4deltaODLmuMatrixPlot <- UnnestedFitsData %>%
+   filter(Strain == "MED4",
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run), alpha = 0.5,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+  #   scale_y_continuous(breaks=seq(0, 0.115, by = 0.01)) +
+  # coord_cartesian(ylim = c (0, 0.115)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(O2, Strain, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, Strain = label_value, Photoperiod = label_both, O2 = label_both)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+MED4deltaODLmuMatrixPlot
+
+deltaOD_LmuSummaryGrowthPlot <- UnnestedFitsData %>%
+   filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4",
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+  geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 0.1, alpha = 0.4) +
+labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run),alpha = 0.5 ,hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), size = 0.3, color = 'black', data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 50)) +
+  coord_cartesian(xlim = c (0, 200)) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2, Photoperiod), rows = vars(Strain), 
+                    labeller = labeller(WL = label_value, Strain = label_value, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+deltaOD_LmuSummaryGrowthPlot
+
+#plotly::ggplotly(deltaOD_LmuSummaryGrowthPlot)
+
+
+```
+
+
+```{r save summary growth plots}
+
+ggsave(file = file.path(PlotsPath, paste("MIT9313deltaODLmuMatrixPlot",".png",sep = "")), plot = MIT9313deltaODLmuMatrixPlot, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+ggsave(file = file.path(PlotsPath, paste("SS120deltaODLmuMatrixPlot",".png",sep = "")), plot = SS120deltaODLmuMatrixPlot, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+ggsave(file = file.path(PlotsPath, paste("MED4deltaODLmuMatrixPlot",".png",sep = "")), plot = MED4deltaODLmuMatrixPlot, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+```
+
+```{r, PhotonDosePlots fig.height= 40, fig.width= 40 }}
+# UnnestedFitsData %>%
+#    filter(Strain == "MIT9313") %>%
+#   ggplot() +
+#   geom_point(aes(x = SetActinic_day, y = OD720_Gmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+#  geom_line(aes(x = SetActinic_day, y = OD720_Gmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+#  labs(subtitle = "MIT9313, O2, Actinic PAR (nm)", y = "Cell Density and Cell Size Specific Gompertz Growth Rate (OD720_Gmu)", x = "Photon dose day-1") +
+#  geom_text(aes(x = SetActinic_day, y = OD720_Gmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+#   geom_errorbar(aes(x = SetActinic_day, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), colour = "black", data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+#   # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+#   # coord_cartesian(xlim = c (0, 16)) +
+#   #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+#   # coord_cartesian(ylim = c (-0.03, 0.07)) +
+#  # scale_colour_manual(values = MCMIXColours) +
+#   facet_grid (cols = vars(O2), rows = vars(WL)) +
+#   theme_bw() 
+# +
+#   labs(colour = "Actinic PAR (nm)")
+
+# UnnestedFitsData %>%
+#    filter(Strain == "MIT9313") %>%
+#   ggplot() +
+#   geom_point(aes(x = Photoperiod, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 3) +
+#  geom_line(aes(x = Photoperiod, y = OD720_Gmu_corr, colour = as.factor(WL)), size = 0.3) +
+#  labs(subtitle = "MIT9313, O2, Actinic PAR (nm)", y = "Cell Density and Cell Size Specific Gompertz Growth Rate (OD720_Gmu)", x = "Photoperiod (h)") +
+#  geom_text(aes(x = SetActinic_day, y = OD720_Gmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+#   geom_errorbar(aes(x = Photoperiod, ymin = OD720_Gmu_corr - OD720_Gmu_se, ymax = OD720_Gmu_corr + OD720_Gmu_se), colour = "black", data = . %>% filter(GrowthAmpOD720Flag_14days == 1)) +
+#   scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+#   coord_cartesian(xlim = c (0, 16)) +
+#   #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+#   # coord_cartesian(ylim = c (-0.03, 0.07)) +
+#   #scale_colour_manual(values = MCMIXColours) +
+#   facet_grid (cols = vars(O2), rows = vars(SetActinic_day)) +
+#   theme_bw() 
+#+
+  #labs(colour = "Actinic PAR (nm)")
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313") %>%
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "MIT9313, O2, Actinic PAR (nm)", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+ # facet_grid (cols = vars(O2), rows = vars(WL)) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+  theme_bw() +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+MIT9313PhotonDose <- UnnestedFitsData %>%
+   filter(Strain == "MIT9313",
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "MIT9313, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+  #facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+MIT9313PhotonDose
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313") %>%
+  filter(O2 == 0) %>% 
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "MIT9313, O2, Actinic PAR (nm)", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+  #facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+UnnestedFitsData %>%
+   filter(Strain == "MIT9313") %>%
+  filter(O2 == 21) %>% 
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "MIT9313, O2, Actinic PAR (nm)", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+  #facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+UnnestedFitsData %>%
+   filter(Strain == "SS120") %>%
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "SS120, O2, Actinic PAR (nm)", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+  #facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+SS120PhotonDose <- UnnestedFitsData %>%
+   filter(Strain == "SS120",
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "SS120, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+  #facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+SS120PhotonDose
+
+UnnestedFitsData %>%
+   filter(Strain == "SS120") %>%
+  filter(O2 == 0) %>% 
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "SS120, O2, Actinic PAR (nm)", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+  #facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+UnnestedFitsData %>%
+   filter(Strain == "SS120") %>%
+  filter(O2 == 21) %>% 
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "SS120, O2, Actinic PAR (nm)", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+  #facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MED4") %>%
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "MED4, O2, Actinic PAR (nm)", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+ # facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+MED4PhotonDose <- UnnestedFitsData %>%
+   filter(Strain == "MED4",
+          deltaOD_Lmu_corr == 0 |
+          deltaOD_Lmu_corr != 0 & deltaOD_LseGrowthFlag == 1) %>%
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "MED4, O2, Actinic PAR (nm)- Outliers filtered by standard error > 20% of growth rate- Outliers filtered by standard error > 20% of growth rate", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+ # facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+MED4PhotonDose
+
+ UnnestedFitsData %>%
+   filter(Strain == "MED4") %>%
+  filter(O2 == 0) %>% 
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "MED4, O2, Actinic PAR (nm)", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+  #facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+UnnestedFitsData %>%
+   filter(Strain == "MED4") %>%
+  filter(O2 == 21) %>% 
+  ggplot() +
+  geom_point(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 3) +
+ geom_line(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, colour = as.factor(Photoperiod)), size = 0.3) +
+ labs(subtitle = "MED4, O2, Actinic PAR (nm)", y = "Chlorophyll Specific Logistic Growth Rate (deltaOD_Lmu)", x = "Photon dose day-1") +
+ geom_text(aes(x = SetActinic_day, y = deltaOD_Lmu_corr, label= Run, alpha = 1),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = SetActinic_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), colour = "black", data = . %>% filter(GrowthAmpdeltaODFlag_14days  == 1)) +
+  # scale_x_continuous(breaks=seq(0, 16, by = 4)) +
+  # coord_cartesian(xlim = c (0, 16)) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  #scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(O2), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2 = label_both)) +
+  #facet_grid (cols = vars(O2), rows = vars(WL)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+```
+
+```{r save summary photon dose growth plots}
+
+ggsave(file = file.path(PlotsPath, paste("MIT9313PhotonDose",".png",sep = "")), plot = MIT9313PhotonDose, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+ggsave(file = file.path(PlotsPath, paste("SS120PhotonDose",".png",sep = "")), plot = SS120PhotonDose, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+ggsave(file = file.path(PlotsPath, paste("MED4PhotonDose",".png",sep = "")), plot = MED4PhotonDose, device = NULL, scale = 1, height=15, width= 25, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+```
+
+
+
+
+```{r compare lndelta to lnOD720 growth rates, formatted for poster presentation}
+
+
+EvenGrowthLogPlot <- UnnestedFitsData %>% 
+  filter(Strain == "MIT9313" |
+         Strain == "SS120" |
+         Strain == "MED4") %>%
+  ggplot(aes(x = OD720_Gmu_corr, y = deltaOD_Gmu_corr, colour = WL), size = 10) +
+  theme(panel.spacing.x = unit(10, "cm"), panel.spacing.y = unit(2, "cm")) +
+  geom_point(aes(labels = c(Run)), size = 2) +
+ #geom_errorbar(aes(ymin =  deltaOD_Gmu_corr -  deltaOD_Gmu_corr_se, ymax = deltaOD_Gmu_corr +  deltaOD_Gmu_corr_se)) + 
+  scale_colour_manual(values = MCMIXColours) +
+  #geom_text(aes(x = OD720_Gmu_corr, y = deltaOD_Gmu_corr, label= Run),hjust=0, vjust=0) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_fixed(ratio = 1) +
+  coord_cartesian(xlim = c (0, 0.6), ylim = c(0, 0.6)) +
+  scale_x_continuous(breaks=seq(0, 0.6, by = 0.1)) +
+  labs(subtitle = "Strain, O2, Actinic PAR (nm)", y = "Chlorophyll Specific Exponential Growth Rate (deltaOD µ" ~ h^-1 ~")", x = "Cell Density and Cell Size Specific Exponential Growth Rate (OD720 µ" ~ h^-1 ~")") +
+  facet_grid(rows = vars(Strain), cols = vars(O2, WL)) + 
+  theme_bw() + 
+  labs(colour = "Actinic PAR (nm)",
+       size = 20)+
+   theme(axis.text.x = element_text(angle = 90, vjust = 1, size = 15, color = "black"),
+        axis.text.y = element_text(size = 20, color = "black"),
+        title = element_text(color = "#0B4545", size = 25),
+        plot.title = element_text(hjust = 0.05, size = 15),
+        plot.subtitle = element_text(hjust = -0.05, size = 15, color = "black"),
+        axis.title.x = element_text(hjust= 0.60, vjust = -0.2),
+        axis.title.y = element_text(hjust = 0.6, vjust = 1.2),
+        strip.text.x = element_text(size = 30),
+        strip.text.y = element_text(size = 30),
+        legend.text = element_text(size = 30)
+        #plot.subtitle = element_text(hjust = -0.05, size = 20, color = "black")
+       # legend.position = "top"
+        ) 
+
+EvenGrowthLogPlot
+
+plotly::ggplotly(EvenGrowthLogPlot)
+
+
+```
+
+
+```{r save Even Growth Plots}
+
+ggsave(file = file.path(PlotsPath, paste("EvenGrowthLogPlot",".png",sep = "")), plot = EvenGrowthLogPlot, device = NULL, scale = 1, height=40, width= 40, units = c("cm"),dpi = 300, limitsize = TRUE)
+
+```
+
+
+
+```{r, Growth vs par eU plots, formatted for poster presentation, fig.height= 20, fig.width = 20}
+
+PicoWavelengths = c(450, 530, 660,  "WW")
+PicoMCMIXColours = c("dodgerblue", "#117733","red", "black")
+
+names(PicoMCMIXColours) <- PicoWavelengths
+PicoMCMIXColours
+
+# assigning 0 to growth estimates if flagged as no growth 
+HighO2deltaODGrowth_ParLogPlot <-  LongerFitsData %>%
+  #filter(ID != "LaGe1084") %>%
+   filter(Strain == "MIT9313"|
+            Strain == "SS120" |
+            Strain == "MED4",
+          O2 == 21,
+          term == "Gmu",
+          Wavelength == "deltaOD") %>%
+  ggplot(group = 1) + # group = 1 is a dummy grouping to ovewrite default gruoping
+  geom_jitter(aes(x = Par_ue, y = estimate, colour = as.factor(WL), shape = as.factor(GmuGrowthFlag)), size = 6) +
+   geom_smooth(aes(x = Par_ue, y = estimate, colour = as.factor(WL)), size = 1.5, se = FALSE) +
+   labs(y = "deltaOD Exponential Growth Rates (µ" ~ h^-1 ~")", 
+        x = "Growth Light (µE)",
+        subtitle = "High Oxygen") +
+  ggrepel::geom_text_repel(aes(x = Par_ue, y = estimate, label= ID),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = estimate - se, ymax = estimate + se), data = . %>% filter(GrowthAmpFlag & GmuGrowthFlag == 1)) +
+  scale_x_continuous(breaks=seq(0, 180, by = 90)) +
+  coord_cartesian(xlim = c (0, 200)) +
+ scale_colour_manual(values = PicoMCMIXColours) +
+  scale_shape_manual(values = c(13, 16)) +
+ facet_grid (cols = vars(Strain), rows = vars(Photoperiod))+
+  theme_bw() +
+   theme(axis.text.x = element_text(angle = 90, hjust = 1.0, size = 30, color = "black"),
+        axis.text.y = element_text(size = 30, color = "black"),
+        title = element_text(color = "#0B4545", size = 50),
+        plot.title = element_text(hjust = 0.05, size = 15),
+        plot.subtitle = element_text(hjust = 0.5, size = 50, color = "black"),
+        axis.title.x = element_text(hjust= 0.60, vjust = 1.0),
+        axis.title.y = element_text(hjust = 0.6, vjust = 1.2),
+        strip.text.x = element_text(size = 30),
+        strip.text.y = element_text(size = 30),
+        legend.text = element_text(size = 30),
+       legend.position = "top"
+        ) +
+ labs(colour = "Actinic PAR (nm)",
+      size = 10) 
+
+HighO2deltaODGrowth_ParLogPlot
+
+LowO2deltaODGrowth_ParLogPlot <-  LongerFitsData %>%
+  #filter(ID != "LaGe1084") %>%
+   filter(Strain == "MIT9313"|
+            Strain == "SS120" |
+            Strain == "MED4",
+          O2 == 0,
+          term == "Gmu",
+          Wavelength == "deltaOD") %>%
+  ggplot(group = 1) + # group = 1 is a dummy grouping to overwrite default grouping
+  geom_jitter(aes(x = Par_ue, y = estimate, colour = as.factor(WL), shape = as.factor(GmuGrowthFlag)), size = 6) +
+   geom_smooth(aes(x = Par_ue, y = estimate, colour = as.factor(WL)), size = 1.5, se = FALSE) +
+   labs(y = "deltaOD Exponential Growth Rates (µ" ~ h^-1 ~")", 
+        x = "Growth Light (µE)",
+        subtitle = "Low Oxygen") +
+  ggrepel::geom_text_repel(aes(x = Par_ue, y = estimate, label= ID),hjust=0, vjust=0) +
+  geom_errorbar(aes(x = Par_ue, ymin = estimate - se, ymax = estimate + se), data = . %>% filter(GrowthAmpFlag & GmuGrowthFlag == 1)) +
+  scale_x_continuous(breaks=seq(0, 180, by = 90)) +
+  coord_cartesian(xlim = c (0, 200)) +
+ scale_colour_manual(values = PicoMCMIXColours) +
+  scale_shape_manual(values = c(13, 16)) +
+ facet_grid (cols = vars(Strain), rows = vars(Photoperiod))+
+  theme_bw() +
+   theme(axis.text.x = element_text(angle = 90, hjust = 1.0, size = 30, color = "black"),
+        axis.text.y = element_text(size = 30, color = "black"),
+        title = element_text(color = "#0B4545", size = 50),
+        plot.title = element_text(hjust = 0.05, size = 15),
+        plot.subtitle = element_text(hjust = 0.5, size = 50, color = "black"),
+        axis.title.x = element_text(hjust= 0.60, vjust = 1.0),
+        axis.title.y = element_text(hjust = 0.6, vjust = 1.2),
+        strip.text.x = element_text(size = 30),
+        strip.text.y = element_text(size = 30),
+        legend.text = element_text(size = 30),
+       legend.position = "top"
+        ) +
+ labs(colour = "Actinic PAR (nm)",
+      size = 10) 
+
+LowO2deltaODGrowth_ParLogPlot
+
+
+
+
+
+
+```
+
+```{r save Species Growth Plots, warning= FALSE}
+
+ggsave(file = file.path(PlotsPath, paste("HighO2deltaODGrowth_ParLogPlot",".png",sep = "")), plot = HighO2deltaODGrowth_ParLogPlot, device = NULL, scale = 1, height=40, width= 40, units = c("cm"),dpi = 500, limitsize = TRUE)
+
+ggsave(file = file.path(PlotsPath, paste("LowO2deltaODGrowth_ParLogPlot",".png",sep = "")), plot = LowO2deltaODGrowth_ParLogPlot, device = NULL, scale = 1, height=40, width= 40, units = c("cm"),dpi = 500, limitsize = TRUE)
+
+
+```
+
+
+```{r, gmax vs par eU plots formatted for poster presentation, fig.height= 10, fig.width= 10}
+# assigning 0 to growth estimates if flagged as no growth 
+HighO2Gmax_ParLogPlot <-  LongerFitsData %>%
+   #filter(OD720_Gmu_se < 0.05) %>%
+  #filter(estimate < 0.05) %>%
+ #filter(se < 2 * estimate) %>%
+   filter(Strain == "MIT9313"|
+            Strain == "SS120" |
+            Strain == "MED4",
+          O2 == 21,
+          term == "Gmax",
+          Wavelength == "OD720") %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = estimate, colour = as.factor(Photoperiod)), size = 5) +
+   labs(y = "OD720 Growth maximums (Gmax)", 
+        x = "Growth Light (µE)") +
+  #geom_text(aes(x = Par_ue, y = OD720_Gmu, label= Run),hjust=0, vjust=0) +
+  #geom_errorbar(aes(x = Par_ue, ymin = estimate - se, ymax = estimate + se)) +
+  scale_x_continuous(breaks=seq(0, 180, by = 90)) +
+  coord_cartesian(xlim = c (0, 200)) +
+ # scale_colour_manual(values = MCMIXColours) +
+ facet_grid (cols = vars(Strain), rows = vars(WL))+
+  theme_grey() +
+   theme(axis.text.x = element_text(angle = 90, hjust = 1.0, size = 30, color = "black"),
+        axis.text.y = element_text(size = 30, color = "black"),
+        title = element_text(color = "#0B4545", size = 50),
+        plot.title = element_text(hjust = 0.05, size = 15),
+       # plot.subtitle = element_text(hjust = -0.05, size = 20, color = "black"),
+        axis.title.x = element_text(hjust= 0.60, vjust = 1.0),
+        axis.title.y = element_text(hjust = 0.6, vjust = 1.2),
+        strip.text.x = element_text(size = 30),
+        strip.text.y = element_text(size = 30),
+        legend.text = element_text(size = 30)
+        ) +
+ labs(colour = "Photoperiod",
+      size = 10) +
+  scale_colour_brewer(palette = "Set1")
+
+HighO2Gmax_ParLogPlot
+
+
+LowO2Gmax_ParLogPlot <-  LongerFitsData %>%
+   #filter(OD720_Gmu_se < 0.05) %>%
+  #filter(estimate < 0.05) %>%
+ #filter(se < 2 * estimate) %>%
+   filter(Strain == "MIT9313"|
+            Strain == "SS120" |
+            Strain == "MED4",
+          O2 == 0,
+          term == "Gmax",
+          Wavelength == "OD720") %>%
+ ggplot() +
+  geom_point(aes(x = Par_ue, y = estimate, colour = as.factor(Photoperiod)), size = 5) +
+   labs(y = "OD720 Growth maximums (Gmax)", 
+        x = "Growth Light (µE)") +
+  #geom_text(aes(x = Par_ue, y = OD720_Gmu, label= Run),hjust=0, vjust=0) +
+  #geom_errorbar(aes(x = Par_ue, ymin = estimate - se, ymax = estimate + se)) +
+  scale_x_continuous(breaks=seq(0, 180, by = 90)) +
+  coord_cartesian(xlim = c (0, 200)) +
+ # scale_colour_manual(values = MCMIXColours) +
+ facet_grid (cols = vars(Strain), rows = vars(WL))+
+  theme_grey() +
+   theme(axis.text.x = element_text(angle = 90, hjust = 1.0, size = 30, color = "black"),
+        axis.text.y = element_text(size = 30, color = "black"),
+        title = element_text(color = "#0B4545", size = 50),
+        plot.title = element_text(hjust = 0.05, size = 15),
+       # plot.subtitle = element_text(hjust = -0.05, size = 20, color = "black"),
+        axis.title.x = element_text(hjust= 0.60, vjust = 1.0),
+        axis.title.y = element_text(hjust = 0.6, vjust = 1.2),
+        strip.text.x = element_text(size = 30),
+        strip.text.y = element_text(size = 30),
+        legend.text = element_text(size = 30)
+        ) +
+ labs(colour = "Photoperiod",
+      size = 10) +
+  scale_colour_brewer(palette = "Set1")
+
+# g <- ggplot_gtable(ggplot_build(LowO2Growth_ParLogPlot))
+# stripr <- which(grepl('strip-r', g$layout$WL))
+# fills <- MCMIXColours
+# k <- 1
+# for (i in stripr) {
+# j <- which(grepl('rect', g$grobs[[i]]$grobs[[1]]$childrenOrder))
+# g$grobs[[i]]$grobs[[1]]$children[[j]]$gLowO2Growth_ParLogPlot$fill <- fills[k]
+# k <- k+1
+# }
+# grid.draw(g)
+
+LowO2Gmax_ParLogPlot
+
+
+```
+
+
+```{r save pmax Plots}
+
+ggsave(file = file.path(PlotsPath, paste("HighO2Gmax_ParLogPlot",".png",sep = "")), plot = HighO2Gmax_ParLogPlot, device = NULL, scale = 1, height=40, width= 40, units = c("cm"),dpi = 500, limitsize = TRUE)
+
+ggsave(file = file.path(PlotsPath, paste("LowO2Gmax_ParLogPlot",".png",sep = "")), plot = LowO2Gmax_ParLogPlot, device = NULL, scale = 1, height=40, width= 40, units = c("cm"),dpi = 500, limitsize = TRUE)
+
+
+```
+
+```{r Growth vs cumulative photon dose day-1 plots, formatted for poster presentation, fig.height= 10, fig.width= 10}
+
+LowO2Growth_CumulativePhotonPlot <-  LongerFitsData %>%
+   #filter(OD720_Gmu_se < 0.05) %>%
+ # filter(estimate < 0.05) %>%
+ #filter(se < 2 * estimate) %>%
+   filter(  Strain == "MIT9313"|
+            Strain == "SS120" |
+            Strain == "MED4",
+          O2 == 0,
+          term == "Gmu",
+          Wavelength == "OD720",
+          WL == "450",
+          Par_ue == "15" |
+          Par_ue == "30" |
+          Par_ue == "90" |
+          Par_ue == "180" ) %>%
+ ggplot() +
+  geom_point(aes(x = SetActinic_day/10000, y = estimate, colour = as.factor(Par_ue)), size = 5) +
+   labs(subtitle = "Wavelength 450, Low Oxygen", y = "OD720 Exponential Growth Rates (µ" ~ h^-1 ~")", 
+        x = "Cumulative photon daily dose(umol m sec day)") +
+  #geom_text(aes(x = Par_ue, y = OD720_Gmu, label= Run),hjust=0, vjust=0) +
+  #geom_errorbar(aes(x = Par_ue, ymin = estimate - se, ymax = estimate + se)) +
+  scale_x_continuous(breaks=seq(0, 200, by = 100)) +
+  coord_cartesian(xlim = c (0, 200)) +
+ # scale_colour_manual(values = MCMIXColours) +
+ facet_grid (cols = vars(Strain), rows = vars(Photoperiod))+
+  theme_grey() +
+   theme(axis.text.x = element_text(angle = 90, hjust = 1.0, size = 30, color = "black"),
+        axis.text.y = element_text(size = 30, color = "black"),
+        title = element_text(color = "#0B4545", size = 50),
+        plot.title = element_text(hjust = 0.05, size = 15),
+       # plot.subtitle = element_text(hjust = -0.05, size = 20, color = "black"),
+        axis.title.x = element_text(hjust= 0.60, vjust = 1.0),
+        axis.title.y = element_text(hjust = 0.6, vjust = 1.2),
+        strip.text.x = element_text(size = 30),
+        strip.text.y = element_text(size = 30),
+        legend.text = element_text(size = 30)
+        ) +
+ labs(colour = "Par_ue",
+      size = 10) +
+  scale_colour_brewer(palette = "Set1")
+
+# g <- ggplot_gtable(ggplot_build(LowO2Growth_ParLogPlot))
+# stripr <- which(grepl('strip-r', g$layout$WL))
+# fills <- MCMIXColours
+# k <- 1
+# for (i in stripr) {
+# j <- which(grepl('rect', g$grobs[[i]]$grobs[[1]]$childrenOrder))
+# g$grobs[[i]]$grobs[[1]]$children[[j]]$gLowO2Growth_ParLogPlot$fill <- fills[k]
+# k <- k+1
+# }
+# grid.draw(g)
+
+LowO2Growth_CumulativePhotonPlot
+
+
+
+```
+
+
+
+```{r save lowO2 growth and cumulative photon plot}
+
+ggsave(file = file.path(PlotsPath, paste("LowO2Growth_CumulativePhotonPlot",".png",sep = "")), plot = LowO2Growth_CumulativePhotonPlot, device = NULL, scale = 1, height=40, width= 40, units = c("cm"),dpi = 500, limitsize = TRUE)
+
+```
+
+
+
+
+```{r save unested growth summaries to ShinyPico}}
+
+# saveRDS(object = EvenGrowthLog, file = file.path(ShinyPath, "PicoGrowthLogs.Rds"), ascii = FALSE, version = NULL, compress = FALSE, refhook = NULL)
+
+# also save RDS file to shiny folder
+
+
+
+# saveRDS(EvenGrowthLog, file = file.path("ShinyPico", "data", paste(Project, "GrowthLogs", ".Rds",sep = "_"),fsep = .Platform$file.sep))
+
+
+```
+
+
+Combine separate growth estimates from mean and s.d. <https://www.statstodo.com/CombineMeansSDs_Pgm.php>
+
+```{r combine estimates by condition}
+# SelectedDataGrowthRates %>%
+#   group_by(Par_ue, Strain, O2, WL) %>%
+```
+
+XXXXX
+
+
+# Statistical ANOVA to determine effects of WL, O2, Par_ue & Strain on metric of growth rate.
+
+Normally not more than 3 factor ANOVA, so consider running separately for each strain.
