@@ -14,7 +14,7 @@ output:
 
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
-#DataOut <- file.path("..", "Data", "CleanData")
+DataOut <- file.path("..", "Data", "ProcessedData")
 DataIn <- file.path("..", "Data", "ProcessedData", fsep = .Platform$file.sep)
 
 FileEncode <- "UTF-8" 
@@ -304,6 +304,14 @@ Plot2
 ggarrange(Plot1,Plot2,
           ncol = 1, nrow = 2)
 ```
+
+```{r Cleaning the environment}
+rm(data_textA, data_textB, Plot1, Plot2)
+```
+
+
+
+
 
 
 
