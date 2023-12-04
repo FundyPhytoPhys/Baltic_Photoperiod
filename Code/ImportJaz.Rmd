@@ -13,7 +13,57 @@ library(lubridate)
 library(googledrive)
 ```
 
+```{r}
+# # Set the path to the zip folder and the destination folder
+# zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEmCombine.zip"
+# destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
+# 
+# # Unzip the files
+# ss<-unzip(zip_file, exdir = destination_folder)
+# print(ss)
+```
+
+
 ```{r import the data}
+# Project <- "Baltic_Photoperiod"
+# DataOut <- file.path("..", "Data", "ImportedData")
+# DataIn <- file.path("..", "Data", "RawData", "JazEmCombine.zip", fsep = .Platform$file.sep)
+# 
+# Jazfile <- list.files(path = DataIn, pattern = ".txt", full.names = TRUE)
+# 
+# Jazfile[1:10]
+# unique(duplicated(Jazfile))
+# SkipCS <- 14
+# FileEncodeCS <- "UTF-8"
+# DelimCS <- "\t"
+# RollWindow <- 10
+```
+```{r}
+# # Set the path to the zip folder and the destination folder
+# zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEmCombine.zip"
+# destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
+# 
+# # Unzip the files
+# ss <- unzip(zip_file, exdir = destination_folder)
+# 
+# # Specify the path to the extracted folder
+# extracted_folder <- file.path(destination_folder, "JazEmCombine")
+# 
+# # List files in the extracted folder with a ".txt" extension
+# Jazfile <- list.files(path = extracted_folder, pattern = ".txt", full.names = TRUE)
+# 
+# # Jazfile[1:10]
+# # unique(duplicated(Jazfile))
+# SkipCS <- 14
+# FileEncodeCS <- "UTF-8"
+# DelimCS <- "\t"
+# RollWindow <- 10
+```
+
+
+
+
+```{r}
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
 DataIn <- file.path("..", "Data", "RawData", "JazEm", fsep = .Platform$file.sep)
