@@ -15,7 +15,7 @@ output:
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ProcessedData")
-DataIn <- file.path("..", "Data", "ProcessedData", fsep = .Platform$file.sep)
+DataIn <- file.path("..", "Data", "ImportedData", fsep = .Platform$file.sep)
 
 FileEncode <- "UTF-8" 
 Delimiter <- ""
@@ -53,7 +53,7 @@ list.files(path = DataIn, pattern = Project, full.names = TRUE)
 ```{r read pigments File}
 #df ontained mean OD per day from Multiculti and Abs from Olis spectra for selected nm. Based on this I calculated pigments per mL and per cell (pg/cell)
 
-MCPigmentFile <- "../Data/ProcessedData/Baltic_Photoperiod_Pigments_OtherRepository.Rds"
+MCPigmentFile <- "../Data/ProcessedData/Baltic_Photoperiod_Imported_Pigments_OtherRepository.Rds"
 MCPigmentFileName <- str_split(string = MCPigmentFile, "/")[[1]][3] %>%
   str_remove(pattern = ".Rds")
 MCPigment <- readRDS(MCPigmentFile)  %>%

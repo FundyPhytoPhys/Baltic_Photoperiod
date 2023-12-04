@@ -718,7 +718,7 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 
 
 
-
+potrzebne pigmenty - phyco/chla ratio!!!!
 
 
 
