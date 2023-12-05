@@ -23,7 +23,7 @@ zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/Ja
 destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
 
 # Specify the path to the extracted folder within the zip file
-extracted_folder <- "JazEmCombine"
+#extracted_folder <- "JazEmCombine"
 
 #List files in the extracted folder with a ".txt" extension
 Jazfile <- unzip(zip_file, list = TRUE)
@@ -106,7 +106,7 @@ mutate(ObsDate = ymd(ObsDate),
        WL = as.factor(WL))
 ```
 ```{r filename separation}
-JazSpectest <- JazSpec %>% 
+JazSpec <- JazSpec %>% 
   mutate(Filename = str_remove(Filename, pattern = " "))  %>% 
   separate(col = Filename, into = c("Instrument","ObsDate", "Strain", "Par_ue", "WL"), sep = "([\\/\\/\\_\\_\\_\\_\\_\\_\\.])", remove = FALSE) %>% 
   mutate(FilenameJaz=Filename) %>% 
