@@ -1,0 +1,831 @@
+---
+title: "Import Solisense kinetic fluorometer data"
+author: "Douglas A. Campbell"
+date: "`r format(Sys.Date())`"
+output:
+  html_document:
+    df_print: paged
+---
+
+# This .Rmd imports and tidys fit data from the Solisense kinetic fluorometer software.
+# It does not perform the underlying fits of the induction/relaxation profiles from FRRf protocols.
+
+```{r setup, include = FALSE}
+# knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+# knitr::opts_chunk$set(fig.path='Figs/')
+```
+
+```{r load libraries} 
+library(tidyverse)
+library(lubridate)
+library(broom)
+library(knitr)
+library(OneR)
+library(zoo)
+library(googledrive)
+library(googlesheets4)
+library(readxl)
+library(Cairo) #for greek symbols
+```
+
+```{r Read ActPARCrossCal Rds}
+Path <- file.path("..", "..", "FluorO2Calibrations", "CalibrationData")
+
+ActPARCrossCal <- read_rds(file.path(Path, "SolisenseInformation_DCCrossParam.Rds"))
+
+ActPARCrossCal <- ActPARCrossCal %>% 
+  mutate(Slope = `estimate_LIFT_Gen_Developer.cal`,
+         Slope_SE = `std.error_LIFT_Gen_Developer.cal`) %>% 
+  select(c(DCLamp, Models, Slope, Slope_SE))
+
+#intercept set to 0 in lm in SolisenseInformation.Rproj/SolisenseCalibCompare.Rmd
+```
+
+```{r conversions}
+us_s <- 1000000
+photons_umol <- 6.022E17 #Avogardo
+A2_m2 <- 1E20 #for sigma -> angstrom (Å) – a metric unit of length equal to 10^−10 m
+```
+
+```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
+gs4_deauth()
+
+MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1y144Qjs1pxO2vYU4G6of69qX1TVlA8WTwnhfVwaSU0U/edit#gid=0") %>%
+  drop_na(WL) %>%
+  mutate(WL = unlist(WL))
+
+as.data.frame(MetaData)
+MetaData <- MetaData %>%
+   mutate(ExpDate = ymd(ExpDate),
+          ExpEndDate = ymd_hms(`ExpEndDate`))
+```
+
+```{r set project variables for data taken from old software; OS}
+Project <- "Baltic_Photoperiod"
+DataOut <- file.path("..", "Data", "ImportedData")
+DataIn <- file.path("..", "Data", "RawData", "SolisenseTest", fsep = .Platform$file.sep)
+
+FileID <- "fit"
+FileEncode <- "UTF-8" 
+Delimiter <- ","
+HeaderRows <- 0
+```
+
+```{r list files for file import}
+SolisenseFilesOS <- list.files(path = DataIn, pattern = FileID, full.names = TRUE, recursive = FALSE)
+SolisenseFilesOS
+
+#test for duplicate file names
+unique(duplicated(SolisenseFilesOS))
+```
+
+```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
+read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) %>%
+    mutate(Filename = flnm)
+  }
+```
+
+```{r purrr::map to read all files, read Solisense files}
+SolFitsOS <- SolisenseFilesOS %>%
+  map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = HeaderRows, fileencode = FileEncode))
+
+head(SolFitsOS)
+colnames(SolFitsOS)
+length(unique(SolFitsOS$Filename))
+```
+
+```{r tidy SolFitsTrim}
+SolFitsTrimOS <- SolFitsOS %>%
+  filter(!grepl("----", DATE)) %>% 
+  select(-c("RFID_User_Data", "Barcode_Data", "PIF",  "Lon", "Lat", "GPS_stat", "LEDSel", "S/N_raw", "PAR_3", "PAR_4", "PAR_5", "PAR_6", "TPQ_PSI", "QBP_Size", "...58", "Alp4QA", "Tau4QA", "Alp1PQ", "Tau1PQ", "Alp2PQ", "Tau2PQ", "Alp3PQ", "Tau3PQ", "ETR")) %>% # remove superfluous columns for unfit data
+
+  mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseTest/"),
+         Filename = str_remove(string = Filename, pattern = "_fit.csv")
+         ) %>%
+  separate(Filename, into = c("fp0", "Project", "RunDateTime", "CultureID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
+  mutate(RunDateTime = ymd_hm(RunDateTime),
+         TIME = as.character(TIME)) %>%  #time-column may be read in as factor, and as.character changes it to numeric; using lubdridate::hms would only change the format to 13H 4M 2S but does not work later to merge into one DateTime-column
+  mutate(SourceDataFile = `Source DataFile`,
+         ObsDate = DATE,
+         ObsTime = TIME) %>%
+  mutate(Ex_WL = as.factor(as.numeric(Ex_WL))) %>%
+  mutate(across(.cols = c(Light_1:fQB), .fns = as.numeric)) %>%
+  mutate(StartDateTimeSol = RunDateTime) %>%
+  mutate(nm445 = Light_1,
+         nm470 = Light_2,
+         nm505 = Light_3,
+         nm535 = Light_4,
+         nm590 = Light_5,
+         IR = Light_6) %>%
+  drop_na(StartDateTimeSol) %>%
+  mutate(ObsTime = hms(ObsTime),
+         ObsDate = ymd(ObsDate)) %>%
+  mutate(ObsDateTime = ymd_hms(paste(ObsDate, ObsTime))) %>%
+  relocate(ObsDateTime, .after = ObsTime) %>%
+  relocate(CultureID, .before = ObsDate) %>%
+  #mutate(FvFm=as.numeric(FvFm)) %>%
+  select(-c(Light_1,Light_2,Light_3,Light_4,Light_5,Light_6,`Source DataFile`,DATE,TIME,RunDateTime, fp0, Project))
+
+#for consistency add TempCont column
+SolFitsTrimOS <- SolFitsTrimOS %>%
+  mutate(TempCont = "TC") %>%
+  mutate(FvFm = Fv/Fm*1) %>%
+  select(-c("Fv/Fm"))
+```
+
+```{r Filter error data}
+SolFitsTrimOS <- SolFitsTrimOS %>%
+  filter(Sig>0)
+```
+
+```{r Add ActPARcorr with proper correction factors for TC and no TC}
+#Intercepts for cross conversions set to 0.
+SolFitsTrimOS <- SolFitsTrimOS %>% 
+  mutate(nm445Corr = case_when(TempCont == "TC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+         nm470Corr = case_when(TempCont == "TC" ~ nm470 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr2_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm470 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr2_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+         nm505Corr = case_when(TempCont == "TC" ~ nm505 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr3_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm505 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr3_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+           nm535Corr = case_when(TempCont == "TC" ~ nm535 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr4_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm535 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr4_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+          nm590Corr = case_when(TempCont == "TC" ~ nm590 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr5_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm590 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr5_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+          IRCorr = case_when(TempCont == "TC" ~ IR * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "PwrIR_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ IR * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "PwrIR_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]))
+
+SolFitsTrimOS <- SolFitsTrimOS %>%
+  mutate(ActPAR = nm445 + nm470 + nm505 + nm535 + nm590 + IR) %>%  
+  mutate(ActPARCorr = nm445Corr + nm470Corr + nm505Corr + nm535Corr + nm590Corr + IRCorr)
+```
+
+```{r durations}
+#generate column with duration of light step in s
+#add a column adding Dark1s based upon any step < 5 s
+#replace NA for first dark with nominal 181;  issue will be changing durations of light steps across each run
+SolFitsTrimOS_lightsteps <- SolFitsTrimOS %>%
+  group_by(SourceDataFile, Filename, CultureID, ObsDate, Ex_WL, TempCont) %>%
+  mutate(Step_s = replace_na(as.numeric(ObsDateTime - lag(ObsDateTime)), 181), .after = ObsDateTime) %>% 
+  mutate(LR_s = as.numeric(ObsDateTime - ObsDateTime[1]), .after = Step_s) %>%
+  mutate(Dark1s = if_else(Step_s > 5, 0, 1), .after = Step_s) %>%
+  relocate(Ex_WL, .after = Dark1s) %>%
+  relocate(ActPAR, .after = Ex_WL) %>%
+  ungroup()
+```
+
+```{r Combine Solisense and MetaData catallog}
+SolFitsTrimMetaOS <- MetaData %>%
+  left_join(., SolFitsTrimOS_lightsteps, by = c("CultureID" = "CultureID")) 
+```
+
+```{r Test plot}
+SolFitsTrimMetaOS %>%
+  ggplot() +
+  geom_point(aes(x = ActPAR, y = Alp2QA, size = LR_s)) +
+  facet_grid(cols = vars(Par_ue), rows = vars(Photoperiod)) +
+  theme_bw() 
+```
+
+```{r estimate parameters using Oxborough & Baker 1997 for Fo'}
+
+SolFitsTrimMetaOS_param <- SolFitsTrimMetaOS %>%
+  group_by(SourceDataFile, Filename, CultureID, ObsDate, Ex_WL, TempCont) %>%
+  mutate(Sig_m2psii = Sig/A2_m2,
+         Fodark = Fo[1],
+         Fmdark = Fm[1],
+         Sigdark = Sig[1],
+         Sigdark_m2psii = Sigdark/A2_m2,
+         ActPARCorr_photonsm2s = ActPARCorr *  photons_umol, 
+         TauAv = ((Tau1QA * Alp1QA) + (Tau2QA * Alp2QA))/(Alp1QA + Alp2QA), 
+         Ctauav = 1/(1 + (Sig_m2psii * ActPARCorr_photonsm2s * (TauAv/us_s))), 
+         aLHIIdark = (Fmdark * Fodark)/(Fmdark - Fodark),
+         Fomin = min(Fo, na.rm = TRUE),
+         Fmmax = max(Fm, na.rm = TRUE),
+         Sigmax = max(Sig, na.rm = TRUE),
+         Sigmax_m2psii = Sigmax/A2_m2,
+         FoOxbo = Fomin/(((Fmmax - Fomin)/Fmmax) + (Fomin/Fm)),
+         qpOxbo = (Fm - Fo)/(Fm - FoOxbo),
+         aLHIIOxbomax = (Fmmax * FoOxbo)/(Fmmax - FoOxbo),
+         JVPSII_aLHIIOxbomax = ActPARCorr_photonsm2s * aLHIIOxbomax * FvFm,
+         ETRCtauav = Sig_m2psii * Ctauav * ActPARCorr_photonsm2s,
+         ETRqpOxbo = Sig_m2psii * qpOxbo * ActPARCorr_photonsm2s,
+         JVPSII_ETRtauav_FoSig = ETRCtauav * Fomin/Sigmax_m2psii, #Sigmax converted A2_m2
+         JVPSII_ETRqpOxbo_FoSig = ETRqpOxbo * Fomin/Sigmax_m2psii,
+         JVPSII_ETRtauav_aLHII_Sig = ETRCtauav * aLHIIOxbomax/Sigmax_m2psii,
+         JVPSII_ETRqpOxbo_aLHII_Sig = ETRqpOxbo * aLHIIOxbomax/Sigmax_m2psii) %>%
+  ungroup()
+```
+
+```{r Test plots}
+
+SolFitsTrimMetaOS_param %>%
+  filter(Dark1s == 0) %>%
+  ggplot() +
+  geom_point(aes(x = Ctauav, y = qpOxbo)) +
+  facet_grid(cols = vars(Ex_WL)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
+  coord_fixed(xlim = c(0,1), ylim = c(0,1), ratio = 1) +
+  theme(strip.text.y = element_text(size = 5, angle=0)) 
+
+SolFitsTrimMetaOS_param %>%
+  filter(Dark1s == 0) %>%
+  ggplot() +
+  geom_point(aes(x =  JVPSII_aLHIIOxbomax, y = JVPSII_ETRqpOxbo_aLHII_Sig)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
+  facet_grid(cols = vars(Ex_WL), rows = vars(Strain)) +
+  theme(strip.text.y = element_text(size = 5, angle=0)) +
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = "Strain", breaks = NULL, labels = NULL)) +
+  scale_x_continuous(sec.axis = sec_axis(~ . , name = "Ex_WL", breaks = NULL, labels = NULL)) 
+```
+
+Sigma -> taken from corresponding light
+
+```{r FilterData with light calibration}
+SolFitsTrimMetaClean30 <- SolFitsTrimMetaOS_param %>% 
+  filter(Dark1s == 0) %>%
+  filter(Par_ue == 30) %>% 
+  filter(ActPAR == 20) # 39.5 for 445 and 48.7 for 590
+  
+SolFitsTrimMetaClean90 <- SolFitsTrimMetaOS_param %>% 
+  filter(Dark1s == 0) %>%
+  filter(Par_ue == 90) %>% 
+  filter(ActPAR == 40) # 79.0 for 445 and 97.5 for 590
+
+SolFitsTrimMetaClean180 <- SolFitsTrimMetaOS_param %>% 
+  filter(Dark1s == 0) %>%
+  filter(Par_ue == 180) %>% 
+  filter(ActPAR == 80) # 158.1 for 445 and 195.0 for 590
+
+SolFitsTrimMetaClean300 <- SolFitsTrimMetaOS_param %>% 
+  filter(Dark1s == 0) %>%
+  filter(Par_ue == 300) %>% 
+  filter(ActPAR == 160) # 316.2 for 445 and 390.0 for 590
+
+SolFitsTrimMetaClean900 <- SolFitsTrimMetaOS_param %>% 
+  filter(Dark1s == 0) %>%
+  filter(Par_ue == 900) %>% 
+  filter(ActPAR == 320) # 632.5 for 445 and 780.1 for 590
+
+SolFitsTrimMetaCleanOS<-rbind(SolFitsTrimMetaClean30, SolFitsTrimMetaClean90, SolFitsTrimMetaClean180, SolFitsTrimMetaClean300,SolFitsTrimMetaClean900)
+
+rm(SolFitsTrimMetaClean30, SolFitsTrimMetaClean90, SolFitsTrimMetaClean180, SolFitsTrimMetaClean300,SolFitsTrimMetaClean900)
+
+SolFitsTrimMetaCleanOS<-SolFitsTrimMetaCleanOS %>% 
+  select(-c(SourceDataFile))
+```
+
+```{r convert Sig_m2psii to Sig_nm2psii}
+SolFitsTrimMetaCleanOS <- SolFitsTrimMetaCleanOS %>%
+mutate(Sig_nm2psii=Sig_m2psii*1000000000000000000) %>% 
+mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)   
+```
+
+```{r calculate Sigma mean}
+#colnames(SolFitsTrimMetaClean)
+
+SolFitsTrimMetaCleanOS <- SolFitsTrimMetaCleanOS %>%
+  group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
+  
+  summarize(CultureID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
+            
+            meanSig_nm2psii = mean(Sig_nm2psii),
+            sdSig_nm2psii = sd(Sig_nm2psii),
+            meanSigdark_nm2psii = mean(Sigdark_nm2psii),
+            sdSigdark_nm2psii = sd(Sigdark_nm2psii)) %>%
+  ungroup()
+
+SolFitsTrimMetaCleanOS<- SolFitsTrimMetaCleanOS %>%
+group_by(CultureID) %>%
+  arrange(ObsDate) %>%
+  mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
+ungroup()
+
+SolFitsTrimMetaCleanOS<- SolFitsTrimMetaCleanOS %>%
+  mutate(Time_h = E_days*24)
+```
+
+```{r test plot}
+SolFitsTrimMetaCleanOS %>% 
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = meanSig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
+  facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
+  theme_bw()           
+```
+
+Sigma -> 1s in dark after corresponding light
+
+```{r}
+SolFitsTrimMetaDarkafterLight30 <- SolFitsTrimMetaOS_param %>% 
+  filter(Dark1s == 1) %>%
+  filter(ActPAR == 0) %>% 
+  filter(Par_ue == 30) %>% 
+  filter(LR_s==13|LR_s==14|LR_s==15|LR_s==16|
+         LR_s==118|LR_s==119|LR_s==120|LR_s==112|LR_s==122)
+
+SolFitsTrimMetaDarkafterLight90 <- SolFitsTrimMetaOS_param %>% 
+  filter(Dark1s == 1) %>%
+  filter(ActPAR == 0) %>% 
+  filter(Par_ue == 90) %>% 
+  filter(LR_s==26|LR_s==27|LR_s==28|LR_s==29|
+         LR_s==105|LR_s==106|LR_s==107|LR_s==108)
+
+SolFitsTrimMetaDarkafterLight180 <- SolFitsTrimMetaOS_param %>% 
+  filter(Dark1s == 1) %>%
+  filter(ActPAR == 0) %>% 
+  filter(Par_ue == 180) %>% 
+  filter(LR_s==40|LR_s==41|LR_s==42|LR_s==43|
+         LR_s==92|LR_s==93|LR_s==94|LR_s==95)
+
+SolFitsTrimMetaDarkafterLight300 <- SolFitsTrimMetaOS_param %>% 
+  filter(Dark1s == 1) %>%
+  filter(ActPAR == 0) %>% 
+  filter(Par_ue == 300) %>% 
+  filter(LR_s==53|LR_s==54|LR_s==55|LR_s==56|
+         LR_s==79|LR_s==80|LR_s==81|LR_s==82)
+
+SolFitsTrimMetaDarkafterLight900 <- SolFitsTrimMetaOS_param %>% 
+  filter(Dark1s == 1) %>%
+  filter(ActPAR == 0) %>% 
+  filter(Par_ue == 900) %>% 
+  filter(LR_s==66|LR_s==67|LR_s==68|LR_s==69)
+
+SolFitsTrimMetaDarkafterLightOS <- rbind(SolFitsTrimMetaDarkafterLight30, SolFitsTrimMetaDarkafterLight90, SolFitsTrimMetaDarkafterLight180, SolFitsTrimMetaDarkafterLight300, SolFitsTrimMetaDarkafterLight900)
+
+rm(SolFitsTrimMetaDarkafterLight30, SolFitsTrimMetaDarkafterLight90, SolFitsTrimMetaDarkafterLight180, SolFitsTrimMetaDarkafterLight300, SolFitsTrimMetaDarkafterLight900)
+
+SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>% 
+  mutate(Sig1s=Sig*1) %>% 
+  mutate(Sig1s_m2psii=Sig_m2psii*1) %>% 
+  select(-c(Sig, Sig_m2psii))
+```
+
+```{r convert Sig1s_m2psii to Sig1s_nm2psii}
+SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
+mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)    
+```
+
+ObsDateTime -> (format HMS) problem when I combined "light" data in one df
+```{r Create Sigma1s mean}
+colnames(SolFitsTrimMetaDarkafterLightOS)
+
+SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
+  group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
+
+  summarize(CultureID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
+            
+            meanSig1s_nm2psii = mean(Sig1s_nm2psii),
+            sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
+  ungroup()
+
+SolFitsTrimMetaDarkafterLightOS<- SolFitsTrimMetaDarkafterLightOS %>%
+group_by(CultureID) %>%
+  arrange(ObsDate) %>%
+  mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
+ungroup()
+
+SolFitsTrimMetaDarkafterLightOS<- SolFitsTrimMetaDarkafterLightOS %>%
+  mutate(Time_h = E_days*24)
+```
+
+```{r test plot}
+SolFitsTrimMetaDarkafterLightOS %>% 
+  ggplot() +
+  geom_point(aes(x = PARPhotonDose, y = meanSig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
+  theme_bw() 
+```
+
+```{r Cleaning the environment}
+rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFitsTrimOS_lightsteps)
+```
+
+```{r save rds}
+# saveRDS(SolFitsTrimMetaCleanOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAll.Rds", sep = "_"), fsep = .Platform$file.sep))
+# 
+# saveRDS(SolFitsTrimMetaDarkafterLightOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAllDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
+```
+
+
+
+
+
+
+
+
+
+
+
+new computer
+
+```{r set project variables for data taken from new software; NS}
+Project <- "Baltic_Photoperiod"
+DataOut <- file.path("..", "Data", "ImportedData")
+DataIn <- file.path("..", "Data", "RawData", "SolisenseNewComp", fsep = .Platform$file.sep)
+
+FileID <- "fit"
+FileEncode <- "UTF-8" 
+Delimiter <- ","
+HeaderRows <- 0
+```
+
+```{r list files for file import}
+SolisenseFilesNS <- list.files(path = DataIn, pattern = FileID, full.names = TRUE, recursive = FALSE)
+SolisenseFilesNS
+
+#test for duplicate file names
+unique(duplicated(SolisenseFilesNS))
+```
+
+```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
+read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) %>%
+    mutate(Filename = flnm)
+  }
+```
+
+```{r purrr::map to read all files, read Solisense files}
+SolFitsNS <- SolisenseFilesNS %>%
+  map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = HeaderRows, fileencode = FileEncode))
+
+head(SolFitsNS)
+colnames(SolFitsNS)
+length(unique(SolFitsNS$Filename))
+```
+
+```{r tidy SolFitsTrim}
+SolFitsTrimNS <- SolFitsNS %>%
+  filter(!grepl("----", DATE)) %>% 
+  select(-c("RFID_User_Data", "Barcode_Data", "PIF",  "Lon", "Lat", "GPS_stat", "LEDSel")) %>% # remove superfluous columns for unfit data
+
+  mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseNewComp/"),
+         Filename = str_remove(string = Filename, pattern = "_fit.csv")
+         ) %>%
+  separate(Filename, into = c("fp0", "Project", "RunDateTime", "CultureID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
+  mutate(RunDateTime = ymd_hm(RunDateTime),
+         TIME = as.character(TIME)) %>%  #time-column may be read in as factor, and as.character changes it to numeric; using lubdridate::hms would only change the format to 13H 4M 2S but does not work later to merge into one DateTime-column
+  mutate(SourceDataFile = `Source DataFile`,
+         ObsDate = DATE,
+         ObsTime = TIME) %>%
+  mutate(Ex_WL = as.factor(as.numeric(Ex_WL))) %>%
+  mutate(across(.cols = c(Light_1:Fv), .fns = as.numeric)) %>%
+  mutate(StartDateTimeSol = RunDateTime) %>%
+  mutate(nm445 = Light_1,
+         nm470 = Light_2,
+         nm505 = Light_3,
+         nm535 = Light_4,
+         nm590 = Light_5,
+         IR = Light_6) %>%
+  drop_na(StartDateTimeSol) %>%
+  mutate(ObsTime = hms(ObsTime),
+         ObsDate = ymd(ObsDate)) %>%
+  mutate(ObsDateTime = ymd_hms(paste(ObsDate, ObsTime))) %>%
+  relocate(ObsDateTime, .after = ObsTime) %>%
+  relocate(CultureID, .before = ObsDate) %>%
+  #mutate(FvFm=as.numeric(FvFm)) %>%
+  select(-c(Light_1,Light_2,Light_3,Light_4,Light_5,Light_6,`Source DataFile`,DATE,TIME,RunDateTime, fp0, Project))
+
+#for consistency add TempCont column
+SolFitsTrimNS <- SolFitsTrimNS %>%
+  mutate(TempCont = "TC") %>%
+  mutate(FvFm = Fv/Fm*1) %>%
+  select(-c("Fv/Fm"))
+```
+
+```{r Filter error data}
+SolFitsTrimNS <- SolFitsTrimNS %>%
+  filter(Sig>0)
+```
+
+```{r Add ActPARcorr with proper correction factors for TC and no TC}
+#Intercepts for cross conversions set to 0.
+SolFitsTrimNS <- SolFitsTrimNS %>% 
+  mutate(nm445Corr = case_when(TempCont == "TC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+         nm470Corr = case_when(TempCont == "TC" ~ nm470 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr2_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm470 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr2_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+         nm505Corr = case_when(TempCont == "TC" ~ nm505 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr3_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm505 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr3_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+           nm535Corr = case_when(TempCont == "TC" ~ nm535 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr4_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm535 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr4_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+          nm590Corr = case_when(TempCont == "TC" ~ nm590 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr5_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm590 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr5_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+          IRCorr = case_when(TempCont == "TC" ~ IR * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "PwrIR_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ IR * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "PwrIR_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]))
+
+SolFitsTrimNS <- SolFitsTrimNS %>%
+  mutate(ActPAR = nm445 + nm470 + nm505 + nm535 + nm590 + IR) %>%  
+  mutate(ActPARCorr = nm445Corr + nm470Corr + nm505Corr + nm535Corr + nm590Corr + IRCorr)
+```
+
+```{r durations}
+#generate column with duration of light step in s
+#add a column adding Dark1s based upon any step < 5 s
+#replace NA for first dark with nominal 181;  issue will be changing durations of light steps across each run
+SolFitsTrimNS_lightsteps <- SolFitsTrimNS %>%
+  group_by(SourceDataFile, Filename, CultureID, ObsDate, Ex_WL, TempCont) %>%
+  mutate(Step_s = replace_na(as.numeric(ObsDateTime - lag(ObsDateTime)), 181), .after = ObsDateTime) %>% 
+  mutate(LR_s = as.numeric(ObsDateTime - ObsDateTime[1]), .after = Step_s) %>%
+  mutate(Dark1s = if_else(Step_s > 5, 0, 1), .after = Step_s) %>%
+  relocate(Ex_WL, .after = Dark1s) %>%
+  relocate(ActPAR, .after = Ex_WL) %>%
+  ungroup()
+```
+
+```{r Combine Solisense and MetaData catallog}
+SolFitsTrimMetaNS <- MetaData %>%
+  left_join(., SolFitsTrimNS_lightsteps, by = c("CultureID" = "CultureID")) 
+```
+
+```{r Test plot}
+SolFitsTrimMetaNS %>%
+  ggplot() +
+  geom_point(aes(x = ActPAR, y = Alp2QA, size = LR_s)) +
+  facet_grid(cols = vars(Par_ue), rows = vars(Photoperiod)) +
+  theme_bw() 
+```
+
+```{r estimate parameters using Oxborough & Baker 1997 for Fo'}
+
+SolFitsTrimMetaNS_param <- SolFitsTrimMetaNS %>%
+  group_by(SourceDataFile, Filename, CultureID, ObsDate, Ex_WL, TempCont) %>%
+  mutate(Sig_m2psii = Sig/A2_m2,
+         Fodark = Fo[1],
+         Fmdark = Fm[1],
+         Sigdark = Sig[1],
+         Sigdark_m2psii = Sigdark/A2_m2,
+         ActPARCorr_photonsm2s = ActPARCorr *  photons_umol, 
+         TauAv = ((Tau1QA * Alp1QA) + (Tau2QA * Alp2QA))/(Alp1QA + Alp2QA), 
+         Ctauav = 1/(1 + (Sig_m2psii * ActPARCorr_photonsm2s * (TauAv/us_s))), 
+         aLHIIdark = (Fmdark * Fodark)/(Fmdark - Fodark),
+         Fomin = min(Fo, na.rm = TRUE),
+         Fmmax = max(Fm, na.rm = TRUE),
+         Sigmax = max(Sig, na.rm = TRUE),
+         Sigmax_m2psii = Sigmax/A2_m2,
+         FoOxbo = Fomin/(((Fmmax - Fomin)/Fmmax) + (Fomin/Fm)),
+         qpOxbo = (Fm - Fo)/(Fm - FoOxbo),
+         aLHIIOxbomax = (Fmmax * FoOxbo)/(Fmmax - FoOxbo),
+         JVPSII_aLHIIOxbomax = ActPARCorr_photonsm2s * aLHIIOxbomax * FvFm,
+         ETRCtauav = Sig_m2psii * Ctauav * ActPARCorr_photonsm2s,
+         ETRqpOxbo = Sig_m2psii * qpOxbo * ActPARCorr_photonsm2s,
+         JVPSII_ETRtauav_FoSig = ETRCtauav * Fomin/Sigmax_m2psii, #Sigmax converted A2_m2
+         JVPSII_ETRqpOxbo_FoSig = ETRqpOxbo * Fomin/Sigmax_m2psii,
+         JVPSII_ETRtauav_aLHII_Sig = ETRCtauav * aLHIIOxbomax/Sigmax_m2psii,
+         JVPSII_ETRqpOxbo_aLHII_Sig = ETRqpOxbo * aLHIIOxbomax/Sigmax_m2psii) %>%
+  ungroup()
+```
+
+```{r Test plots}
+
+SolFitsTrimMetaNS_param %>%
+  filter(Dark1s == 0) %>%
+  ggplot() +
+  geom_point(aes(x = Ctauav, y = qpOxbo)) +
+  facet_grid(cols = vars(Ex_WL)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
+  coord_fixed(xlim = c(0,1), ylim = c(0,1), ratio = 1) +
+  theme(strip.text.y = element_text(size = 5, angle=0)) 
+
+SolFitsTrimMetaNS_param %>%
+  filter(Dark1s == 0) %>%
+  ggplot() +
+  geom_point(aes(x =  JVPSII_aLHIIOxbomax, y = JVPSII_ETRqpOxbo_aLHII_Sig)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
+  facet_grid(cols = vars(Ex_WL), rows = vars(Strain)) +
+  theme(strip.text.y = element_text(size = 5, angle=0)) +
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = "Strain", breaks = NULL, labels = NULL)) +
+  scale_x_continuous(sec.axis = sec_axis(~ . , name = "Ex_WL", breaks = NULL, labels = NULL)) 
+```
+
+Sigma -> taken from corresponding light
+
+```{r FilterData with light calibration}
+SolFitsTrimMetaClean30 <- SolFitsTrimMetaNS_param %>% 
+  filter(Dark1s == 0) %>%
+  filter(Par_ue == 30) %>% 
+  filter(ActPAR == 20) # 39.5 for 445 and 48.7 for 590
+  
+SolFitsTrimMetaClean90 <- SolFitsTrimMetaNS_param %>% 
+  filter(Dark1s == 0) %>%
+  filter(Par_ue == 90) %>% 
+  filter(ActPAR == 40) # 79.0 for 445 and 97.5 for 590
+
+SolFitsTrimMetaClean180 <- SolFitsTrimMetaNS_param %>% 
+  filter(Dark1s == 0) %>%
+  filter(Par_ue == 180) %>% 
+  filter(ActPAR == 80) # 158.1 for 445 and 195.0 for 590
+
+SolFitsTrimMetaClean300 <- SolFitsTrimMetaNS_param %>% 
+  filter(Dark1s == 0) %>%
+  filter(Par_ue == 300) %>% 
+  filter(ActPAR == 160) # 316.2 for 445 and 390.0 for 590
+
+SolFitsTrimMetaClean900 <- SolFitsTrimMetaNS_param %>% 
+  filter(Dark1s == 0) %>%
+  filter(Par_ue == 900) %>% 
+  filter(ActPAR == 320) # 632.5 for 445 and 780.1 for 590
+
+SolFitsTrimMetaCleanNS<-rbind(SolFitsTrimMetaClean30, SolFitsTrimMetaClean90, SolFitsTrimMetaClean180, SolFitsTrimMetaClean300,SolFitsTrimMetaClean900)
+
+rm(SolFitsTrimMetaClean30, SolFitsTrimMetaClean90, SolFitsTrimMetaClean180, SolFitsTrimMetaClean300,SolFitsTrimMetaClean900)
+
+SolFitsTrimMetaCleanNS<-SolFitsTrimMetaCleanNS %>% 
+  select(-c(SourceDataFile))
+```
+
+```{r convert Sig_m2psii to Sig_nm2psii}
+SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
+mutate(Sig_nm2psii=Sig_m2psii*1000000000000000000) %>% 
+mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)   
+```
+
+```{r calculate Sigma mean}
+#colnames(SolFitsTrimMetaClean)
+
+SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
+  group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
+  
+  summarize(CultureID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
+            
+            meanSig_nm2psii = mean(Sig_nm2psii),
+            sdSig_nm2psii = sd(Sig_nm2psii),
+            meanSigdark_nm2psii = mean(Sigdark_nm2psii),
+            sdSigdark_nm2psii = sd(Sigdark_nm2psii)) %>%
+  ungroup()
+
+SolFitsTrimMetaCleanNS<- SolFitsTrimMetaCleanNS %>%
+group_by(CultureID) %>%
+  arrange(ObsDate) %>%
+  mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
+ungroup()
+
+SolFitsTrimMetaCleanNS<- SolFitsTrimMetaCleanNS %>%
+  mutate(Time_h = E_days*24)
+```
+
+```{r test plot}
+SolFitsTrimMetaCleanNS %>% 
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = meanSig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
+  facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
+  theme_bw()           
+```
+
+Sigma -> 1s in dark after corresponding light
+
+```{r}
+SolFitsTrimMetaDarkafterLight30 <- SolFitsTrimMetaNS_param %>% 
+  filter(Dark1s == 1) %>%
+  filter(ActPAR == 0) %>% 
+  filter(Par_ue == 30) %>% 
+  filter(LR_s==13|LR_s==14|LR_s==15|LR_s==16|
+         LR_s==118|LR_s==119|LR_s==120|LR_s==112|LR_s==122)
+
+SolFitsTrimMetaDarkafterLight90 <- SolFitsTrimMetaNS_param %>% 
+  filter(Dark1s == 1) %>%
+  filter(ActPAR == 0) %>% 
+  filter(Par_ue == 90) %>% 
+  filter(LR_s==26|LR_s==27|LR_s==28|LR_s==29|
+         LR_s==105|LR_s==106|LR_s==107|LR_s==108)
+
+SolFitsTrimMetaDarkafterLight180 <- SolFitsTrimMetaNS_param %>% 
+  filter(Dark1s == 1) %>%
+  filter(ActPAR == 0) %>% 
+  filter(Par_ue == 180) %>% 
+  filter(LR_s==40|LR_s==41|LR_s==42|LR_s==43|
+         LR_s==92|LR_s==93|LR_s==94|LR_s==95)
+
+SolFitsTrimMetaDarkafterLight300 <- SolFitsTrimMetaNS_param %>% 
+  filter(Dark1s == 1) %>%
+  filter(ActPAR == 0) %>% 
+  filter(Par_ue == 300) %>% 
+  filter(LR_s==53|LR_s==54|LR_s==55|LR_s==56|
+         LR_s==79|LR_s==80|LR_s==81|LR_s==82)
+
+SolFitsTrimMetaDarkafterLight900 <- SolFitsTrimMetaNS_param %>% 
+  filter(Dark1s == 1) %>%
+  filter(ActPAR == 0) %>% 
+  filter(Par_ue == 900) %>% 
+  filter(LR_s==66|LR_s==67|LR_s==68|LR_s==69)
+
+SolFitsTrimMetaDarkafterLightNS <- rbind(SolFitsTrimMetaDarkafterLight30, SolFitsTrimMetaDarkafterLight90, SolFitsTrimMetaDarkafterLight180, SolFitsTrimMetaDarkafterLight300, SolFitsTrimMetaDarkafterLight900)
+
+rm(SolFitsTrimMetaDarkafterLight30, SolFitsTrimMetaDarkafterLight90, SolFitsTrimMetaDarkafterLight180, SolFitsTrimMetaDarkafterLight300, SolFitsTrimMetaDarkafterLight900)
+
+SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>% 
+  mutate(Sig1s=Sig*1) %>% 
+  mutate(Sig1s_m2psii=Sig_m2psii*1) %>% 
+  select(-c(Sig, Sig_m2psii))
+```
+
+```{r convert Sig1s_m2psii to Sig1s_nm2psii}
+SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
+mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)    
+```
+
+ObsDateTime -> (format HMS) problem when I combined "light" data in one df
+```{r Create Sigma1s mean}
+colnames(SolFitsTrimMetaDarkafterLightNS)
+
+SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
+  group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
+
+  summarize(CultureID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
+            
+            meanSig1s_nm2psii = mean(Sig1s_nm2psii),
+            sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
+  ungroup()
+
+SolFitsTrimMetaDarkafterLightNS<- SolFitsTrimMetaDarkafterLightNS %>%
+group_by(CultureID) %>%
+  arrange(ObsDate) %>%
+  mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
+ungroup()
+
+SolFitsTrimMetaDarkafterLightNS<- SolFitsTrimMetaDarkafterLightNS %>%
+  mutate(Time_h = E_days*24)
+```
+
+```{r test plot}
+SolFitsTrimMetaDarkafterLightNS %>% 
+  ggplot() +
+  geom_point(aes(x = PARPhotonDose, y = meanSig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
+  theme_bw() 
+```
+
+```{r Cleaning the environment}
+rm(SolFitsNS, SolFitsTrimNS, SolFitsTrimMetaNS, SolFitsTrimMetaNS_param, SolFitsTrimNS_lightsteps)
+```
+
+```{r save rds}
+# saveRDS(SolFitsTrimMetaCleanNS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAll.Rds", sep = "_"), fsep = .Platform$file.sep))
+# 
+# saveRDS(SolFitsTrimMetaDarkafterLightNS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAllDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
+```
+
+```{r Combine data from old and new Software}
+SolFitsMeta <-rbind(SolFitsTrimMetaCleanOS, SolFitsTrimMetaCleanNS)
+
+SolFitsMetaDarkafterLight <-rbind(SolFitsTrimMetaDarkafterLightOS, SolFitsTrimMetaDarkafterLightNS)
+```
+
+```{r save rds}
+saveRDS(SolFitsMeta, file.path(DataOut, paste(Project, "Imported_SolisenseLight.Rds", sep = "_"), fsep = .Platform$file.sep))
+
+saveRDS(SolFitsMetaDarkafterLight, file.path(DataOut, paste(Project, "Imported_SolisenseDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
+```
+
+
+
+Greek letter :)
+
+\u0391  Α   Greek Capital Letter Alpha
+\u0392  Β   Greek Capital Letter Beta
+\u0393  Γ   Greek Capital Letter Gamma
+\u0394  Δ   Greek Capital Letter Delta
+\u0395  Ε   Greek Capital Letter Epsilon
+\u0396  Ζ   Greek Capital Letter Zeta
+\u0397  Η   Greek Capital Letter Eta
+\u0398  Θ   Greek Capital Letter Theta
+\u0399  Ι   Greek Capital Letter Iota
+\u039A  Κ   Greek Capital Letter Kappa
+\u039B  Λ   Greek Capital Letter Lambda
+\u039C  Μ   Greek Capital Letter Mu
+\u039D  Ν   Greek Capital Letter Nu
+\u039E  Ξ   Greek Capital Letter Xi
+\u039F  Ο   Greek Capital Letter Omicron
+\u03A0  Π   Greek Capital Letter Pi
+\u03A1  Ρ   Greek Capital Letter Rho
+\u03A3  Σ   Greek Capital Letter Sigma
+\u03A4  Τ   Greek Capital Letter Tau
+\u03A5  Υ   Greek Capital Letter Upsilon
+\u03A6  Φ   Greek Capital Letter Phi
+\u03A7  Χ   Greek Capital Letter Chi
+\u03A8  Ψ   Greek Capital Letter Psi
+\u03A9  Ω   Greek Capital Letter Omega
+\u03B1  α   Greek Small Letter alpha
+\u03B2  β   Greek Small Letter beta
+\u03B3  γ   Greek Small Letter gamma
+\u03B4  δ   Greek Small Letter delta
+\u03B5  ε   Greek Small Letter epsilon
+\u03B6  ζ   Greek Small Letter zeta
+\u03B7  η   Greek Small Letter eta
+\u03B8  θ   Greek Small Letter theta
+\u03B9  ι   Greek Small Letter iota
+\u03BA  κ   Greek Small Letter kappa
+\u03BB  λ   Greek Small Letter lambda
+\u03BC  μ   Greek Small Letter mu
+\u03BD  ν   Greek Small Letter nu
+\u03BE  ξ   Greek Small Letter xi
+\u03BF  ο   Greek Small Letter omicron
+\u03C0  π   Greek Small Letter pi
+\u03C1  ρ   Greek Small Letter rho
+\u03C2  ς   Greek Small Letter final sigma
+\u03C3  σ   Greek Small Letter sigma
+\u03C4  τ   Greek Small Letter tau
+\u03C5  υ   Greek Small Letter upsilon
+\u03C6  φ   Greek Small Letter phi
+\u03C7  χ   Greek Small Letter chi
+\u03C8  ψ   Greek Small Letter psi
+\u03C9  ω   Greek Small Letter omega
+
+

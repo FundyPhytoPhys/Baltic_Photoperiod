@@ -26,6 +26,7 @@ Jazfile <- unzip(zip_file, list = TRUE)
 Jazfile <- Jazfile[grepl(".txt$", Jazfile$Name), "Name"]
 print(Jazfile)
 ```
+
 ```{r set up fread_plus, warning = FALSE, echo=FALSE}
 SkipCS <- 14
 FileEncodeCS <- "UTF-8"
