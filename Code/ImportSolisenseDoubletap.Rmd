@@ -18,7 +18,7 @@ output:
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
-DataIn <- file.path("..", "Data", "RawData", "SolisenseDoubletap", fsep = .Platform$file.sep)
+DataIn <- file.path("..", "Data", "RawData", "SolisenseTest", fsep = .Platform$file.sep)
 
 FileID <- "fit"
 FileEncode <- "UTF-8" 
