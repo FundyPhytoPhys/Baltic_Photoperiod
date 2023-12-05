@@ -31,7 +31,7 @@ Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
 
 # Set the path to the zip folder and the destination folder
-zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/OlisSpectraCombine.zip"
+zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/OlisSpectra.zip"
 
 #List files in the extracted folder with a ".asc" extension
 OlisFiles <- unzip(zip_file, list = TRUE)
