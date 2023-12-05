@@ -19,7 +19,7 @@ DataOut <- file.path("..", "Data", "ImportedData")
 
 # Set the path to the zip folder and the destination folder
 zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEm.zip"
-destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
+#destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
 
 #List files in the extracted folder with a ".txt" extension
 Jazfile <- unzip(zip_file, list = TRUE)
@@ -90,18 +90,6 @@ JazSpecTrim <- JazSpecTrim %>%
           is_nm = round(Wavelength[which.max(Counts)]),
           is_nm_rollmean= round(Wavelength[which.max(rollmeanCounts)])) %>% 
   ungroup()
-```
-
-```{r initial plot annotate measured nm, fig.height = 6, fig.width = 8}
-JazSpecTrim %>%
-    ggplot() +
-  geom_point(aes(x = Wavelength, y = Counts, colour = as.factor(WL))) +
-  geom_text(aes(x = is_nm, y= max(Counts), label= is_nm), alpha = 0.5 ,hjust = 0.5, vjust=-0.5) +
-  guides(colour = "none") +
-  geom_vline(aes(xintercept = is_nm), linetype = "dashed") +
-  scale_y_continuous(limits = c(0,100000)) +
-  ggh4x::facet_nested(rows = vars(WL), labeller = labeller(WL = label_both, Par = label_both, MultiCulti = label_both)) +
-  theme_bw() 
 ```
 
 ```{r cleaning JazSpecTrim for final rds}
