@@ -18,8 +18,8 @@ Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
 
 # Set the path to the zip folder and the destination folder
-zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEm.zip"
-#destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
+zip_file <- file.path("..", "Data", "RawData", "JazEm.zip")
+#zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEm.zip"
 
 #List files in the extracted folder with a ".txt" extension
 Jazfile <- unzip(zip_file, list = TRUE)
@@ -58,7 +58,7 @@ colnames(JazSpec)[1] <- "Wavelength"
 colnames(JazSpec)[2] <- "Counts"
 ```
 
-```{r filename separation}
+```{r filename separation, warning = FALSE, echo=FALSE}
 JazSpec <- JazSpec %>% 
   mutate(Filename = str_remove(Filename, pattern = " "))  %>% 
   separate(col = Filename, into = c("Instrument","ObsDate", "Strain", "Par_ue", "WL"), sep = "([\\/\\/\\_\\_\\_\\_\\_\\_\\.])", remove = FALSE) %>% 
