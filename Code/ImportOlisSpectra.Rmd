@@ -87,7 +87,7 @@ read.delim_long <- function(Flnm, FileEncode, Delimiter, headerrows){
 }
 ```
 
-```{r Import OLIS Spectra corrected files}
+```{r Import OLIS Spectra corrected files, warning = FALSE, echo=FALSE}
 TargetFile <-  OlisFiles
 TargetSpectra <- TargetFile %>% 
   map_df(~fread_plus(Flnm = ., FileEncode = FileEncode, Delim = Delimiter, Skip = headerrows)) %>% 
@@ -150,10 +150,8 @@ ungroup()
 ```{r cleaning and ordering OLIS SpectraMeta440 for final rds}
 OLISSpectraMeta440<-OLISSpectraMeta440 %>% 
   mutate(FilenameOlis=Filename) %>% 
-  select(-c(Project, Cdatetime, Range, Filename)) %>% 
+  select(-c(CDateTime, Range, Filename)) %>% 
   select(c(Run, CultureID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, PARPhotonDose, MC, Tube, O2, WL, LightShape, ExpEndDate, FilenameOlis, ObsDate, Absorbance, nm, E_days, SumAb, Abs440, AbsNorm440, SumAbNorm))
-
-#colnames(OLISSpectraMeta440)
 ```
 
 ```{r Removed unnecessary files from environment}
