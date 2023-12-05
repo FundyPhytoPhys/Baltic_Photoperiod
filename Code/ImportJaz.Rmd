@@ -14,51 +14,95 @@ library(googledrive)
 ```
 
 ```{r}
-# # Set the path to the zip folder and the destination folder
-# zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEmCombine.zip"
-# destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
-# 
-# # Unzip the files
-# ss<-unzip(zip_file, exdir = destination_folder)
-# print(ss)
+Project <- "Baltic_Photoperiod"
+DataOut <- file.path("..", "Data", "ImportedData")
+#DataIn <- file.path("..", "Data", "RawData", "JazEm", fsep = .Platform$file.sep)
+
+Jazfile <- list.files(path = DataIn, pattern = ".txt", full.names = TRUE)
+
+Jazfile[1:10]
+unique(duplicated(Jazfile))
+SkipCS <- 14
+FileEncodeCS <- "UTF-8"
+DelimCS <- "\t"
+RollWindow <- 10
+
+# Set the path to the zip folder and the destination folder
+zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEmCombine.zip"
+destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
+
+# Unzip the files
+ss <- unzip(zip_file, exdir = destination_folder)
+print(ss)
+# Specify the path to the extracted folder
+extracted_folder <- file.path(destination_folder, "JazEmCombine")
+
+# List files in the extracted folder with a ".txt" extension
+Jazfile <- list.files(path = extracted_folder, pattern = ".txt", full.names = TRUE)
+
+SkipCS <- 14
+FileEncodeCS <- "UTF-8"
+DelimCS <- "\t"
+RollWindow <- 10
 ```
 
 
-```{r import the data}
-# Project <- "Baltic_Photoperiod"
-# DataOut <- file.path("..", "Data", "ImportedData")
-# DataIn <- file.path("..", "Data", "RawData", "JazEmCombine.zip", fsep = .Platform$file.sep)
-# 
-# Jazfile <- list.files(path = DataIn, pattern = ".txt", full.names = TRUE)
-# 
-# Jazfile[1:10]
-# unique(duplicated(Jazfile))
-# SkipCS <- 14
-# FileEncodeCS <- "UTF-8"
-# DelimCS <- "\t"
-# RollWindow <- 10
-```
 ```{r}
-# # Set the path to the zip folder and the destination folder
-# zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEmCombine.zip"
-# destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
-# 
-# # Unzip the files
-# ss <- unzip(zip_file, exdir = destination_folder)
-# 
-# # Specify the path to the extracted folder
-# extracted_folder <- file.path(destination_folder, "JazEmCombine")
-# 
-# # List files in the extracted folder with a ".txt" extension
-# Jazfile <- list.files(path = extracted_folder, pattern = ".txt", full.names = TRUE)
-# 
-# # Jazfile[1:10]
-# # unique(duplicated(Jazfile))
-# SkipCS <- 14
-# FileEncodeCS <- "UTF-8"
-# DelimCS <- "\t"
-# RollWindow <- 10
+Project <- "Baltic_Photoperiod"
+DataOut <- file.path("..", "Data", "ImportedData")
+#DataIn <- file.path("..", "Data", "RawData", "JazEm", fsep = .Platform$file.sep)
+
+
+# Set the path to the zip folder and the destination folder
+zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEmCombine.zip"
+destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
+
+# Specify the path to the extracted folder within the zip file
+extracted_folder <- "JazEmCombine"
+
+#List files in the extracted folder with a ".txt" extension
+Jazfile <- unzip(zip_file, list = TRUE)
+Jazfile <- Jazfile[grepl(".txt$", Jazfile$Name), "Name"]
+print(Jazfile)
+
+
+#Jazfile <- list.files(path = extracted_folder, pattern = ".txt", full.names = TRUE)
+#print(Jazfile)
+
+SkipCS <- 14
+FileEncodeCS <- "UTF-8"
+DelimCS <- "\t"
+RollWindow <- 10
+
+
+
+
+# Define function to read and process each file
+fread_plus <- function(Flnm, Skip, FileEncode, Delim) {
+  con <- unz(zip_file, file.path(extracted_folder, Flnm))
+  data <- read.table(con, skip = Skip, encoding = FileEncode, sep = Delim, header = FALSE)
+  close(con)
+  
+  data <- data %>%
+    mutate(Filename = Flnm, CDateTime = ymd_hms(file.info(zip_file)$ctime))  # Note: I used zip_file instead of Flnm for zip file info
+  
+  return(data)
+}
+
+# Use map_df to read and process all files in Jazfile
+JazSpec <- Jazfile %>%
+  map_df(~fread_plus(Flnm = ., Skip = SkipCS, FileEncode = FileEncodeCS, Delim = DelimCS))
+
+# Rename columns
+colnames(JazSpec)[1] <- "Wavelength"
+colnames(JazSpec)[2] <- "Counts"
+
+# Display the first 10 rows of the processed data
+print(JazSpec[1:10])
+
 ```
+
+
 
 
 
