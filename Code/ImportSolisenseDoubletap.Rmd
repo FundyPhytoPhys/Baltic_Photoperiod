@@ -15,17 +15,6 @@ output:
 # knitr::opts_chunk$set(fig.path='Figs/')
 ```
 
-```{r set project variables}
-Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ImportedData")
-DataIn <- file.path("..", "Data", "RawData", "SolisenseTest", fsep = .Platform$file.sep)
-
-FileID <- "fit"
-FileEncode <- "UTF-8" 
-Delimiter <- ","
-HeaderRows <- 0
-```
-
 ```{r load libraries} 
 library(tidyverse)
 library(lubridate)
@@ -70,18 +59,15 @@ MetaData <- MetaData %>%
    mutate(ExpDate = ymd(ExpDate),
           ExpEndDate = ymd_hms(`ExpEndDate`))
 ```
+```{r set project variables}
+Project <- "Baltic_Photoperiod"
+DataOut <- file.path("..", "Data", "ImportedData")
+DataIn <- file.path("..", "Data", "RawData", "SolisenseTest", fsep = .Platform$file.sep)
 
-Chl -> chl ug/L
-```{r load turner catalog, message = FALSE, warning = FALSE, echo=FALSE}
-# gs4_deauth()
-# 
-# Turnercatalog<- read_sheet("https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomfuwn6aAg7dBoq1IqrM/edit#gid=0")
-# 
-# as.data.frame(Turnercatalog)
-# ChlData <- Turnercatalog 
-# 
-# ChlData <- ChlData %>%  
-#   mutate(Chl = as.numeric(Reading_rfu) * as.numeric(Chl_slope) + as.numeric(Chl_intercept)) #ug/L
+FileID <- "fit"
+FileEncode <- "UTF-8" 
+Delimiter <- ","
+HeaderRows <- 0
 ```
 
 ```{r list PSI files for file import}
@@ -323,6 +309,20 @@ SolFitsTrimMetaClean %>%
   facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
   theme_bw()           
 ```
+
+
+new computer
+
+
+
+
+
+
+
+
+
+
+
 
 Sigma -> 1s in dark after corresponding light
 
