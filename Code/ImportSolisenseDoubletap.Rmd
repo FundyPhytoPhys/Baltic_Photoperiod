@@ -60,6 +60,8 @@ MetaData <- MetaData %>%
           ExpEndDate = ymd_hms(`ExpEndDate`))
 ```
 
+### Import Solisense files from old software (OS)
+
 ```{r set project variables, read zipped files, list available files, warning = FALSE, echo=FALSE}
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
@@ -400,47 +402,32 @@ rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFits
 
 
 
+### Import Solisense files from new software (NS)
 
-
-
-
-
-
-
-new computer
-
-```{r set project variables for data taken from new software; NS}
+```{r set project variables, read zipped files, list available files, warning = FALSE, echo=FALSE}
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
-DataIn <- file.path("..", "Data", "RawData", "SolisenseNewComp", fsep = .Platform$file.sep)
+
+zip_file <- file.path("..", "Data", "RawData", "SolisenseNewComp.zip")
+
+SolisenseFilesNS <- unzip(zip_file, list = TRUE)
+SolisenseFilesNS <- SolisenseFilesNS[grepl(".csv$", SolisenseFilesNS$Name), "Name"]
+print(SolisenseFilesNS)
 
 FileID <- "fit"
-FileEncode <- "UTF-8" 
+FileEncode <- "UTF-8"
 Delimiter <- ","
 HeaderRows <- 0
 ```
 
-```{r list files for file import}
-SolisenseFilesNS <- list.files(path = DataIn, pattern = FileID, full.names = TRUE, recursive = FALSE)
-SolisenseFilesNS
-
-#test for duplicate file names
-unique(duplicated(SolisenseFilesNS))
-```
-
-```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
-read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) %>%
+```{r set up read_delim_plus, warning = FALSE, echo=FALSE}
+read_delim_plus <- function(flnm, delimiter, headerrows, fileencode) {
+  fread(flnm, skip = headerrows, sep = delimiter, header = TRUE, encoding = fileencode) %>%
     mutate(Filename = flnm)
-  }
-```
+}
 
-```{r purrr::map to read all files, read Solisense files}
 SolFitsNS <- SolisenseFilesNS %>%
-  map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = HeaderRows, fileencode = FileEncode))
-
-head(SolFitsNS)
-colnames(SolFitsNS)
-length(unique(SolFitsNS$Filename))
+  map_df(~read_delim_plus(flnm = unzip(zip_file, exdir = tempdir())[which(unzip(zip_file, list = TRUE)$Name == .)], delimiter = Delimiter, headerrows = HeaderRows, fileencode = FileEncode))
 ```
 
 ```{r tidy SolFitsTrim}
@@ -448,10 +435,10 @@ SolFitsTrimNS <- SolFitsNS %>%
   filter(!grepl("----", DATE)) %>% 
   select(-c("RFID_User_Data", "Barcode_Data", "PIF",  "Lon", "Lat", "GPS_stat", "LEDSel")) %>% # remove superfluous columns for unfit data
 
-  mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseNewComp/"),
+  mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseNewComp.zip/"),
          Filename = str_remove(string = Filename, pattern = "_fit.csv")
          ) %>%
-  separate(Filename, into = c("fp0", "Project", "RunDateTime", "CultureID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
+  separate(Filename, into = c("fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "CultureID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
   mutate(RunDateTime = ymd_hm(RunDateTime),
          TIME = as.character(TIME)) %>%  #time-column may be read in as factor, and as.character changes it to numeric; using lubdridate::hms would only change the format to 13H 4M 2S but does not work later to merge into one DateTime-column
   mutate(SourceDataFile = `Source DataFile`,
@@ -473,7 +460,7 @@ SolFitsTrimNS <- SolFitsNS %>%
   relocate(ObsDateTime, .after = ObsTime) %>%
   relocate(CultureID, .before = ObsDate) %>%
   #mutate(FvFm=as.numeric(FvFm)) %>%
-  select(-c(Light_1,Light_2,Light_3,Light_4,Light_5,Light_6,`Source DataFile`,DATE,TIME,RunDateTime, fp0, Project))
+  select(-c(Light_1,Light_2,Light_3,Light_4,Light_5,Light_6,`Source DataFile`,DATE,TIME,RunDateTime, fp0, fp1, fp2, fp3, fp4, fp5, fp6, fp7, Project))
 
 #for consistency add TempCont column
 SolFitsTrimNS <- SolFitsTrimNS %>%
@@ -761,14 +748,14 @@ SolFitsMetaDarkafterLight <-rbind(SolFitsTrimMetaDarkafterLightOS, SolFitsTrimMe
 ```
 
 ```{r save rds}
-saveRDS(SolFitsMeta, file.path(DataOut, paste(Project, "Imported_SolisenseLight.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(SolFitsMeta, file.path(DataOut, paste(Project, "Imported_SolisenseLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-saveRDS(SolFitsMetaDarkafterLight, file.path(DataOut, paste(Project, "Imported_SolisenseDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(SolFitsMetaDarkafterLight, file.path(DataOut, paste(Project, "Imported_SolisenseDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 
 
-Greek letter :)
+Greek letters :)
 
 \u0391  Α   Greek Capital Letter Alpha
 \u0392  Β   Greek Capital Letter Beta

@@ -60,6 +60,8 @@ MetaData <- MetaData %>%
           ExpEndDate = ymd_hms(`ExpEndDate`))
 ```
 
+### Import Solisense files from old software (OS)
+
 ```{r set project variables for data taken from old software; OS}
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
@@ -409,13 +411,7 @@ rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFits
 
 
 
-
-
-
-
-
-
-new computer
+### Import Solisense files from new software (NS)
 
 ```{r set project variables for data taken from new software; NS}
 Project <- "Baltic_Photoperiod"
@@ -769,9 +765,9 @@ SolFitsMetaDarkafterLight <-rbind(SolFitsTrimMetaDarkafterLightOS, SolFitsTrimMe
 ```
 
 ```{r save rds}
-saveRDS(SolFitsMeta, file.path(DataOut, paste(Project, "Imported_SolisenseLight.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(SolFitsMeta, file.path(DataOut, paste(Project, "Imported_SolisenseLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-saveRDS(SolFitsMetaDarkafterLight, file.path(DataOut, paste(Project, "Imported_SolisenseDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(SolFitsMetaDarkafterLight, file.path(DataOut, paste(Project, "Imported_SolisenseDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 
