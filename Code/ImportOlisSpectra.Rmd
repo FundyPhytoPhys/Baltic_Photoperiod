@@ -31,8 +31,8 @@ Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
 
 # Set the path to the zip folder and the destination folder
-zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/OlisSpectra.zip"
-destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
+zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/OlisSpectraCombine.zip"
+#destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
 
 #List files in the extracted folder with a ".asc" extension
 Olisfile <- unzip(zip_file, list = TRUE)
@@ -45,12 +45,12 @@ Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
 
 # Set the path to the zip folder and the destination folder
-zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/OlisSpectra.zip"
-destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
+zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/OlisSpectraCombine.zip"
+#destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
 
 #List files in the extracted folder with a ".asc" extension
-Olisfile <- unzip(zip_file, list = TRUE)
-Olisfile <- Olisfile[grepl(".asc$", Olisfile$Name), "Name"]
+OlisFiles <- unzip(zip_file, list = TRUE)
+OlisFiles <- OlisFiles[grepl(".asc$", OlisFiles$Name), "Name"]
 
 
 FileID <- "Smooth"
@@ -61,7 +61,7 @@ headerrows <- 0
 # Define function to read and process each file
 fread_plus <- function(Flnm, Skip, FileEncode, Delim) {
   con <- unz(zip_file, Flnm)  # Corrected the file path within the zip archive
-  data <- read.table(con, skip = Skip, encoding = FileEncode, sep = Delim, header = FALSE)
+  data <- read.table(con, skip = Skip, encoding = FileEncode, sep = Delim, header = TRUE, row.names = NULL)
   
 # Use tryCatch to handle errors during the closing of the connection
   tryCatch(
@@ -79,57 +79,72 @@ fread_plus <- function(Flnm, Skip, FileEncode, Delim) {
 #read.delim_long meant for map over a vector of filepaths to read, convert to long format and tidy the imported data
 read.delim_long <- function(Flnm, FileEncode, Delimiter, headerrows){
   read.delim(Flnm, encoding = FileEncode, sep = Delimiter, skip = headerrows, header = TRUE, row.names = NULL) %>%
-    mutate(Filename = Flnm, Cdatetime = ymd_hms(file.info(Flnm)$ctime)) %>%
-    mutate(nm = trimws(OLIS.3D.ASCII)) %>%
-    mutate(FirstLastSpec = str_extract(Filename, "_[A-Z][a-z][A-Z][a-z][:digit:][:digit:][:digit:][:digit:]_[A-Z][a-z][A-Z][a-z][:digit:][:digit:][:digit:][:digit:]_")) %>%
-    mutate(SampleNumbers = str_extract_all(FirstLastSpec, "[:digit:][:digit:][:digit:][:digit:]")) %>%
-    mutate(FirstSampleNumber = as.numeric(map(SampleNumbers, ~.[[1]]))) %>%
-    mutate(LastSampleNumber = as.numeric(map(SampleNumbers, ~.[[2]]))) %>%
-    mutate(OperatorID = str_extract(Filename,"[A-Z][a-z][A-Z][a-z]")) %>%
-    pivot_longer(cols = starts_with("X"), names_to = "SpectraID", values_to = "Abs") %>%
-    mutate(SampleCode = as.numeric(str_remove(SpectraID, "X"))) %>%
-    mutate(SampleNumber = SampleCode - min(SampleCode, na.rm = TRUE) + FirstSampleNumber) %>%
-    relocate(OperatorID, SampleNumber) %>%
-    unite(col = SampleID, OperatorID:SampleNumber, sep = "", remove = FALSE) %>%
-    arrange(SampleID, nm) %>%
-    relocate(SampleID, nm, Abs) %>%
-    mutate(SpectraDate = str_extract(Filename, "/[:digit:][:digit:][:digit:][:digit:][:digit:][:digit:][:digit:][:digit:]_"),
-           SpectraDate = str_remove_all(SpectraDate, "_"),
-           SpectraDate = str_remove_all(SpectraDate, "/"),
-           SpectraDate = ymd(SpectraDate)
-    )
+#     mutate(Filename = Flnm, Cdatetime = ymd_hms(file.info(Flnm)$ctime)) %>%
+#     mutate(nm = trimws(OLIS.3D.ASCII)) %>%
+#     mutate(FirstLastSpec = str_extract(Filename, "_[A-Z][a-z][A-Z][a-z][:digit:][:digit:][:digit:][:digit:]_[A-Z][a-z][A-Z][a-z][:digit:][:digit:][:digit:][:digit:]_")) %>%
+#     mutate(SampleNumbers = str_extract_all(FirstLastSpec, "[:digit:][:digit:][:digit:][:digit:]")) %>%
+#     mutate(FirstSampleNumber = as.numeric(map(SampleNumbers, ~.[[1]]))) %>%
+#     mutate(LastSampleNumber = as.numeric(map(SampleNumbers, ~.[[2]]))) %>%
+#     mutate(OperatorID = str_extract(Filename,"[A-Z][a-z][A-Z][a-z]")) %>%
+#     pivot_longer(cols = starts_with("X"), names_to = "SpectraID", values_to = "Abs") %>%
+#     mutate(SampleCode = as.numeric(str_remove(SpectraID, "X"))) %>%
+#     mutate(SampleNumber = SampleCode - min(SampleCode, na.rm = TRUE) + FirstSampleNumber) %>%
+#     relocate(OperatorID, SampleNumber) %>%
+#     unite(col = SampleID, OperatorID:SampleNumber, sep = "", remove = FALSE) %>%
+#     arrange(SampleID, nm) %>%
+#     relocate(SampleID, nm, Abs) %>%
+#     mutate(SpectraDate = str_extract(Filename, "/[:digit:][:digit:][:digit:][:digit:][:digit:][:digit:][:digit:][:digit:]_"),
+#            SpectraDate = str_remove_all(SpectraDate, "_"),
+#            SpectraDate = str_remove_all(SpectraDate, "/"),
+#            SpectraDate = ymd(SpectraDate)
+#     )
+# }
+
+
+mutate(Filename = flnm, Cdatetime = ymd_hms(file.info(flnm)$ctime)) %>%
+ rename(nm = OLIS.3D.ASCII) %>%
+  mutate(FirstLastSpec = str_extract(Filename, "_[A-Z][a-z][A-Z][a-z][:digit:][:digit:][:digit:][:digit:]_[A-Z][a-z][A-Z][a-z][:digit:][:digit:][:digit:][:digit:]_")) %>%
+  mutate(SampleNumbers = str_extract_all(FirstLastSpec, "[:digit:][:digit:][:digit:][:digit:]")) %>%
+  mutate(FirstSampleNumber = as.numeric(map(SampleNumbers, ~.[[1]]))) %>%
+  mutate(LastSampleNumber = as.numeric(map(SampleNumbers, ~.[[2]]))) %>%
+  mutate(OperatorID = str_extract(Filename,"[A-Z][a-z][A-Z][a-z]")) %>%
+  pivot_longer(cols = starts_with("X"), names_to = "SpectraID", values_to = "Abs") %>%
+  mutate(SampleCode = as.numeric(str_remove(SpectraID, "X"))) %>%
+  mutate(SampleNumber = SampleCode - min(SampleCode, na.rm = TRUE) + FirstSampleNumber) %>%
+  relocate(OperatorID, SampleNumber) %>%
+  unite(col = SampleID, OperatorID:SampleNumber, sep = "", remove = FALSE) %>%
+  arrange(SampleID, nm) %>%
+  relocate(SampleID, nm, Abs) %>%
+  mutate(SpectraDate = str_extract(Filename, "/[:digit:][:digit:][:digit:][:digit:][:digit:][:digit:][:digit:][:digit:]_"),
+         SpectraDate = str_remove_all(SpectraDate, "_"),
+         SpectraDate = str_remove_all(SpectraDate, "/"),
+         SpectraDate = ymd(SpectraDate)
+  )
 }
 
 
-TargetSpectra <- Olisfile %>% 
-  map_df(~fread_plus(Flnm = ., FileEncode = FileEncode, Delim = Delimiter, Skip = headerrows)) %>% 
-  pivot_longer(-c(Filename), values_to = "Absorbance", names_to = "SampleID") %>%
-  filter(!is.na(Absorbance))
-
-TargetSpectraLong <- TargetSpectra %>%
-  separate(col = Filename, into = c("fp0", "fp1", "fp2", "fp3", "ObsDate", "Project", "CultureID", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
-TargetSpectraLong <- TargetSpectraLong %>%
-  select(-c(fp0, fp1, fp2, fp3, Type, Correction, Smooth, SampleID)) %>% 
-  mutate(ObsDate = ymd(`ObsDate`)) 
 
 
-```
 
-```{r Import OLIS Spectra corrected files}
-TargetFile <-  Olisfile
+
+
+TargetFile <-  OlisFiles
 TargetSpectra <- TargetFile %>% 
-  map_df(~fread_plus(Flnm = ., Filencode = FileEncode, Delimiter = Delimiter, headerrows = HeaderRows)) %>% 
-  
-  pivot_longer(., -c(`OLIS.3D.ASCII`, Filename, Cdatetime), values_to = "Absorbance", names_to = "SampleID") %>%
+  map_df(~fread_plus(Flnm = ., FileEncode = FileEncode, Delim = Delimiter, Skip = headerrows)) %>% 
+  pivot_longer(., -c(`OLIS.3D.ASCII`, Filename, CDateTime), values_to = "Absorbance", names_to = "SampleID") %>%
   filter(!is.na(Absorbance)) %>%
   mutate(nm = `OLIS.3D.ASCII`) %>% 
   select(-c(`OLIS.3D.ASCII`))   
+
 TargetSpectraLong <- TargetSpectra %>%
-  separate(col = Filename, into = c("fp0", "fp1", "fp2", "fp3", "ObsDate", "Project", "CultureID", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
+  separate(col = Filename, into = c("fp3", "ObsDate", "Project", "CultureID", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
 TargetSpectraLong <- TargetSpectraLong %>%
-  select(-c(fp0, fp1, fp2, fp3, Type, Correction, Smooth, SampleID)) %>% 
+  select(-c(fp3, Type, Correction, Smooth, SampleID, Project)) %>% 
   mutate(ObsDate = ymd(`ObsDate`)) 
+
 ```
+
+
 
 
 
@@ -184,7 +199,8 @@ read.delim_long <- function(flnm, filencode, delimiter, headerrows){read.delim(f
 
 ```{r Import OLIS Spectra corrected files}
 TargetFile <-  OlisFiles
-TargetSpectra <- TargetFile %>% map_df(~read.delim_plus(flnm = ., filencode = FileEncode, delimiter = Delimiter, headerrows = HeaderRows)) %>% 
+TargetSpectra <- TargetFile %>% 
+  map_df(~read.delim_plus(flnm = ., filencode = FileEncode, delimiter = Delimiter, headerrows = HeaderRows)) %>% 
   pivot_longer(., -c(`OLIS.3D.ASCII`, Filename, Cdatetime), values_to = "Absorbance", names_to = "SampleID") %>%
   filter(!is.na(Absorbance)) %>%
   mutate(nm = `OLIS.3D.ASCII`) %>% 
