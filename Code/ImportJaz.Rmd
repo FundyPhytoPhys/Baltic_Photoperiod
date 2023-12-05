@@ -19,7 +19,7 @@ DataOut <- file.path("..", "Data", "ImportedData")
 #DataIn <- file.path("..", "Data", "RawData", "JazEm", fsep = .Platform$file.sep)
 
 # Set the path to the zip folder and the destination folder
-zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEmCombine.zip"
+zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEm.zip"
 destination_folder <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData"
 
 #List files in the extracted folder with a ".txt" extension
