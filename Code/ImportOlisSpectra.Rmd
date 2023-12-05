@@ -31,7 +31,8 @@ Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
 
 # Set the path to the zip folder and the destination folder
-zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/OlisSpectra.zip"
+zip_file <- file.path("..", "Data", "RawData", "OlisSpectra.zip")
+#zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/OlisSpectra.zip"
 
 #List files in the extracted folder with a ".asc" extension
 OlisFiles <- unzip(zip_file, list = TRUE)
@@ -159,6 +160,6 @@ rm(Absorbance440, MetaData, TargetSpectra, OLISSpectraMeta, TargetSpectraLong)
 ```
 
 ```{r save rds}
-saveRDS(OLISSpectraMeta440, file.path(DataOut, paste(Project, "Imported_OlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(OLISSpectraMeta440, file.path(DataOut, paste(Project, "Imported_OlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 

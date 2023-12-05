@@ -411,9 +411,9 @@ rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_
 ```
 
 ```{r save rds}
-# saveRDS(OLISSpectraMetaPUR, file.path(DataOut, paste(Project, "Processed_OlisSpectraAll.Rds", sep = "_"), fsep = .Platform$file.sep))
+# saveRDS(OLISSpectraMetaPUR, file.path(DataOut, paste(Project, "Processed_OlisSpectraAll.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-# saveRDS(OLISSpectraMetaPURShort, file.path(DataOut, paste(Project, "Processed_OlisSpectraPlot.Rds", sep = "_"), fsep = .Platform$file.sep))
+# saveRDS(OLISSpectraMetaPURShort, file.path(DataOut, paste(Project, "Processed_OlisSpectraPlot.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 ```{r Clean df, create smaller df - without absorbance and all nm}

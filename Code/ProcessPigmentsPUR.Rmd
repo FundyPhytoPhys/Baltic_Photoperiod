@@ -515,7 +515,7 @@ rm(data_vline1, data_vline2, data_vline3, data_vline4, MCPigment, MCPigmenttMaxA
 ```
 
 ```{r save rds}
-# saveRDS(MCPigmenttMaxAG, file.path(DataOut, paste(Project, "Processed_MCPigmentAll.Rds", sep = "_"), fsep = .Platform$file.sep))
+# saveRDS(MCPigmenttMaxAG, file.path(DataOut, paste(Project, "Processed_MCPigmentAll.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
 saveRDS(MCPigmenttMaxAGExpAll, file.path(DataOut, paste(Project, "Processed_PigmentsExp.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
