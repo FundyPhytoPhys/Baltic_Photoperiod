@@ -66,7 +66,7 @@ MetaData <- MetaData %>%
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
 
-zip_file <- file.path("..", "Data", "RawData", "SolisenseTest.zip")
+zip_file <- file.path("..", "Data", "RawData", "SolisenseOS.zip")
 
 SolisenseFilesOS <- unzip(zip_file, list = TRUE)
 SolisenseFilesOS <- SolisenseFilesOS[grepl(".csv$", SolisenseFilesOS$Name), "Name"]
@@ -93,7 +93,7 @@ SolFitsTrimOS <- SolFitsOS %>%
   filter(!grepl("----", DATE)) %>% 
   select(-c("RFID_User_Data", "Barcode_Data", "PIF",  "Lon", "Lat", "GPS_stat", "LEDSel", "S/N_raw", "PAR_3", "PAR_4", "PAR_5", "PAR_6", "TPQ_PSI", "QBP_Size", "Alp4QA", "Tau4QA", "Alp1PQ", "Tau1PQ", "Alp2PQ", "Tau2PQ", "Alp3PQ", "Tau3PQ", "ETR", "V58")) %>% # remove superfluous columns for unfit data
 
-  mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseTest.zip/"),
+  mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseOS.zip/"),
          Filename = str_remove(string = Filename, pattern = "_fit.csv")
          ) %>%
   separate(Filename, into = c("fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "CultureID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
@@ -408,7 +408,7 @@ rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFits
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
 
-zip_file <- file.path("..", "Data", "RawData", "SolisenseNewComp.zip")
+zip_file <- file.path("..", "Data", "RawData", "SolisenseNS.zip")
 
 SolisenseFilesNS <- unzip(zip_file, list = TRUE)
 SolisenseFilesNS <- SolisenseFilesNS[grepl(".csv$", SolisenseFilesNS$Name), "Name"]
@@ -435,7 +435,7 @@ SolFitsTrimNS <- SolFitsNS %>%
   filter(!grepl("----", DATE)) %>% 
   select(-c("RFID_User_Data", "Barcode_Data", "PIF",  "Lon", "Lat", "GPS_stat", "LEDSel")) %>% # remove superfluous columns for unfit data
 
-  mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseNewComp.zip/"),
+  mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseNS.zip/"),
          Filename = str_remove(string = Filename, pattern = "_fit.csv")
          ) %>%
   separate(Filename, into = c("fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "CultureID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
