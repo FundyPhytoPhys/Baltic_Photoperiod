@@ -44,6 +44,7 @@ FileEncode <- "UTF-8"
 Delimiter <- ""
 headerrows <- 0
 ```
+
 ```{r, set up fread_plus and read.delim_long, warning = FALSE, echo=FALSE}
 # Define function to read and process each file
 fread_plus <- function(Flnm, Skip, FileEncode, Delim) {
