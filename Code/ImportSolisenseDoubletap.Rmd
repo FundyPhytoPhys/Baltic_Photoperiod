@@ -174,14 +174,6 @@ SolFitsTrimMetaOS <- MetaData %>%
   left_join(., SolFitsTrimOS_lightsteps, by = c("CultureID" = "CultureID")) 
 ```
 
-```{r Test plot}
-SolFitsTrimMetaOS %>%
-  ggplot() +
-  geom_point(aes(x = ActPAR, y = Alp2QA, size = LR_s)) +
-  facet_grid(cols = vars(Par_ue), rows = vars(Photoperiod)) +
-  theme_bw() 
-```
-
 ```{r estimate parameters using Oxborough & Baker 1997 for Fo'}
 
 SolFitsTrimMetaOS_param <- SolFitsTrimMetaOS %>%
@@ -210,28 +202,6 @@ SolFitsTrimMetaOS_param <- SolFitsTrimMetaOS %>%
          JVPSII_ETRtauav_aLHII_Sig = ETRCtauav * aLHIIOxbomax/Sigmax_m2psii,
          JVPSII_ETRqpOxbo_aLHII_Sig = ETRqpOxbo * aLHIIOxbomax/Sigmax_m2psii) %>%
   ungroup()
-```
-
-```{r Test plots}
-
-SolFitsTrimMetaOS_param %>%
-  filter(Dark1s == 0) %>%
-  ggplot() +
-  geom_point(aes(x = Ctauav, y = qpOxbo)) +
-  facet_grid(cols = vars(Ex_WL)) +
-  geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
-  coord_fixed(xlim = c(0,1), ylim = c(0,1), ratio = 1) +
-  theme(strip.text.y = element_text(size = 5, angle=0)) 
-
-SolFitsTrimMetaOS_param %>%
-  filter(Dark1s == 0) %>%
-  ggplot() +
-  geom_point(aes(x =  JVPSII_aLHIIOxbomax, y = JVPSII_ETRqpOxbo_aLHII_Sig)) +
-  geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
-  facet_grid(cols = vars(Ex_WL), rows = vars(Strain)) +
-  theme(strip.text.y = element_text(size = 5, angle=0)) +
-  scale_y_continuous(sec.axis = sec_axis(~ . , name = "Strain", breaks = NULL, labels = NULL)) +
-  scale_x_continuous(sec.axis = sec_axis(~ . , name = "Ex_WL", breaks = NULL, labels = NULL)) 
 ```
 
 Sigma -> taken from corresponding light
@@ -298,14 +268,6 @@ ungroup()
 
 SolFitsTrimMetaCleanOS<- SolFitsTrimMetaCleanOS %>%
   mutate(Time_h = E_days*24)
-```
-
-```{r test plot}
-SolFitsTrimMetaCleanOS %>% 
-  ggplot() +
-  geom_point(aes(x = Par_ue, y = meanSig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
-  facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
-  theme_bw()           
 ```
 
 Sigma -> 1s in dark after corresponding light
@@ -383,14 +345,6 @@ SolFitsTrimMetaDarkafterLightOS<- SolFitsTrimMetaDarkafterLightOS %>%
   mutate(Time_h = E_days*24)
 ```
 
-```{r test plot}
-SolFitsTrimMetaDarkafterLightOS %>% 
-  ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = meanSig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() 
-```
-
 ```{r Cleaning the environment}
 rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFitsTrimOS_lightsteps)
 ```
@@ -400,7 +354,6 @@ rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFits
 # 
 # saveRDS(SolFitsTrimMetaDarkafterLightOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAllDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
-
 
 
 
@@ -516,14 +469,6 @@ SolFitsTrimMetaNS <- MetaData %>%
   left_join(., SolFitsTrimNS_lightsteps, by = c("CultureID" = "CultureID")) 
 ```
 
-```{r Test plot}
-SolFitsTrimMetaNS %>%
-  ggplot() +
-  geom_point(aes(x = ActPAR, y = Alp2QA, size = LR_s)) +
-  facet_grid(cols = vars(Par_ue), rows = vars(Photoperiod)) +
-  theme_bw() 
-```
-
 ```{r estimate parameters using Oxborough & Baker 1997 for Fo'}
 
 SolFitsTrimMetaNS_param <- SolFitsTrimMetaNS %>%
@@ -552,28 +497,6 @@ SolFitsTrimMetaNS_param <- SolFitsTrimMetaNS %>%
          JVPSII_ETRtauav_aLHII_Sig = ETRCtauav * aLHIIOxbomax/Sigmax_m2psii,
          JVPSII_ETRqpOxbo_aLHII_Sig = ETRqpOxbo * aLHIIOxbomax/Sigmax_m2psii) %>%
   ungroup()
-```
-
-```{r Test plots}
-
-SolFitsTrimMetaNS_param %>%
-  filter(Dark1s == 0) %>%
-  ggplot() +
-  geom_point(aes(x = Ctauav, y = qpOxbo)) +
-  facet_grid(cols = vars(Ex_WL)) +
-  geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
-  coord_fixed(xlim = c(0,1), ylim = c(0,1), ratio = 1) +
-  theme(strip.text.y = element_text(size = 5, angle=0)) 
-
-SolFitsTrimMetaNS_param %>%
-  filter(Dark1s == 0) %>%
-  ggplot() +
-  geom_point(aes(x =  JVPSII_aLHIIOxbomax, y = JVPSII_ETRqpOxbo_aLHII_Sig)) +
-  geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
-  facet_grid(cols = vars(Ex_WL), rows = vars(Strain)) +
-  theme(strip.text.y = element_text(size = 5, angle=0)) +
-  scale_y_continuous(sec.axis = sec_axis(~ . , name = "Strain", breaks = NULL, labels = NULL)) +
-  scale_x_continuous(sec.axis = sec_axis(~ . , name = "Ex_WL", breaks = NULL, labels = NULL)) 
 ```
 
 Sigma -> taken from corresponding light
@@ -640,14 +563,6 @@ ungroup()
 
 SolFitsTrimMetaCleanNS<- SolFitsTrimMetaCleanNS %>%
   mutate(Time_h = E_days*24)
-```
-
-```{r test plot}
-SolFitsTrimMetaCleanNS %>% 
-  ggplot() +
-  geom_point(aes(x = Par_ue, y = meanSig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
-  facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
-  theme_bw()           
 ```
 
 Sigma -> 1s in dark after corresponding light
@@ -725,14 +640,6 @@ SolFitsTrimMetaDarkafterLightNS<- SolFitsTrimMetaDarkafterLightNS %>%
   mutate(Time_h = E_days*24)
 ```
 
-```{r test plot}
-SolFitsTrimMetaDarkafterLightNS %>% 
-  ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = meanSig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() 
-```
-
 ```{r Cleaning the environment}
 rm(SolFitsNS, SolFitsTrimNS, SolFitsTrimMetaNS, SolFitsTrimMetaNS_param, SolFitsTrimNS_lightsteps)
 ```
@@ -749,11 +656,27 @@ SolFitsMeta <-rbind(SolFitsTrimMetaCleanOS, SolFitsTrimMetaCleanNS)
 SolFitsMetaDarkafterLight <-rbind(SolFitsTrimMetaDarkafterLightOS, SolFitsTrimMetaDarkafterLightNS)
 ```
 
+```{r test plot}
+# SolFitsMeta %>% 
+#   ggplot() +
+#   geom_point(aes(x = Par_ue, y = meanSig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
+#   facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
+#   theme_bw()   
+# 
+# SolFitsMetaDarkafterLight %>% 
+#   ggplot() +
+#   geom_point(aes(x = Par_ue, y = meanSig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
+#   facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
+#   theme_bw()  
+```
+
 ```{r save rds}
 saveRDS(SolFitsMeta, file.path(DataOut, paste(Project, "Imported_SolisenseLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
 saveRDS(SolFitsMetaDarkafterLight, file.path(DataOut, paste(Project, "Imported_SolisenseDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
+
+
 
 
 
