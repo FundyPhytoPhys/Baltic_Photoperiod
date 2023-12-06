@@ -47,40 +47,14 @@ library(readxl)
 library(Cairo) #for greek symbols
 ```
 
-```{r set colours}
-# Wavelengths_nm = c(445, 470, 505, 535, 590)
-# Colours_nm = c("darkblue", "dodgerblue", "darkgreen", "yellowgreen",  "darkorange")
-# 
-# names(Colours_nm) <- Wavelengths_nm
-# Colours_nm
-
-```
-
-```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
-# gs4_deauth()
-# 
-# MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1y144Qjs1pxO2vYU4G6of69qX1TVlA8WTwnhfVwaSU0U/edit#gid=0") %>%
-#   drop_na(WL) %>%
-#   mutate(WL = unlist(WL))
-# 
-# as.data.frame(MetaData)
-# MetaData <- MetaData %>%
-#    mutate(ExpDate = ymd(ExpDate),
-#           ExpEndDate = ymd_hms(`ExpEndDate`))
-```
-
 ```{r Exported Rmd only first time in session}
 list.files(path = DataIn, pattern = Project, full.names = TRUE)
 ```
 
-
-RDS already contained only data from corresponding growth light 
-Also, conteined mean for sig and JVPSII - for replica measured on the same day
-Also, contained mean for chla (ug/L) and cell per L based on Turner and MD Pico
-
+# This RDS contained only data from corresponding growth light 
+# Also, conteined mean sig - mean for replica measured on the same day
 
 ```{r read ProcessFile}
-#Solisense file
 SolisenseFile <- "../Data/ImportedData/Baltic_Photoperiod_Imported_SolisenseLight.Rds"  
 
 SolisenseFileName <- str_split(string = SolisenseFile, "/")[[1]][3] %>%
@@ -88,15 +62,12 @@ SolisenseFileName <- str_split(string = SolisenseFile, "/")[[1]][3] %>%
 
 SolFits <- readRDS(SolisenseFile)  %>%
   ungroup()
-
 ```
 
-
-These dfs contained only sigma in 1s of dark after corresponding light (it caused problems when I tried to combain them with sig in the light)
-
+# This RDS contained only sigma in 1s of dark after corresponding light (it caused problems when I tried to combain them with sig in the light)
+# Also, conteined mean for sig - mean for replica measured on the same day
 
 ```{r read ProcessFile}
-#Solisense file sigma 1s
 Solisense1sFile <- "../Data/ImportedData/Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds"
 
 Solisense1sFileName <- str_split(string = Solisense1sFile, "/")[[1]][3] %>%
