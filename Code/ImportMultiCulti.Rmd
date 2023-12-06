@@ -1,5 +1,5 @@
 ---
-title: "MultiDataImportPico"
+title: "ImportMultiCulti"
 author:
 - Laurel Genge
 - Carlie Barnhill
@@ -22,11 +22,7 @@ editor_options:
     wrap: 72
 ---
 
-# Set Options
-
-## Set figure caption font size
-
-```{css, echo=FALSE}
+```{css, Set figure caption font size, echo=FALSE}
 p.caption {
   font-size: 18px;
 }
@@ -35,49 +31,11 @@ p.caption {
 ## Set Chunk Options
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE)
-knitr::opts_chunk$set(fig.path='Figs/')
+# knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+# knitr::opts_chunk$set(fig.path='Figs/')
 ```
 
-# To Do
-
--move filter for negative OD to point of log curve fitting Filtering
-negative points needed for current noise filtering, so placed just
-before noise filtering; with more sophisticated noise filtering 
-
-# Introduction
-
-The PSI Multicultivator is used to grow 8 x 80 ml of phytoplankton
-culture under a common temperature regime, with individual control of
-bubbling, light level, light spectral quality and photoperiod for each
-of the 8 culture tubes.
-
-This .Rmd Rworkbook imports data in simple .csv long form exported from
-PSI Multicultivators based upon project specific values for variables
-set by the user.
-
-It tidies and organizes the data. It uses a pivot_wider and
-interpolation approach to get the Actinic_par and OD values in line
-rowwise. This requires careful 'arrange' of the rows. It imports a
-metadata Catalog and merges the metadata with the imported data based
-upon shared values for the variables 'MC', 'Tube', and 'Filename' which
-should unambiguously identify a given growth trajectory measured at
-OD680 or OD720.
-
-It generates preliminary data plots. It filters the data for outliers by
-screening out values distant from the moving average of a window in the
-stream; this requires careful 'arrange' of the rows so sequential rows
-represent sequential time steps.
-
-This works because the OD680 & OD720 data are only episodically, but
-widely, aberrant when a bubble interrupts the measurement, and if the
-MultiCultivator is running properly these bubble aberration events are
-rare.
-
-# Load Libraries and set Project Variables
-
 ```{r load libraries}
-# libraries; Note check actual dependencies
 library(tidyverse)
 library(lubridate)
 library(broom)
@@ -86,157 +44,46 @@ library(data.table)
 library(googledrive)
 library(googlesheets4)
 library(photobiologyWavebands)
-
 ```
 
-```{r set project variables}
-#"..", takes up a level in the directory path
-Project <- "PICO"
-DataIn <- file.path("..", "Data", "RawData", "MultiCultiData.zip")
-DataOut <- file.path("..","Data", "ImportedData", "MultiCultiData")
-
-Skip <- 20
-
-```
-
-#set Photobiology colors
-```{r set colours}
+```{r set Photobiology colors}
 MyWavelengths = c(405, 445, 470, 530, 620, 660, 730, "WW")
 MCMIXColours = c(c(w_length2rgb(405), w_length2rgb(445), w_length2rgb(470), w_length2rgb(530),            w_length2rgb(620), w_length2rgb(660), w_length2rgb(730), "black"))
 
-# MyWavelengths = c(450, 530, 660, "WW")
-# MCMIXColours = c(w_length2rgb(450), w_length2rgb(530), w_length2rgb(660), "black")
-
-
-
 names(MCMIXColours) <- MyWavelengths
 MCMIXColours
-
-
-
 ```
 
-# Import MetaData 
-```{r load Catalog direct from googlesheet, results = "hide"}
-# #implement read with googlesheet name instead of full url
-
-# gs4_deauth()
-
-# imagine this is the URL or ID of a Sheet readable by anyone (with a link)
-
-
-# Catalog <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0") %>% 
-   
-  # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
-  # ggplot/dplyr doesn't like working with a dataframe of lists.
-  # In this case WL is set to a list since some values are numbers, some are strings, some are blank.
-  # To fix this, first drop all rows missing WL, then unlist.
-  # Must first drop NA rows since unlist will collapse NULL lists, then the unlisted WL is a shorter length than original WL column, which mutate doesn't like.
-#   drop_na(WL) %>%
-#   mutate(WL = unlist(WL))
-# 
-# as.data.frame(Catalog)
-# 
-# Catalog <- Catalog %>%
-#    mutate(ExpDate = ymd(ExpDate),
-#           ExpEndDate = ymd_hms(`ExpEndDate`))
-
+```{r set project variables}
+Project <- "Baltic_Photoperiod"
+DataIn <- file.path("..", "Data", "RawData", "MultiCulti.zip")
+DataOut <- file.path("..","Data", "ImportedData", "MultiCultiData")
+Skip <- 20
 ```
-
 
 ```{r read locally stored metadata from rds}
-
 CultureCatalog <- readRDS(file = file.path("..", "Data","CultureCatalog.Rds"))
-
 ```
 
-
-# List previously imported MultiCulti files
-
-```{r previously imported files}
+```{r List previously imported files}
 list.files(path = DataOut, pattern = Project, full.names = TRUE)
 ```
 
-# List MultiCulti files for Project that are saved in DataIn
-
-```{r MultiCulti files}
-
-#List files in the extracted folder with a ".asc" extension
+```{r List files in the extracted folder with a ".csv" extension}
 MCFiles <- unzip(DataIn, list = TRUE)
 MCFiles <- MCFiles[grepl(".csv$", MCFiles$Name), "Name"]
 print(MCFiles)
-
 ```
 
-# Set Target File
 ```{r set TargetFile and read csv}
-
 TargetFile <- "20221021_PICO_MCMIX006_RUN96.csv"
-
 
 # This opens a compressed file without decompressing.
 TargetData <- read_csv(unz(DataIn, TargetFile),  skip = Skip, id = "Path", col_names = c("key", "time", "abs-time", "value")) %>% 
   separate(col =Path, into = c("Path", "Filename"), sep = ":") 
 
-
-
 TargetFileName <- str_remove(string = TargetFile, pattern = ".csv")
-
 TargetFileName
-
-```
-
-
-
-## Create function using data.table::fread to skip the beginning comments and starts reading file after key word Skip
-
-```{r fread_plus}
-# fread_plus <- function(Flnm, Skip){data.table::fread(file = Flnm, skip = Skip) %>%
-#     mutate(Filename = Flnm, CDateTime = ymd_hms(file.info(Flnm)$ctime))
-# }
-```
-
-# Read in TargetFile
-
-select(-c(V5)) only needed for some files.
-
-```{r Read TargetFile}
-# #abs-time is failing because it contains ',' in the variable values; file is actually a .tsv, not a .csv
-# #abs-time not currently used?
-# # TargetData <- fread_plus(Flnm = TargetFile, Skip = "key") %>%
-# # select(-c(V5))
-# 
-# #run this if V5 is the 'value' column
-# TargetData <- fread_plus(Flnm = TargetFile, Skip = "key")  %>%
-#    select(-c(V5))
-# TargetData <- fread_plus(Flnm = paste(DataIn, "20211223_PICO_MCMIX006_RUN42.csv", sep = ":"), Skip = "key")  %>%
-#    select(-c(V5))
-# # %>%
-# #  select(-c(value)) %>%
-# #   rename(value = V5)
-# 
-# 
-# TargetData[1:10,]
-# 
-# #check whether all necessary values for 'key' are present; people forget to 'export all' values from PSI
-# unique(TargetData$key)
-```
-
-```{r read in all MultiData}
-# MultiData <- MultiFiles %>%
-#   map_df(~fread_plus(Flnm = ., Skip = "key")) %>%
-#   select(-c(V5))
-# 
-# MultiData[1:10,]
-
-# MultiDataTarget <- MultiData %>%
-   #filter(Filename == TargetFile)
-```
-
-```{r TargetFile actinic light NA to 0}
-# TargetData <- TargetData %>%
-#   mutate(value = if_else(grepl("actinic-lights", key), if_else(is.na(value), 0, value), value))
-
 ```
 
 # Filter superfluous rows, Add ToD column, extract ExpDate, extract MC, 
@@ -280,11 +127,6 @@ TargetData <- TargetData %>%
 TargetData <- TargetData %>% 
     mutate(MC = str_extract(Filename, "MC.*[:digit:][:digit:][:digit:]"),
            MC = str_remove(MC, pattern = "\\_.*"))
-
-
-#add ln(value) later
-
-
 ```
 
 ## Create preliminary plot for TargetData
