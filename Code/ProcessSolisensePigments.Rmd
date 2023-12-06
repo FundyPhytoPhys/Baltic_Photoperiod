@@ -48,25 +48,25 @@ library(Cairo) #for greek symbols
 ```
 
 ```{r set colours}
-Wavelengths_nm = c(445, 470, 505, 535, 590)
-Colours_nm = c("darkblue", "dodgerblue", "darkgreen", "yellowgreen",  "darkorange")
-
-names(Colours_nm) <- Wavelengths_nm
-Colours_nm
+# Wavelengths_nm = c(445, 470, 505, 535, 590)
+# Colours_nm = c("darkblue", "dodgerblue", "darkgreen", "yellowgreen",  "darkorange")
+# 
+# names(Colours_nm) <- Wavelengths_nm
+# Colours_nm
 
 ```
 
 ```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
-gs4_deauth()
-
-MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1y144Qjs1pxO2vYU4G6of69qX1TVlA8WTwnhfVwaSU0U/edit#gid=0") %>%
-  drop_na(WL) %>%
-  mutate(WL = unlist(WL))
-
-as.data.frame(MetaData)
-MetaData <- MetaData %>%
-   mutate(ExpDate = ymd(ExpDate),
-          ExpEndDate = ymd_hms(`ExpEndDate`))
+# gs4_deauth()
+# 
+# MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1y144Qjs1pxO2vYU4G6of69qX1TVlA8WTwnhfVwaSU0U/edit#gid=0") %>%
+#   drop_na(WL) %>%
+#   mutate(WL = unlist(WL))
+# 
+# as.data.frame(MetaData)
+# MetaData <- MetaData %>%
+#    mutate(ExpDate = ymd(ExpDate),
+#           ExpEndDate = ymd_hms(`ExpEndDate`))
 ```
 
 ```{r Exported Rmd only first time in session}
@@ -81,7 +81,7 @@ Also, contained mean for chla (ug/L) and cell per L based on Turner and MD Pico
 
 ```{r read ProcessFile}
 #Solisense file
-SolisenseFile <- "../Data/ImportedData/Baltic_Photoperiod_Imported_Solisense_OldComp.Rds"  
+SolisenseFile <- "../Data/ImportedData/Baltic_Photoperiod_Imported_SolisenseLight.Rds"  
 
 SolisenseFileName <- str_split(string = SolisenseFile, "/")[[1]][3] %>%
   str_remove(pattern = ".Rds")
@@ -89,18 +89,6 @@ SolisenseFileName <- str_split(string = SolisenseFile, "/")[[1]][3] %>%
 SolFits <- readRDS(SolisenseFile)  %>%
   ungroup()
 
-
-#Solisense file -> data from a new Solisense computer
-Solisense2File <- "../Data/ImportedData/Baltic_Photoperiod_Imported_Solisense_NewComp.Rds"
-
-Solisense2FileName <- str_split(string = Solisense2File, "/")[[1]][3] %>%
-  str_remove(pattern = ".Rds")
-
-SolFits2 <- readRDS(Solisense2File)  %>%
-  ungroup()
-
-SolFits3<-rbind(SolFits,SolFits2)
-rm(SolFits,SolFits2)
 ```
 
 
@@ -109,7 +97,7 @@ These dfs contained only sigma in 1s of dark after corresponding light (it cause
 
 ```{r read ProcessFile}
 #Solisense file sigma 1s
-Solisense1sFile <- "../Data/ImportedData/Baltic_Photoperiod_Imported_Solisense1s_OldComp.Rds"
+Solisense1sFile <- "../Data/ImportedData/Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds"
 
 Solisense1sFileName <- str_split(string = Solisense1sFile, "/")[[1]][3] %>%
   str_remove(pattern = ".Rds")
@@ -117,26 +105,11 @@ Solisense1sFileName <- str_split(string = Solisense1sFile, "/")[[1]][3] %>%
 SolFits1s <- readRDS(Solisense1sFile)  %>%
   ungroup()
 
-
-#Solisense file -> sigma 1s from a new Solisense computer
-Solisense21sFile <- "../Data/ImportedData/Baltic_Photoperiod_Imported_Solisense1s_NewComp.Rds"
-
-Solisense21sFileName <- str_split(string = Solisense21sFile, "/")[[1]][3] %>%
-  str_remove(pattern = ".Rds")
-
-SolFits21s <- readRDS(Solisense21sFile)  %>%
-  ungroup()
-
-SolFits31s<-rbind(SolFits1s,SolFits21s)
-rm(SolFits1s,SolFits21s)
 ```
 
 
-
-
-
 ```{r}
-SolFitsAll <-SolFits3 %>% 
+SolFits <-SolFits %>% 
   filter(Strain=="BA127R"| Strain=="BA48R"| Strain=="BA56G"| Strain=="BA77G") %>% 
   filter(WL=="WW") %>% 
   filter(O2==21) %>% 
@@ -145,15 +118,15 @@ SolFitsAll <-SolFits3 %>%
         Strain=="BA56G"~"PC-rich_056",
          Strain=="BA77G"~"PC-rich_077")) 
 
-SolFitsAll$facetsPhotonDose = factor(SolFitsAll$WL, labels = c("PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})"))
+SolFits$facetsPhotonDose = factor(SolFits$WL, labels = c("PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})"))
 
-SolFitsAll$facetsExcitation = factor(SolFitsAll$WL, labels = c("Excitation~(nm)"))
+SolFits$facetsExcitation = factor(SolFits$WL, labels = c("Excitation~(nm)"))
 
-SolFitsAll$facetsStrain = factor(SolFitsAll$WL, labels = c("Strain"))
+SolFits$facetsStrain = factor(SolFits$WL, labels = c("Strain"))
 
 
 # the same for second df contained sigma 1s
-SolFits31s <-SolFits31s %>% 
+SolFits1s <-SolFits1s %>% 
   filter(Strain=="BA127R"| Strain=="BA48R"| Strain=="BA56G"| Strain=="BA77G") %>% 
   filter(WL=="WW") %>% 
   filter(O2==21) %>% 
@@ -166,15 +139,15 @@ SolFits31s <-SolFits31s %>%
 
 Filter one weird data point 445nm, 16h, 900uE
 ```{r}
-SolFitsAll445<-SolFitsAll %>% 
+SolFitsAll445<-SolFits %>% 
   filter(Ex_WL == 445) %>% 
-  filter(Sig<250)  %>% 
+  filter(Sig_m2psii<250)  %>% 
   filter(meanSig_nm2psii<2.5) 
 
-SolFitsAll590<-SolFitsAll %>% 
+SolFitsAll590<-SolFits %>% 
   filter(Ex_WL == 590) 
   
-SolFitsAllChoosen<-rbind(SolFitsAll445,SolFitsAll590)
+SolFitsChoosen<-rbind(SolFitsAll445,SolFitsAll590)
   rm(SolFitsAll445,SolFitsAll590)
   
 
@@ -183,7 +156,7 @@ SolFitsAllChoosen<-rbind(SolFitsAll445,SolFitsAll590)
 
 choose only exp data for sigma and JVPSII in the corresponding light
 ```{r}
-SolFitsAllChoosen2<- SolFitsAllChoosen 
+SolFitsAllChoosen2<- SolFitsChoosen 
   
 O1 <- SolFitsAllChoosen2 %>%
   filter(Par_ue == 30 | Par_ue == 300 | Par_ue == 90 | Par_ue == 180 | Par_ue == 900) %>% 
@@ -242,7 +215,7 @@ rm(O1, O2, O3, O4, O5, O6, O7, O8, O9, SolFitsAllChoosen2)
 
 choose only exp data for Sig 1s
 ```{r}
-SolFitsAllChoosen2<- SolFits31s 
+SolFitsAllChoosen2<- SolFits1s 
   
 O1 <- SolFitsAllChoosen2 %>%
   filter(Par_ue == 30 | Par_ue == 300 | Par_ue == 90 | Par_ue == 180 | Par_ue == 900) %>% 
@@ -304,9 +277,9 @@ Plot
 ```{r fig.height = 8, fig.width = 8, warning = FALSE}
 
 
-Plot <- SolFitsAllChoosen %>%
+SolFitsChoosen %>%
   ggplot() +
-  geom_point(aes(x = Time_h, y = Sig, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_point(aes(x = Time_h, y = Sig_m2psii, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
   # geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
   # geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
   # geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
@@ -314,12 +287,12 @@ Plot <- SolFitsAllChoosen %>%
   #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
-Plot
 
 
-Plot <- SolFitsAllChoosenExp %>%
+
+SolFitsAllChoosenExp %>%
   ggplot() +
-  geom_point(aes(x = Time_h, y = Sig, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_point(aes(x = Time_h, y = Sig_m2psii, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
   # geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
   # geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
   # geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
@@ -327,12 +300,12 @@ Plot <- SolFitsAllChoosenExp %>%
   #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
-Plot
 
 
-Plot <- SolFitsAllChoosenExp %>%
+
+SolFitsAllChoosenExp %>%
   ggplot() +
-  geom_point(aes(x = Time_h, y = meanSig, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_point(aes(x = Time_h, y = meanSig_nm2psii, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
   # geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
   # geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
   # geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
@@ -341,7 +314,7 @@ Plot <- SolFitsAllChoosenExp %>%
   #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
-Plot
+
 ```
 
 
@@ -361,11 +334,11 @@ SolFitsAllChoosenExp<-SolFitsAllChoosenExp %>%
 
   group_by(Strain, Ex_WL, Par_ue, Photoperiod) %>%
 
-  summarize(CultureID, Ex_WL, Par_ue, Photoperiod, WL, O2, Filename, Run, Strain, InnocDate, ExpDate, PARPhotonDose, DATE, MDcellsL, meanMDcellsL, sdMDcellsL, TurnerChl_ugL, meanTurnerChl_ugL, sdTurnerChl_ugL, ObsDate, ObsDateTime, FvFm, Sig, meanSig, sdSig, Sig_nm2psii, meanSig_nm2psii, sdSig_nm2psii, Sigdark, meanSigdark_nm2psii, sdSigdark_nm2psii, Sigmax, FoOxbo, Fm, Fo, Fodark, Fomin, 
+  summarize(CultureID, Ex_WL, Par_ue, Photoperiod, WL, O2, Filename, Run, Strain, InnocDate, ExpDate, PARPhotonDose, DATE, MDcellsL, meanMDcellsL, sdMDcellsL, TurnerChl_ugL, meanTurnerChl_ugL, sdTurnerChl_ugL, ObsDate, ObsDateTime, FvFm, meanSig, sdSig, Sig_nm2psii, meanSig_nm2psii, sdSig_nm2psii, Sigdark, meanSigdark_nm2psii, sdSigdark_nm2psii, Sigmax, FoOxbo, Fm, Fo, Fodark, Fomin, 
             
 JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
 
-meanJVPSII_aLHIIOxbomax, sdJVPSII_aLHIIOxbomax, meanJVPSII_ETRtauav_FoSig, sdJVPSII_ETRtauav_FoSig, meanJVPSII_ETRqpOxbo_FoSig, sdJVPSII_ETRqpOxbo_FoSig, meanJVPSII_ETRtauav_aLHII_Sig, sdJVPSII_ETRtauav_aLHII_Sig, meanJVPSII_ETRqpOxbo_aLHII_Sig, sdJVPSII_ETRqpOxbo_aLHII_Sig, E_days, Time_h, facetsPhotonDose, facetsExcitation, facetsStrain, 
+E_days, Time_h, facetsPhotonDose, facetsExcitation, facetsStrain, 
 
              AllmeanJVPSII_aLHIIOxbomax= mean(JVPSII_aLHIIOxbomax),
              AllmeanJVPSII_ETRtauav_FoSig= mean(JVPSII_ETRtauav_FoSig),
@@ -396,7 +369,7 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 
 Plot<-SolFitsAllChoosenExp %>% 
   ggplot() +
-  geom_point(aes(x = Time_h, y = Sig, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_point(aes(x = Time_h, y = Sig_m2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
