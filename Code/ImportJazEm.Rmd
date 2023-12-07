@@ -95,7 +95,7 @@ colnames(JazSpec)[1] <- "Wavelength"
 colnames(JazSpec)[2] <- "Counts"
 ```
 
-# Seperate filename
+# Import and prepare files
 
 ```{r filename separation, warning = FALSE, echo=FALSE}
 JazSpec <- JazSpec %>% 
@@ -110,21 +110,25 @@ mutate(ObsDate = ymd(ObsDate),
        WL = as.factor(WL))
 ```
 
-# Select the appropriate wavelength range
+# Select wavelength range from 400 to 700 nm
 
-```{r select needed range of nm}
+```{r select range of nm}
 JazSpecTrim <- JazSpec %>% 
   subset(JazSpec$Wavelength >= 400 & JazSpec$Wavelength <= 701)
 ```
 
-```{r remove all NA columns & empty rows, fix column types}
+# Remove all NA columns & empty rows, fix column types
+
+```{r remove empty rows and fix column types}
 not_all_na <- function(x) {!all(is.na(x))}
 
 JazSpecTrim <- JazSpecTrim %>%
   select_if(not_all_na)
 ```
 
-```{r find nm at max count and compare with rolling mean of counts}
+# Find nm at max count and compare with rolling mean of counts
+
+```{r find nm at max count}
 JazSpecTrim <- JazSpecTrim %>% 
   group_by(WL, Strain) %>%
    mutate(rollmeanCounts = zoo::rollmean(Counts, k = RollWindow, align = "left", fill = NA),
@@ -132,6 +136,8 @@ JazSpecTrim <- JazSpecTrim %>%
           is_nm_rollmean= round(Wavelength[which.max(rollmeanCounts)])) %>% 
   ungroup()
 ```
+
+# Cleaning df before saving as rds and removed unnecessary files from the environment
 
 ```{r cleaning JazSpecTrim for final rds}
 JazSpecTrim<-JazSpecTrim %>% 
@@ -143,6 +149,8 @@ colnames(JazSpecTrim)
 ```{r removed unnecessary files from environment}
 rm(JazSpec)
 ```
+
+# Save rds for further analysis
 
 ```{r save rds}
 saveRDS(JazSpecTrim, file.path(DataOut, paste(Project, "Imported_JazEm.Rds", sep = "_"), fsep = .Platform$file.sep))
