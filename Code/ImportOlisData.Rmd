@@ -1,5 +1,5 @@
 ---
-title: "ImportOlisSpectra"
+title: "ImportOlisData"
 author:
 - Sylwia Sliwinska-Wilczewska
 - Douglas A. Campbell

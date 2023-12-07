@@ -1,5 +1,5 @@
 ---
-title: "ImportJazEm"
+title: "ImportJazEmData"
 author:
 - Sylwia Sliwinska-Wilczewska
 - Douglas A. Campbell
