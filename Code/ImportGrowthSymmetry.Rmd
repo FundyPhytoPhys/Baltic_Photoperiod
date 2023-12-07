@@ -1,28 +1,48 @@
 ---
-title: "Import Growth symmetry data"
-author: "Douglas A. Campbell, Sylwia Sliwinska-Wilczewska"
+title: "ImportGrowthSymmetry"
+author:
+- Sylwia Sliwinska-Wilczewska
+- Douglas A. Campbell
 date: "`r format(Sys.Date())`"
 output:
-  html_document:
-    df_print: paged
+bookdown::html_document2:
+    code_folding: show
+    keep_md: yes
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 6
+    fig_caption: yes
+bibliography: BalticPhotoperiod.bib
+csl: plos-one.csl
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
+# Set Options
+
+## Set figure caption font size
+
+```{css, echo=FALSE}
+p.caption {
+  font-size: 18px;
+}
+```
+
+## Set Chunk Options
+
 ```{r setup, include = FALSE}
-# knitr::opts_chunk$set(echo = TRUE, message = FALSE)
-# knitr::opts_chunk$set(fig.path='Figs/')
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(fig.path='Figs/')
 ```
 
-```{r set project variables}
-Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ImportedData")
+# Introduction
 
-FileID <- "Smooth"
-FileEncode <- "UTF-8" 
-Delimiter <- ""
-HeaderRows <- 0
-```
+This RMD imports Growth Symmetry (GS) catalog from a google sheet.
 
-```{r load libraries} 
+# Load Libraries and set Project Variables
+
+```{r load libraries, warning = FALSE, echo=FALSE} 
 library(tidyverse)
 library(lubridate)
 library(stringr)
@@ -38,28 +58,36 @@ library(readxl)
 library(stringi)
 ```
 
-```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
-gs4_deauth()
+```{r set project variables}
+Project <- "Baltic_Photoperiod"
+DataOut <- file.path("..", "Data", "ImportedData")
 
-MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1y144Qjs1pxO2vYU4G6of69qX1TVlA8WTwnhfVwaSU0U/edit#gid=0") %>%
-  drop_na(WL) %>%
-  mutate(WL = unlist(WL))
-
-as.data.frame(MetaData)
-MetaData <- MetaData %>%
-   mutate(ExpDate = ymd(ExpDate),
-          ExpEndDate = ymd_hms(`ExpEndDate`))
+FileID <- "Smooth"
+FileEncode <- "UTF-8" 
+Delimiter <- ""
+HeaderRows <- 0
 ```
 
-```{r Load local GS catalog, message = FALSE, warning = FALSE, echo=FALSE}
-gs4_deauth()
+# Read MetaData
 
+```{r read locally stored metadata from rds}
+CultureCatalog <- readRDS(file = file.path("..", "Data","CultureCatalog.Rds"))
+```
+
+# Read Growth Symmetry (GS) catalog
+
+```{r load local GS catalog, results = "hide", message = FALSE, warning = FALSE, echo=FALSE}
+gs4_deauth()
+# this is the URL or ID of a Sheet readable by anyone (with a link)
 GScatalog<- read_sheet("https://docs.google.com/spreadsheets/d/1zqH6iYlqMPigyloLKJPeVWugmcnmgJ-eMU3gLkR6FSU/edit#gid=0")
 
 as.data.frame(GScatalog)
 GScatalog <- GScatalog 
 ```
-```{r Prepare data - mutate as numeric, calculate AccLen, DecLen, GS (growth symmetry)}
+
+# Preparing df for further analysis
+
+```{r prepare data - mutate as numeric, calculate AccLen, DecLen, GS (growth symmetry)}
 GScatalog <- GScatalog %>% 
   mutate(Acc_perc = as.numeric(Acc_perc)) %>% 
   mutate(Dec_perc = as.numeric(Dec_perc)) %>% 
@@ -76,12 +104,16 @@ GScatalog <- GScatalog %>%
   mutate(TDG = as.numeric(TDG)) 
 ```
 
-```{r Merge GS catalog with MetaData, warning = FALSE}
-GScatalogMeta <- MetaData %>%
+# Merge GS catalog with MetaData
+
+```{r merge GS catalog with MetaData, warning = FALSE, echo=FALSE}
+GScatalogMeta <- CultureCatalog %>%
   left_join(., GScatalog, by = c("Strain" = "Strain", "Photoperiod"="Photoperiod", "Par_ue"="Par_ue","WL"="WL", "O2"="O2")) 
 ```
 
-```{r Cleaning unrelated values and outliers/error points}
+# Filtering unrelated values and outliers
+
+```{r cleaning unrelated values and outliers}
 GScatalogMeta<-GScatalogMeta %>% 
   filter(Photoperiod!=24) %>% 
   filter(AccDecRatio_perc<10)
@@ -92,14 +124,17 @@ GScatalogMeta1 <-GScatalogMeta %>%
 GScatalogMeta2 <-GScatalogMeta %>% 
   filter(PARPhotonDose<19440000) %>% 
 filter(GS<4)
+
 GScatalogMeta<-rbind(GScatalogMeta1,GScatalogMeta2)
 rm(GScatalogMeta1,GScatalogMeta2)
 ```
 
-```{r Calculate mean of GS from every day (every peak in exp and pre-stationary phase), warning = FALSE}
+# Calculate mean of GS from every day (every peak in exp and pre-stationary phase)
+
+```{r calculate mean of GS, warning = FALSE}
 GScatalogMeta<-GScatalogMeta %>% 
   group_by(Strain, Photoperiod, Par_ue, Phase) %>%
-  summarize(Run, CultureID, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, PARPhotonDose, MC, Tube, O2, LightShape, ExpEndDate,  PhotoperiodTstart_h, PhotoperiodTend_h,tMaxDG,tMaxAG, Phase, AchivePreStationary, MaxDG, MaxAG, Acc_perc, Dec_perc, Strain, Par_ue, Photoperiod, O2, WL, OD680start, OD680end, TDG, AccDecRatio_perc, AccLen, DecLen, GS, 
+  summarize(Run, CultureID, Strain, ExpDate, Par_ue, Photoperiod, PARPhotonDose, MC, Tube, O2, LightShape, ExpEndDate, PhotoperiodTstart_h, PhotoperiodTend_h,tMaxDG,tMaxAG, Phase, AchivePreStationary, MaxDG, MaxAG, Acc_perc, Dec_perc, Strain, Par_ue, Photoperiod, O2, WL, OD680start, OD680end, TDG, AccDecRatio_perc, AccLen, DecLen, GS, 
             meanAccLen = mean(AccLen), 
             sdAccLen = sd(AccLen),
             meanDecLen = mean(DecLen), 
@@ -108,8 +143,9 @@ GScatalogMeta<-GScatalogMeta %>%
             sdGS = sd(GS)) %>%  
   ungroup() 
 ```
+# Rename strain names, create facets labels, and create horizontal lines for plot
 
-```{r Change strain names for plot}
+```{r rename strain names for plot}
 GScatalogMeta<-GScatalogMeta %>% 
     mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
          Strain=="BA48R"~"PE-rich_048",
@@ -117,20 +153,22 @@ GScatalogMeta<-GScatalogMeta %>%
          Strain=="BA77G"~"PC-rich_077"))
 ```
 
-```{r Create facets labels for plot}
+```{r create facets labels for plot}
 GScatalogMeta$facetsPar_ue = factor(GScatalogMeta$O2, labels = c("PAR~(µmol~photons~m^{-2}~s^{-1})"))
 GScatalogMeta$facetsPhotoperiod = factor(GScatalogMeta$WL, labels = c("Photoperiod~(h)"))
 GScatalogMeta$facetsStrain = factor(GScatalogMeta$O2, labels = c("Strain"))
 GScatalogMeta$facetsPhase = factor(GScatalogMeta$WL, labels = c("Phase~of~growth"))
 ```
 
-```{r Create df to show hline}
+```{r create df to show hline}
 data_hlineGS8 <- data.frame(Photoperiod= c(8),facets2= c("Photoperiod~(h)"),value = c(4))
 data_hlineGS12 <- data.frame(Photoperiod= c(12),facets2= c("Photoperiod~(h)"),value = c(6))
 data_hlineGS16 <- data.frame(Photoperiod= c(16),facets2= c("Photoperiod~(h)"),value = c(8))
 ```
 
-```{r Fitting exponential decays, warning = FALSE}
+# Fit the data to exponential decays
+
+```{r fitting exponential decays, warning = FALSE}
 GScatalogMetaExp <-GScatalogMeta %>% 
   drop_na(GS) %>%
   filter(Phase == "Exponential") %>% 
@@ -152,7 +190,7 @@ pivot_wider(., names_from = c(term), values_from = c(estimate)) %>%
   mutate(alpha = exp(log_alpha)) 
 ```
 
-```{r Unnest, preparing df to preparing final plot, warning = FALSE}
+```{r unnest, preparing df to preparing final plot, warning = FALSE}
 augmented<-fitted  %>%
   unnest(augmented) %>%
   select(c(Strain, PARPhotonDose,GS, .fitted)) 
@@ -170,7 +208,9 @@ GSMetaSt <-GScatalogMeta %>%
 GScatalogMetaFinalPlot<-rbind(GSMetaExpPlot, GSMetaSt)
 ```
 
-```{r Create GS plot, fig.height = 8, fig.width = 8, warning = FALSE}
+# Create GS and AccLen plots
+
+```{r create GS plot, fig.height = 8, fig.width = 8, warning = FALSE}
 
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
@@ -272,7 +312,9 @@ labs(y = "AccLen (h)", x = "Photoperiod (h)") +
         legend.text = element_text(size=9))
 ```
 
-```{r Create 4 df for vertical lines (coloured as Strain) contained tMaxAG values}
+# Create 4 df for vertical lines (coloured as Strain) contained tMaxAG values
+
+```{r create df for vertical lines}
 #PC-rich_056
 data_vline_056 <- data.frame(Par_ue= c(30, 30, 30, 90, 90, 90, 180, 180, 180, 300, 300, 300, 900, 900, 900),Photoperiod= c(8,12,16,8,12,16,8,12,16,8,12,16,8,12,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(293.8333, 321.0833, 323.0833, 317.2500, 269.5833, 174.1667, 242.6667, 198.0833, 104.5833, 218.9167, 173.7500, 102.5833, 147.5000, 148.41667, 148.66667))
 
@@ -285,6 +327,8 @@ data_vline_048 <- data.frame(Par_ue= c(30, 30, 30, 90, 90, 90, 180, 180, 180, 30
 #PE-rich_127
 data_vline_127 <- data.frame(Par_ue= c(30, 30, 30, 90, 90, 90, 180, 180, 180, 300, 300, 300, 900, 900, 900),Photoperiod= c(8,12,16,8,12,16,8,12,16,8,12,16,8,12,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(315.1667, 319.0000, 321.0833, 291.9167, 223.1667, 153.1667, 219.0833, 172.3333, 103.5000, 170.9167, 147.9167, 101.5000, 145.83333, 147.08333, 123.50000))
 ```
+
+# Create TDG plot
 
 ```{r Create TDG plot, fig.height = 8, fig.width = 8, warning = FALSE}
 GScatalogMeta %>%
@@ -319,8 +363,7 @@ labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
         legend.text = element_text(size=10))
 ```
 
-#Ask Doug
-Calculate Par_ue Sine and PARphotondose Sine (because of sine shape of light)
+# Calculate Par_ue Sine and PARphotondose Sine (because of sine shape of light)
 
 ```{r change as character to extract first digit without round - b/c this is hours}
 GScatalogSine<-GScatalogMeta %>% 
@@ -332,10 +375,11 @@ GScatalogSine<-GScatalogSine %>%
   mutate(meanAccLen = as.numeric(meanAccLen)) %>% 
   mutate(meanAccLenRound = as.numeric(meanAccLenRound)) 
 ```
+# Read Sine Par_ue catalog
 
-```{r Load df with calculated Par_ue sine per hour}
+```{r load df with calculated Par_ue sine per hour, results = "hide", warning = FALSE, echo=FALSE}
 gs4_deauth()
-
+# this is the URL or ID of a Sheet readable by anyone (with a link)
 ParSine<- read_sheet("https://docs.google.com/spreadsheets/d/1oZLemHtd6H3j2MgXbgNzqtZ2Gy3EKH6Vnn14PnEpPTw/edit#gid=0")
 
 as.data.frame(ParSine)
@@ -353,13 +397,16 @@ ParSine<-ParSine %>%
          Strain=="BA77G"~"PC-rich_077")) %>% 
   mutate(PARPhotonDoseSine = (PAR_Sine*Photoperiod/2)*3600)
 ```
+# combine GScatalogAllSine with ParSine
 
-```{r Combine GScatalogAllSine with ParSine}
+```{r combine GScatalogAllSine with ParSine}
 GScatalogSineMeta <- GScatalogSine %>%
   left_join(., ParSine, by = c("Strain" = "Strain", "Photoperiod" = "Photoperiod", "Par_ue" = "Par_ue", "meanAccLenRound" = "Photoperiod_h_Sine"))
 ```
 
-```{r AccLen vs PARphotondose Plot, fig.height = 8, fig.width = 8, warning = FALSE}
+# Create preliminary plots
+
+```{r preliminary Plot, fig.height = 8, fig.width = 8, warning = FALSE}
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
@@ -391,9 +438,13 @@ GScatalogSineMeta %>%
         legend.text = element_text(size=10))
 ```
 
-```{r Cleaning the environment}
-rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GSMetaSt, augmented, fitted, GScatalog, GScatalogMetaExp, GSMetaExp, MetaData, data_vline_048, data_vline_127, data_vline_056, data_vline_077, ParSine, GSMetaExpPlot, GScatalogSine, GScatalogMetaFinalPlot, GScatalogSineMeta)
+# Cleaning df before saving as rds and removed unnecessary files from the environment
+
+```{r cleaning the environment}
+rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GSMetaSt, augmented, fitted, GScatalog, GScatalogMetaExp, GSMetaExp, CultureCatalog, data_vline_048, data_vline_127, data_vline_056, data_vline_077, ParSine, GSMetaExpPlot, GScatalogSine, GScatalogMetaFinalPlot, GScatalogSineMeta)
 ```
+
+# Save rds for further analysis
 
 ```{r save rds}
 # saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Imported_GS.Rds", sep = "_"), fsep = .Platform$file.sep))

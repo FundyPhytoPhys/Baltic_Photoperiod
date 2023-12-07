@@ -1,21 +1,49 @@
 ---
-title: "Import Solisense kinetic fluorometer data"
-author: "Douglas A. Campbell"
+title: "ImportSolisenseDoubletap"
+author:
+- Sylwia Sliwinska-Wilczewska
+- Douglas A. Campbell
 date: "`r format(Sys.Date())`"
 output:
-  html_document:
-    df_print: paged
+bookdown::html_document2:
+    code_folding: show
+    keep_md: yes
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 6
+    fig_caption: yes
+bibliography: BalticPhotoperiod.bib
+csl: plos-one.csl
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
-# This .Rmd imports and tidys fit data from the Solisense kinetic fluorometer software.
-# It does not perform the underlying fits of the induction/relaxation profiles from FRRf protocols.
+# Set Options
 
-```{r setup, include = FALSE}
-# knitr::opts_chunk$set(echo = TRUE, message = FALSE)
-# knitr::opts_chunk$set(fig.path='Figs/')
+## Set figure caption font size
+
+```{css, echo=FALSE}
+p.caption {
+  font-size: 18px;
+}
 ```
 
-```{r load libraries} 
+## Set Chunk Options
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(fig.path='Figs/')
+```
+
+# Introduction
+
+This RMD imports and tidys fit data from the Solisense kinetic fluorometer software.
+It does not perform the underlying fits of the induction/relaxation profiles from FRRf protocols.
+
+# Load Libraries
+
+```{r load libraries, warning = FALSE, echo=FALSE} 
 library(tidyverse)
 library(lubridate)
 library(broom)
@@ -30,7 +58,10 @@ library(data.table)
 library(purrr)
 ```
 
-```{r Read ActPARCrossCal Rds}
+# Read ActPARCrossCal Rds from FluorO2Calibrations project existing on GitHub
+
+```{r read existing Rds}
+#"..", "..", takes up two levels in the directory path
 Path <- file.path("..", "..", "FluorO2Calibrations", "CalibrationData")
 
 ActPARCrossCal <- read_rds(file.path(Path, "SolisenseInformation_DCCrossParam.Rds"))
@@ -43,26 +74,21 @@ ActPARCrossCal <- ActPARCrossCal %>%
 #intercept set to 0 in lm in SolisenseInformation.Rproj/SolisenseCalibCompare.Rmd
 ```
 
+# Set up conversions
+
 ```{r conversions}
 us_s <- 1000000
 photons_umol <- 6.022E17 #Avogardo
 A2_m2 <- 1E20 #for sigma -> angstrom (Å) – a metric unit of length equal to 10^−10 m
 ```
 
-```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
-gs4_deauth()
+# Read MetaData
 
-MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1y144Qjs1pxO2vYU4G6of69qX1TVlA8WTwnhfVwaSU0U/edit#gid=0") %>%
-  drop_na(WL) %>%
-  mutate(WL = unlist(WL))
-
-as.data.frame(MetaData)
-MetaData <- MetaData %>%
-   mutate(ExpDate = ymd(ExpDate),
-          ExpEndDate = ymd_hms(`ExpEndDate`))
+```{r read locally stored metadata from rds}
+CultureCatalog <- readRDS(file = file.path("..", "Data","CultureCatalog.Rds"))
 ```
 
-### Import Solisense files from old software (OS)
+# Set Project Variables from old software (OS)
 
 ```{r set project variables, read zipped files, list available files, warning = FALSE, echo=FALSE}
 Project <- "Baltic_Photoperiod"
@@ -80,6 +106,8 @@ Delimiter <- ","
 HeaderRows <- 0
 ```
 
+# Set up delim_plus function
+
 ```{r set up read_delim_plus, warning = FALSE, echo=FALSE}
 read_delim_plus <- function(flnm, delimiter, headerrows, fileencode) {
   fread(flnm, skip = headerrows, sep = delimiter, header = TRUE, encoding = fileencode) %>%
@@ -89,6 +117,8 @@ read_delim_plus <- function(flnm, delimiter, headerrows, fileencode) {
 SolFitsOS <- SolisenseFilesOS %>%
   map_df(~read_delim_plus(flnm = unzip(zip_file, exdir = tempdir())[which(unzip(zip_file, list = TRUE)$Name == .)], delimiter = Delimiter, headerrows = HeaderRows, fileencode = FileEncode))
 ```
+
+# Import and prepare files
 
 ```{r tidy SolFitsTrim}
 SolFitsTrimOS <- SolFitsOS %>%
@@ -129,12 +159,16 @@ SolFitsTrimOS <- SolFitsTrimOS %>%
   select(-c("Fv/Fm"))
 ```
 
-```{r Filter error data}
+# Filter unrelated values
+
+```{r filter unrelated values}
 SolFitsTrimOS <- SolFitsTrimOS %>%
   filter(Sig>0)
 ```
 
-```{r Add ActPARcorr with proper correction factors for TC and no TC}
+# Add ActPARcorr with proper correction factors for TC and no TC
+
+```{r Add ActPARcorr}
 #Intercepts for cross conversions set to 0.
 SolFitsTrimOS <- SolFitsTrimOS %>% 
   mutate(nm445Corr = case_when(TempCont == "TC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
@@ -155,6 +189,8 @@ SolFitsTrimOS <- SolFitsTrimOS %>%
   mutate(ActPARCorr = nm445Corr + nm470Corr + nm505Corr + nm535Corr + nm590Corr + IRCorr)
 ```
 
+# Preparing df for further analysis
+
 ```{r durations}
 #generate column with duration of light step in s
 #add a column adding Dark1s based upon any step < 5 s
@@ -169,12 +205,16 @@ SolFitsTrimOS_lightsteps <- SolFitsTrimOS %>%
   ungroup()
 ```
 
-```{r Combine Solisense and MetaData catallog}
-SolFitsTrimMetaOS <- MetaData %>%
+# Merge Solisense data with MetaData
+
+```{r combine Solisense and MetaData catalog, warning = FALSE, echo=FALSE}
+SolFitsTrimMetaOS <- CultureCatalog %>%
   left_join(., SolFitsTrimOS_lightsteps, by = c("CultureID" = "CultureID")) 
 ```
 
-```{r estimate parameters using Oxborough & Baker 1997 for Fo'}
+# Estimate parameters using Oxborough & Baker 1997 for Fo'
+
+```{r estimate parameters, warning = FALSE, echo=FALSE}
 
 SolFitsTrimMetaOS_param <- SolFitsTrimMetaOS %>%
   group_by(SourceDataFile, Filename, CultureID, ObsDate, Ex_WL, TempCont) %>%
@@ -204,9 +244,9 @@ SolFitsTrimMetaOS_param <- SolFitsTrimMetaOS %>%
   ungroup()
 ```
 
-Sigma -> taken from corresponding light
+# Choosen Sigma from corresponding light
 
-```{r FilterData with light calibration}
+```{r data taken from corresponding light calibration}
 SolFitsTrimMetaClean30 <- SolFitsTrimMetaOS_param %>% 
   filter(Dark1s == 0) %>%
   filter(Par_ue == 30) %>% 
@@ -240,15 +280,17 @@ SolFitsTrimMetaCleanOS<-SolFitsTrimMetaCleanOS %>%
   select(-c(SourceDataFile))
 ```
 
+# Convert Sig_m2psii to Sig_nm2psii
+
 ```{r convert Sig_m2psii to Sig_nm2psii}
 SolFitsTrimMetaCleanOS <- SolFitsTrimMetaCleanOS %>%
 mutate(Sig_nm2psii=Sig_m2psii*1000000000000000000) %>% 
 mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)   
 ```
 
-```{r calculate Sigma mean}
-#colnames(SolFitsTrimMetaClean)
+# Calculate Sigma mean from replica measured on the same day
 
+```{r calculate Sigma mean, warning = FALSE, echo=FALSE}
 SolFitsTrimMetaCleanOS <- SolFitsTrimMetaCleanOS %>%
   group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
   
@@ -270,9 +312,9 @@ SolFitsTrimMetaCleanOS<- SolFitsTrimMetaCleanOS %>%
   mutate(Time_h = E_days*24)
 ```
 
-Sigma -> 1s in dark after corresponding light
+# Choosen Sigma measured from 1s in dark after corresponding light
 
-```{r}
+```{r data taken from 1s of dark after corresponding light calibration}
 SolFitsTrimMetaDarkafterLight30 <- SolFitsTrimMetaOS_param %>% 
   filter(Dark1s == 1) %>%
   filter(ActPAR == 0) %>% 
@@ -317,15 +359,16 @@ SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
   select(-c(Sig, Sig_m2psii))
 ```
 
+# Convert Sig1s_m2psii to Sig1s_nm2psii
+
 ```{r convert Sig1s_m2psii to Sig1s_nm2psii}
 SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
 mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)    
 ```
 
-ObsDateTime -> (format HMS) problem when I combined "light" data in one df
-```{r Create Sigma1s mean}
-colnames(SolFitsTrimMetaDarkafterLightOS)
+# Calculate Sigma1s mean from replica measured on the same day
 
+```{r Calculate Sigma1s mean}
 SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
   group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
 
@@ -345,9 +388,13 @@ SolFitsTrimMetaDarkafterLightOS<- SolFitsTrimMetaDarkafterLightOS %>%
   mutate(Time_h = E_days*24)
 ```
 
+# Cleaning df before saving as rds and removed unnecessary files from the environment
+
 ```{r Cleaning the environment}
 rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFitsTrimOS_lightsteps)
 ```
+
+# Save rds for further analysis
 
 ```{r save rds}
 # saveRDS(SolFitsTrimMetaCleanOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAll.Rds", sep = "_"), fsep = .Platform$file.sep))
@@ -355,9 +402,7 @@ rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFits
 # saveRDS(SolFitsTrimMetaDarkafterLightOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAllDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
-
-
-### Import Solisense files from new software (NS)
+# Set Project Variables from new software (NS)
 
 ```{r set project variables, read zipped files, list available files, warning = FALSE, echo=FALSE}
 Project <- "Baltic_Photoperiod"
@@ -375,6 +420,8 @@ Delimiter <- ","
 HeaderRows <- 0
 ```
 
+# Set up read_delim_plus function
+
 ```{r set up read_delim_plus, warning = FALSE, echo=FALSE}
 read_delim_plus <- function(flnm, delimiter, headerrows, fileencode) {
   fread(flnm, skip = headerrows, sep = delimiter, header = TRUE, encoding = fileencode) %>%
@@ -384,6 +431,8 @@ read_delim_plus <- function(flnm, delimiter, headerrows, fileencode) {
 SolFitsNS <- SolisenseFilesNS %>%
   map_df(~read_delim_plus(flnm = unzip(zip_file, exdir = tempdir())[which(unzip(zip_file, list = TRUE)$Name == .)], delimiter = Delimiter, headerrows = HeaderRows, fileencode = FileEncode))
 ```
+
+# Import and prepare files
 
 ```{r tidy SolFitsTrim}
 SolFitsTrimNS <- SolFitsNS %>%
@@ -424,12 +473,16 @@ SolFitsTrimNS <- SolFitsTrimNS %>%
   select(-c("Fv/Fm"))
 ```
 
-```{r Filter error data}
+# Filter unrelated values
+
+```{r filter unrelated values}
 SolFitsTrimNS <- SolFitsTrimNS %>%
   filter(Sig>0)
 ```
 
-```{r Add ActPARcorr with proper correction factors for TC and no TC}
+# Add ActPARcorr with proper correction factors for TC and no TC
+
+```{r add ActPARcorr}
 #Intercepts for cross conversions set to 0.
 SolFitsTrimNS <- SolFitsTrimNS %>% 
   mutate(nm445Corr = case_when(TempCont == "TC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
@@ -450,6 +503,8 @@ SolFitsTrimNS <- SolFitsTrimNS %>%
   mutate(ActPARCorr = nm445Corr + nm470Corr + nm505Corr + nm535Corr + nm590Corr + IRCorr)
 ```
 
+# Preparing df for further analysis
+
 ```{r durations}
 #generate column with duration of light step in s
 #add a column adding Dark1s based upon any step < 5 s
@@ -464,13 +519,16 @@ SolFitsTrimNS_lightsteps <- SolFitsTrimNS %>%
   ungroup()
 ```
 
-```{r Combine Solisense and MetaData catallog}
-SolFitsTrimMetaNS <- MetaData %>%
+# Merge Solisense data with MetaData
+
+```{r Combine Solisense and MetaData catalog, warning = FALSE, echo=FALSE}
+SolFitsTrimMetaNS <- CultureCatalog %>%
   left_join(., SolFitsTrimNS_lightsteps, by = c("CultureID" = "CultureID")) 
 ```
 
-```{r estimate parameters using Oxborough & Baker 1997 for Fo'}
+# Estimate parameters using Oxborough & Baker 1997 for Fo'
 
+```{r estimate parameters, warning = FALSE, echo=FALSE}
 SolFitsTrimMetaNS_param <- SolFitsTrimMetaNS %>%
   group_by(SourceDataFile, Filename, CultureID, ObsDate, Ex_WL, TempCont) %>%
   mutate(Sig_m2psii = Sig/A2_m2,
@@ -499,9 +557,9 @@ SolFitsTrimMetaNS_param <- SolFitsTrimMetaNS %>%
   ungroup()
 ```
 
-Sigma -> taken from corresponding light
+# Choosen Sigma from corresponding light
 
-```{r FilterData with light calibration}
+```{r data taken from corresponding light calibration}
 SolFitsTrimMetaClean30 <- SolFitsTrimMetaNS_param %>% 
   filter(Dark1s == 0) %>%
   filter(Par_ue == 30) %>% 
@@ -535,15 +593,17 @@ SolFitsTrimMetaCleanNS<-SolFitsTrimMetaCleanNS %>%
   select(-c(SourceDataFile))
 ```
 
+# Convert Sig_m2psii to Sig_nm2psii
+
 ```{r convert Sig_m2psii to Sig_nm2psii}
 SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
 mutate(Sig_nm2psii=Sig_m2psii*1000000000000000000) %>% 
 mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)   
 ```
 
-```{r calculate Sigma mean}
-#colnames(SolFitsTrimMetaClean)
+# Calculate Sigma mean from replica measured on the same day
 
+```{r calculate Sigma mean, warning = FALSE, echo=FALSE}
 SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
   group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
   
@@ -565,9 +625,9 @@ SolFitsTrimMetaCleanNS<- SolFitsTrimMetaCleanNS %>%
   mutate(Time_h = E_days*24)
 ```
 
-Sigma -> 1s in dark after corresponding light
+# Choosen Sigma measured from 1s in dark after corresponding light
 
-```{r}
+```{r data taken from 1s of dark after corresponding light calibration}
 SolFitsTrimMetaDarkafterLight30 <- SolFitsTrimMetaNS_param %>% 
   filter(Dark1s == 1) %>%
   filter(ActPAR == 0) %>% 
@@ -612,15 +672,16 @@ SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
   select(-c(Sig, Sig_m2psii))
 ```
 
+# Convert Sig1s_m2psii to Sig1s_nm2psii
+
 ```{r convert Sig1s_m2psii to Sig1s_nm2psii}
 SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
 mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)    
 ```
 
-ObsDateTime -> (format HMS) problem when I combined "light" data in one df
-```{r Create Sigma1s mean}
-colnames(SolFitsTrimMetaDarkafterLightNS)
+# Calculate Sigma1s mean from replica measured on the same day
 
+```{r calculate Sigma1s mean, warning = FALSE, echo=FALSE}
 SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
   group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
 
@@ -640,9 +701,13 @@ SolFitsTrimMetaDarkafterLightNS<- SolFitsTrimMetaDarkafterLightNS %>%
   mutate(Time_h = E_days*24)
 ```
 
+# Cleaning df before saving as rds and removed unnecessary files from the environment
+
 ```{r Cleaning the environment}
 rm(SolFitsNS, SolFitsTrimNS, SolFitsTrimMetaNS, SolFitsTrimMetaNS_param, SolFitsTrimNS_lightsteps)
 ```
+
+# Save rds for further analysis
 
 ```{r save rds}
 # saveRDS(SolFitsTrimMetaCleanNS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAll.Rds", sep = "_"), fsep = .Platform$file.sep))
@@ -650,13 +715,17 @@ rm(SolFitsNS, SolFitsTrimNS, SolFitsTrimMetaNS, SolFitsTrimMetaNS_param, SolFits
 # saveRDS(SolFitsTrimMetaDarkafterLightNS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAllDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
-```{r Combine data from old and new Software}
+# Merge df from old and new Software for data taken from the corresponding light and at 1s of dark after corresponding light
+
+```{r combine data from old and new Software}
 SolFitsMeta <-rbind(SolFitsTrimMetaCleanOS, SolFitsTrimMetaCleanNS)
 
 SolFitsMetaDarkafterLight <-rbind(SolFitsTrimMetaDarkafterLightOS, SolFitsTrimMetaDarkafterLightNS)
 ```
 
-```{r test plot}
+# Create preliminary plots 
+
+```{r preliminary plot}
 # SolFitsMeta %>% 
 #   ggplot() +
 #   geom_point(aes(x = Par_ue, y = meanSig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
@@ -670,66 +739,13 @@ SolFitsMetaDarkafterLight <-rbind(SolFitsTrimMetaDarkafterLightOS, SolFitsTrimMe
 #   theme_bw()  
 ```
 
+# Save rds for further analysis
+
 ```{r save rds}
 saveRDS(SolFitsMeta, file.path(DataOut, paste(Project, "Imported_SolisenseLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
 saveRDS(SolFitsMetaDarkafterLight, file.path(DataOut, paste(Project, "Imported_SolisenseDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
-
-
-
-
-Greek letters :)
-
-\u0391  Α   Greek Capital Letter Alpha
-\u0392  Β   Greek Capital Letter Beta
-\u0393  Γ   Greek Capital Letter Gamma
-\u0394  Δ   Greek Capital Letter Delta
-\u0395  Ε   Greek Capital Letter Epsilon
-\u0396  Ζ   Greek Capital Letter Zeta
-\u0397  Η   Greek Capital Letter Eta
-\u0398  Θ   Greek Capital Letter Theta
-\u0399  Ι   Greek Capital Letter Iota
-\u039A  Κ   Greek Capital Letter Kappa
-\u039B  Λ   Greek Capital Letter Lambda
-\u039C  Μ   Greek Capital Letter Mu
-\u039D  Ν   Greek Capital Letter Nu
-\u039E  Ξ   Greek Capital Letter Xi
-\u039F  Ο   Greek Capital Letter Omicron
-\u03A0  Π   Greek Capital Letter Pi
-\u03A1  Ρ   Greek Capital Letter Rho
-\u03A3  Σ   Greek Capital Letter Sigma
-\u03A4  Τ   Greek Capital Letter Tau
-\u03A5  Υ   Greek Capital Letter Upsilon
-\u03A6  Φ   Greek Capital Letter Phi
-\u03A7  Χ   Greek Capital Letter Chi
-\u03A8  Ψ   Greek Capital Letter Psi
-\u03A9  Ω   Greek Capital Letter Omega
-\u03B1  α   Greek Small Letter alpha
-\u03B2  β   Greek Small Letter beta
-\u03B3  γ   Greek Small Letter gamma
-\u03B4  δ   Greek Small Letter delta
-\u03B5  ε   Greek Small Letter epsilon
-\u03B6  ζ   Greek Small Letter zeta
-\u03B7  η   Greek Small Letter eta
-\u03B8  θ   Greek Small Letter theta
-\u03B9  ι   Greek Small Letter iota
-\u03BA  κ   Greek Small Letter kappa
-\u03BB  λ   Greek Small Letter lambda
-\u03BC  μ   Greek Small Letter mu
-\u03BD  ν   Greek Small Letter nu
-\u03BE  ξ   Greek Small Letter xi
-\u03BF  ο   Greek Small Letter omicron
-\u03C0  π   Greek Small Letter pi
-\u03C1  ρ   Greek Small Letter rho
-\u03C2  ς   Greek Small Letter final sigma
-\u03C3  σ   Greek Small Letter sigma
-\u03C4  τ   Greek Small Letter tau
-\u03C5  υ   Greek Small Letter upsilon
-\u03C6  φ   Greek Small Letter phi
-\u03C7  χ   Greek Small Letter chi
-\u03C8  ψ   Greek Small Letter psi
-\u03C9  ω   Greek Small Letter omega
 
 
