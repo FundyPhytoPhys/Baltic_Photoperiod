@@ -1,13 +1,48 @@
 ---
-title: "Import Jaz emission data"
-author: "Douglas A. Campbell, Sylwia Sliwinska-Wilczewska, Mireille Savoie"
+title: "ImportJazEm"
+author:
+- Sylwia Sliwinska-Wilczewska
+- Douglas A. Campbell
 date: "`r format(Sys.Date())`"
 output:
-  html_document:
-    df_print: paged
+bookdown::html_document2:
+    code_folding: show
+    keep_md: yes
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 6
+    fig_caption: yes
+bibliography: BalticPhotoperiod.bib
+csl: plos-one.csl
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
-```{r libraries}
+# Set Options
+
+## Set figure caption font size
+
+```{css, echo=FALSE}
+p.caption {
+  font-size: 18px;
+}
+```
+
+## Set Chunk Options
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(fig.path='Figs/')
+```
+
+# Introduction
+
+This RMD imports Jaz radiospectrometer fies.
+
+# Load Libraries and set Project Variables
+
+```{r load libraries, warning = FALSE, echo=FALSE}
 library(tidyverse)
 library(lubridate)
 library(googledrive)
@@ -19,13 +54,14 @@ DataOut <- file.path("..", "Data", "ImportedData")
 
 # Set the path to the zip folder and the destination folder
 zip_file <- file.path("..", "Data", "RawData", "JazEm.zip")
-#zip_file <- "C:/Users/Lenovo/Documents/GitHub/Baltic_Photoperiod/Data/RawData/JazEm.zip"
 
-#List files in the extracted folder with a ".txt" extension
+# List files in the extracted folder with a ".txt" extension
 Jazfile <- unzip(zip_file, list = TRUE)
 Jazfile <- Jazfile[grepl(".txt$", Jazfile$Name), "Name"]
 print(Jazfile)
 ```
+
+# Set up fread_plus function
 
 ```{r set up fread_plus, warning = FALSE, echo=FALSE}
 SkipCS <- 14
@@ -59,6 +95,8 @@ colnames(JazSpec)[1] <- "Wavelength"
 colnames(JazSpec)[2] <- "Counts"
 ```
 
+# Seperate filename
+
 ```{r filename separation, warning = FALSE, echo=FALSE}
 JazSpec <- JazSpec %>% 
   mutate(Filename = str_remove(Filename, pattern = " "))  %>% 
@@ -72,19 +110,21 @@ mutate(ObsDate = ymd(ObsDate),
        WL = as.factor(WL))
 ```
 
-```{r remove the wl < 350 and > 750}
+# Select the appropriate wavelength range
+
+```{r select needed range of nm}
 JazSpecTrim <- JazSpec %>% 
   subset(JazSpec$Wavelength >= 400 & JazSpec$Wavelength <= 701)
 ```
 
-```{r Remove all NA columns & empty rows, fix column types}
+```{r remove all NA columns & empty rows, fix column types}
 not_all_na <- function(x) {!all(is.na(x))}
 
 JazSpecTrim <- JazSpecTrim %>%
   select_if(not_all_na)
 ```
 
-```{r, Find nm at max count and compare with rolling mean of counts}
+```{r find nm at max count and compare with rolling mean of counts}
 JazSpecTrim <- JazSpecTrim %>% 
   group_by(WL, Strain) %>%
    mutate(rollmeanCounts = zoo::rollmean(Counts, k = RollWindow, align = "left", fill = NA),
@@ -99,12 +139,13 @@ JazSpecTrim<-JazSpecTrim %>%
 
 colnames(JazSpecTrim)
 ```
-```{r Removed unnecessary files from environment}
+
+```{r removed unnecessary files from environment}
 rm(JazSpec)
 ```
 
-```{r}
- saveRDS(JazSpecTrim, file.path(DataOut, paste(Project, "Imported_JazEm.Rds", sep = "_"), fsep = .Platform$file.sep))
+```{r save rds}
+saveRDS(JazSpecTrim, file.path(DataOut, paste(Project, "Imported_JazEm.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 

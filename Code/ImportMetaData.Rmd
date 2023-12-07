@@ -84,9 +84,9 @@ CultureCatalog<-CultureCatalog %>%
   filter(WL == "WW")
 ```
 
-# Calculate PAR photon dose
+# Calculate daily PAR photon dose
 
-```{r calculate daily PAR photon dose}
+```{r calculate PAR photon dose}
 CultureCatalog1 <- CultureCatalog %>%
   filter(Photoperiod != "24") %>% 
   mutate(PARPhotonDose =(Par_ue/2)*Photoperiod*3600)
