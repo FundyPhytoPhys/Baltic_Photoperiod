@@ -1,18 +1,48 @@
 ---
-title: "Process OLIS spectral data and Jaz data; create final Spectra plot"
-author: "Douglas A. Campbell, Sylwia Sliwinska-Wilczewska"
+title: "ProcessOlisSpectraJazEm"
+author:
+- Sylwia Sliwinska-Wilczewska
+- Douglas A. Campbell
 date: "`r format(Sys.Date())`"
 output:
-  html_document:
-    df_print: paged
+bookdown::html_document2:
+    code_folding: show
+    keep_md: yes
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 6
+    fig_caption: yes
+bibliography: BalticPhotoperiod.bib
+csl: plos-one.csl
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
-```{r setup, include = FALSE}
-# knitr::opts_chunk$set(echo = TRUE, message = FALSE)
-# knitr::opts_chunk$set(fig.path='Figs/')
+# Set Options
+
+## Set figure caption font size
+
+```{css, echo=FALSE}
+p.caption {
+  font-size: 18px;
+}
 ```
 
-```{r load libraries} 
+## Set Chunk Options
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(fig.path='Figs/')
+```
+
+# Introduction
+
+This RMD process Olis spectra and Jaz radiospectrometer files.
+
+# Load Libraries and set Project Variables
+
+```{r load libraries, warning = FALSE, echo=FALSE} 
 library(tidyverse)
 library(lubridate)
 library(stringr)
@@ -46,11 +76,13 @@ Delimiter <- ""
 HeaderRows <- 0
 ```
 
-```{r Exported Rmd only first time in session}
+# List and read imported Olis and Jaz files
+
+```{r exported Rmd only first time in session}
 list.files(path = DataIn, pattern = Project, full.names = TRUE)
 ```
 
-```{r Read imported Olis file}
+```{r read imported Olis file}
 OLISSpectraFile <- "../Data/ImportedData/Baltic_Photoperiod_Imported_OlisSpectra.Rds"
 OLISSpectraFileName <- str_split(string = OLISSpectraFile, "/")[[1]][3] %>%
   str_remove(pattern = ".Rds")
@@ -65,6 +97,8 @@ JazFileName <- str_split(string = JazFile, "/")[[1]][3] %>%
 JazData <- readRDS(JazFile)  %>%
   ungroup()
 ```
+
+# Preparing df for further analysis
 
 ```{r}
 JazData <- JazData %>%
@@ -84,6 +118,8 @@ JazDataRound <- JazDataRound %>%
   filter(WavelengthRound >= 400 & WavelengthRound <= 700)
 ```
 
+# Normalize Jaz emission to 439 nm
+
 ```{r Normalization Jaz emission at 439}
 EmissionJazWW <- JazDataRound %>%
   group_by(WL, Strain, Par_ue) %>%
@@ -96,13 +132,18 @@ JazDataRoundMeta <- JazDataRound %>%
   left_join(., EmissionJazWW) %>%
   mutate(EmNormJaz439 = CountsMean / EmJaz439)
 ```
-```{r Combine Olis spectra and Jaz data}
+
+# Merge Olis and Jaz data
+
+```{r combine Olis spectra and Jaz data}
 OLISSpectraMeta <- OLISSpectra %>%
   left_join(., JazDataRoundMeta, by = c("Par_ue" = "Par_ue", "nm" = "WavelengthRound", "Strain" = "Strain", "WL" = "WL")) %>%
   unique()
 ```
 
-```{r Estimate PUR}
+# Estimate PUR
+
+```{r estimate PUR}
 OLISSpectraMetaPUR <- OLISSpectraMeta %>%
   mutate(PURNorm = (AbsNorm440*EmNormJaz439)) %>% 
   group_by(WL, Strain, Par_ue, Photoperiod, E_days) %>%
@@ -112,7 +153,9 @@ OLISSpectraMetaPUR <- OLISSpectraMeta %>%
   ungroup() 
 ```
 
-```{r Calculate PAR and PUR Photon dose}
+# Calculate daily PUR photon dose
+
+```{r calculate PUR Photon dose}
 OLISSpectraMetaPUR1 <- OLISSpectraMetaPUR %>%
   filter(Photoperiod != "24") %>% 
   mutate(PURPhotonDose =(PUR/2)*Photoperiod*3600)
@@ -125,13 +168,17 @@ OLISSpectraMetaPUR2 <- OLISSpectraMetaPUR %>%
   rm(OLISSpectraMetaPUR1,OLISSpectraMetaPUR2)
 ```
 
-```{r Filter error value}
+# Filter unrevelant data
+
+```{r filter unrevelant data}
 OLISSpectraMetaPUR<-OLISSpectraMetaPUR %>% 
   filter(PUR>=0) %>% 
   filter(PUR<=900)
 ```
 
-```{r Preparing selected data for creating representative plot}
+# Preparing df for creating representative plot
+
+```{r preparing selected data for creating representative plot}
 OLISSpectraMetaPURShortBA127R<- OLISSpectraMetaPUR %>%
   filter(Photoperiod == "12") %>% 
   filter(Strain == "BA127R") %>% 
@@ -161,6 +208,8 @@ OLISSpectraMetaPURShort <- OLISSpectraMetaPURShort %>%
         Strain=="BA56G"~"PC-rich_056",
          Strain=="BA77G"~"PC-rich_077"))
 ```
+
+# Create plot
 
 ```{r Create plot, fig.height = 10, fig.width = 8}
 Par_ue.labs <- c("30 µE", "90 µE", "180 µE", "Phase of growth", "900 µE")
@@ -406,7 +455,9 @@ OLISSpectraMetaPURShort %>%
         legend.text = element_text(size=10))
 ```
 
-```{r Delete unused stuff from the environment}
+# Cleaning df before saving as rds and removed unnecessary files from the environment
+
+```{r delete unused stuff from the environment}
 rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_textpigment5,data_textpigment6, data_textpigment7, data_textpigment8, data_textpigment9, data_textpigment10, data_textpigment11, data_textpigment12, arrowdf1,arrowdf2,arrowdf3,arrowdf4,arrowdf5,arrowdf6, arrowdf7, arrowdf8, arrowdf9, arrowdf10, arrowdf11, arrowdf12, data_textPUR0, data_textPUR00, data_textPUR1,data_textPUR2, EmissionJazWW, JazData, JazDataRound, JazDataRoundMeta, OLISSpectraMetaPURShortBA127R, OLISSpectraMetaPURShortBA77G, OLISSpectraMeta, OLISSpectra)
 ```
 
@@ -416,7 +467,9 @@ rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_
 # saveRDS(OLISSpectraMetaPURShort, file.path(DataOut, paste(Project, "Processed_OlisSpectraPlot.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
-```{r Clean df, create smaller df - without absorbance and all nm}
+# Create tidy df without all nm
+
+```{r clean df, create smaller df - without absorbance and all nm}
 OLISAllPURTidy<-OLISSpectraMetaPUR %>% 
   select(-c(Absorbance, nm, Abs440, AbsNorm440, EmJaz439, EmNormJaz439, PURNorm, CountsMean, SumAbNorm, PURNormSum, SumEmNormJaz439)) %>% 
   unique()
@@ -432,7 +485,9 @@ OLISAllPURTidy <- OLISAllPURTidy %>%
   filter(PURPARRatio>0)
 ```
 
-```{r Create tidy PAR photon dose and facets for plot}
+# Preparing df for creating plot
+
+```{r create tidy PAR photon dose and facets for plot}
 OLISAllPURTidy <- OLISAllPURTidy %>%
     mutate(PARPhotonDoseTidy=PARPhotonDose/100000) %>% 
     mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
@@ -447,7 +502,9 @@ OLISAllPURTidy$facetsPhase = factor(OLISAllPURTidy$WL, labels = c("Phase~of~grow
 OLISAllPURTidy$facetsPARPhotonDose = factor(OLISAllPURTidy$WL, labels = c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"))
 ```
 
-```{r Test plot, fig.height = 8, fig.width = 8}
+# Create preliminary plot
+
+```{r preliminary plot}
 # lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
 # lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
 # lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
@@ -470,6 +527,8 @@ OLISAllPURTidy$facetsPARPhotonDose = factor(OLISAllPURTidy$WL, labels = c("PAR~p
 #   ggh4x::facet_nested(rows = vars(Strain), labeller = label_parsed) +
 #   theme_bw() 
 ```
+
+# Create plot
 
 ```{r Create final PUR/PAR ratio plot, fig.height = 5, fig.width = 8}
 lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
@@ -508,8 +567,10 @@ OLISAllPURTidy %>%
         legend.text = element_text(size=10))
 ```
 
+# Save rds for further analysis
+
 ```{r save rds}
-saveRDS(OLISAllPURTidy, file.path(DataOut, paste(Project, "Processed_OlisSpectraTidy.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(OLISAllPURTidy, file.path(DataOut, paste(Project, "Processed_OlisSpectraTidy.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 
