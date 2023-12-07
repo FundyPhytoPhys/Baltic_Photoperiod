@@ -19,17 +19,7 @@ editor_options:
     wrap: 72
 ---
 
-# Set Options
-
-## Set figure caption font size
-
-```{css, echo=FALSE}
-p.caption {
-  font-size: 18px;
-}
-```
-
-## Set Chunk Options
+# Set Chunk Options
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
@@ -60,7 +50,7 @@ library(stringi)
 
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ImportedData")
+DataOut <- file.path("..", "Data", "ImportedData", "ImportedGrowthSymmetryData")
 
 FileID <- "Smooth"
 FileEncode <- "UTF-8" 
@@ -447,7 +437,7 @@ rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GSMetaSt, augmented, fitted, G
 # Save rds for further analysis
 
 ```{r save rds}
-# saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Imported_GS.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Imported_GrowthSymmetryData.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 

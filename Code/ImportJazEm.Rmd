@@ -19,17 +19,7 @@ editor_options:
     wrap: 72
 ---
 
-# Set Options
-
-## Set figure caption font size
-
-```{css, echo=FALSE}
-p.caption {
-  font-size: 18px;
-}
-```
-
-## Set Chunk Options
+# Set Chunk Options
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
@@ -50,7 +40,7 @@ library(googledrive)
 
 ```{r set project variables, read zipped files, list available files, warning = FALSE, echo=FALSE}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ImportedData")
+DataOut <- file.path("..", "Data", "ImportedData", "ImportedJazEmData")
 
 # Set the path to the zip folder and the destination folder
 zip_file <- file.path("..", "Data", "RawData", "JazEm.zip")
@@ -153,7 +143,7 @@ rm(JazSpec)
 # Save rds for further analysis
 
 ```{r save rds}
-saveRDS(JazSpecTrim, file.path(DataOut, paste(Project, "Imported_JazEm.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(JazSpecTrim, file.path(DataOut, paste(Project, "Imported_JazEmData.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 

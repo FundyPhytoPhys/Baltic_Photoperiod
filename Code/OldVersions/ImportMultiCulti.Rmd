@@ -19,17 +19,7 @@ editor_options:
     wrap: 72
 ---
 
-# Set Options
-
-## Set figure caption font size
-
-```{css, echo=FALSE}
-p.caption {
-  font-size: 18px;
-}
-```
-
-## Set Chunk Options
+# Set Chunk Options
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
