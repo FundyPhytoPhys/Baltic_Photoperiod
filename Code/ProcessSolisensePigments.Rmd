@@ -1,18 +1,48 @@
 ---
-title: "Process Solisense Doubletap data"
-author: "Douglas A. Campbell, Sylwia Sliwinska-Wilczewska"
+title: "ProcessSolisensePigments"
+author:
+- Sylwia Sliwinska-Wilczewska
+- Douglas A. Campbell
 date: "`r format(Sys.Date())`"
 output:
-  html_document:
-    df_print: paged
+bookdown::html_document2:
+    code_folding: show
+    keep_md: yes
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 6
+    fig_caption: yes
+bibliography: BalticPhotoperiod.bib
+csl: plos-one.csl
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
-```{r setup, include = FALSE}
-# knitr::opts_chunk$set(echo = TRUE, message = FALSE)
-# knitr::opts_chunk$set(fig.path='Figs/')
+# Set Options
+
+## Set figure caption font size
+
+```{css, echo=FALSE}
+p.caption {
+  font-size: 18px;
+}
 ```
 
-```{r load libraries} 
+## Set Chunk Options
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(fig.path='Figs/')
+```
+
+# Introduction
+
+This RMD process Solisense and pigments rds.
+
+# Load Libraries and set Project Variables
+
+```{r load libraries, warning = FALSE, echo=FALSE} 
 library(tidyverse)
 library(lubridate)
 library(stringr)
@@ -46,6 +76,8 @@ FileEncode <- "UTF-8"
 Delimiter <- ""
 HeaderRows <- 0
 ```
+
+# List and read Imported_Solisense RDS
 
 ```{r Exported Rmd}
 list.files(path = DataIn, pattern = Project, full.names = TRUE)
@@ -102,7 +134,9 @@ SolFits1s <-SolFits1s %>%
          Strain=="BA77G"~"PC-rich_077")) 
 ```
 
-```{r Removed errors}
+# Filter unrevelant data and outliers
+
+```{r filter outliers}
 #Filter one weird data point 445nm, 16h, 900uE
 SolFitsAll445<-SolFits %>% 
   filter(Ex_WL == 445) %>% 
@@ -116,7 +150,9 @@ SolFitsChoosen<-rbind(SolFitsAll445,SolFitsAll590)
   rm(SolFitsAll445,SolFitsAll590)
 ```
 
-```{r Choose only exp data for sigma and JVPSII in the corresponding light}
+# Choose only exp data for sigma and JVPSII in the corresponding light
+
+```{r choose only exp data}
 O1 <- SolFitsChoosen %>%
   filter(Par_ue == 30 | Par_ue == 300 | Par_ue == 90 | Par_ue == 180 | Par_ue == 900) %>% 
   filter(Photoperiod == 24) %>% 
@@ -166,6 +202,8 @@ SolFitsChoosenExp <-rbind(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 
 rm(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 ```
+
+# Choose only exp data for sigma and JVPSII at 1s after corresponding light
 
 ```{r choose only exp data for Sig 1s}
 O1 <- SolFits1s %>%
@@ -218,7 +256,9 @@ SolFitsChoosenExp1s <-rbind(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 rm(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 ```
 
-```{r Test plot}
+# Create preliminary plot
+
+```{r preliminary plot}
 SolFitsChoosen %>%
   ggplot() +
   geom_point(aes(x = Time_h, y = Sig_m2psii, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
@@ -253,7 +293,6 @@ SolFitsChoosenExp %>%
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
 ```
-
 
 Make "one big" mean to combine all days (only from exp) and all replica when samples were measured 
 (This give me only one value of JVPSII for further growth vs JVPSII plot and nice sig plot as well)
@@ -291,7 +330,9 @@ E_days, Time_h, facetsPhotonDose, facetsExcitation, facetsStrain,
   ungroup()
 ```
 
-```{r Test plot}
+# Create preliminary plot
+
+```{r preliminary plot}
 
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
@@ -361,7 +402,7 @@ SolFitsAllChoosenExp1s %>% # data from second df contained sig 1s
 
 
 
-one phase decay
+# Fit data to one phase decay
 
 multiple curves PAR photon Dose 590 ->sin in the light
 ```{r}
@@ -672,16 +713,8 @@ SolFitsPigmentExp1s %>%
   theme_bw()
 ```
 
+# Combine PC and PE-rich strains together and filter day 2 and 3 b/c they caused problems
 
-Soisense fit -> sig vs Phycobilins and chla
-```{r test inhibition plot}
-
-# #Harrison & Platt, 1986 
-# grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)} 
-
-```
-
-Combine PC and PE-rich strains together and filter day 2 and 3 b/c they caused problems
 ```{r}
 SolFitsAllPigmentPC<-SolFitsPigmentExp %>% 
   filter(E_days!=2) %>% 
@@ -715,7 +748,8 @@ SolFitsAllPigmentPCPE1s<-rbind(SolFitsAllPigmentPC1s, SolFitsAllPigmentPE1s)
 ```
 
 
-Linear fit per par_ue
+# Linear fit per par_ue
+
 ```{r linear fit}
 SolFitsAllPigmentfitPhycoChlalinear <- SolFitsAllPigmentPCPE |>  
   select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
@@ -779,7 +813,9 @@ SolFitsAllPigmentfitPhycoChlalinearPCPE1s <- SolFitsAllPigmentPCPE1s |>
          )
 ```
 
-```{r test plot}
+# Create preliminary plot
+
+```{r preliminary plot}
 #Plot sig vs phyco/Chla ratio -> linear fit
 
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
@@ -829,7 +865,8 @@ SolFitsAllPigmentfitPhycoChlalinear1s %>%
   theme_bw()
 ```
 
-Linear fit Strain
+# Linear fit Strain
+
 ```{r linear fit}
 SolFitsAllPigmentfitPhycoChlalinearStrain <- SolFitsAllPigmentPCPE |>  
   select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
@@ -923,8 +960,9 @@ SolFitsAllPigmentfitPhycoChlalinearStrainGroup1s <- SolFitsAllPigmentPCPE1s |>
          )
 ```
 
+# Creat preliminary plot
 
-```{r test plot}
+```{r preliminary plot}
 #Plot sig vs phyco/Chla ratio -> linear fit
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
@@ -986,7 +1024,8 @@ SolFitsAllPigmentfitPhycoChlalineardarkStrainGroup %>%
   theme_bw() 
 ```
 
-Linear fit Ex_WL
+# Linear fit Ex_WL
+
 ```{r linear fit}
 SolFitsAllPigmentfitPhycoChlalinearExWL <- SolFitsAllPigmentPCPE |>  
   select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
@@ -1036,7 +1075,9 @@ SolFitsAllPigmentfitPhycoChlalinearExWL1s <- SolFitsAllPigmentPCPE1s |>
          )
 ```
 
-```{r fig.height = 8, fig.width = 8, warning = FALSE}
+# Creat preliminary plot
+
+```{r preliminary plot, fig.height = 8, fig.width = 8, warning = FALSE}
 #Plot sig vs phyco/Chla ratio -> linear fit
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
