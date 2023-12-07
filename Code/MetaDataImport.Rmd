@@ -1,7 +1,7 @@
 ---
-title: "MetaDataImport"
+title: "ImportMetaData"
 author:
-- Mireille Savoie
+- Sylwia Sliwinska-Wilczewska
 - Douglas A. Campbell
 date: "`r format(Sys.Date())`"
 output:
@@ -12,7 +12,7 @@ bookdown::html_document2:
     toc_float: TRUE
     toc_depth: 6
     fig_caption: yes
-bibliography: Prochlorococcus_O2_NPQ.bib
+bibliography: BalticPhotoperiod.bib
 csl: plos-one.csl
 editor_options: 
   markdown: 
@@ -36,57 +36,71 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 knitr::opts_chunk$set(fig.path='Figs/')
 ```
 
-
 # Introduction
 
 This RMD imports culture meta data from a google sheet.
 
-
 # Load Libraries and set Project Variables
 
-```{r load libraries}
-# libraries; Note check actual dependencies
+```{r load libraries, warning = FALSE, echo=FALSE}
 library(tidyverse)
 library(lubridate)
 library(knitr)
 library(data.table)
 library(googledrive)
 library(googlesheets4)
-
 ```
 
-```{r set project variables}
+```{r set project variables, warning = FALSE, echo=FALSE}
 #"..", takes up a level in the directory path
-Project <- "PICO"
+Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..","Data")
-ProjectRows <- c("MiSa|JuNa|SaAr")
-ProjectCols <- c("PrimaryOperator", "SampleID", "Run", "ID", "Strain", "ExpCul", "ExpDate", "ExpStartTime", "Par_ue", "Photoperiod", "Temp_c", "MC", "Tube", "EndDate","O2", "O2_Category", "WL","LightShape", "Optode","OptodeCh","OptodeMeasure", "ExpEndDate")
-
+ProjectRows <- c("SySl")
+ProjectCols <- c("Run", "ID", "Strain", "ExpDate", "Par_ue", "Photoperiod", "MC", "Tube", "O2", "WL","LightShape", "ExpEndDate")
 ```
 
 # Import MetaData 
-```{r load Catalog direct from googlesheet, results = "hide"}
-# #implement read with googlesheet name instead of full url
 
+```{r load Catalog direct from googlesheet, results = "hide", warning = FALSE, echo=FALSE}
 gs4_deauth()
-
 # this is the URL or ID of a Sheet readable by anyone (with a link)
-
-
 CultureCatalog <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0") %>% 
-   
-  # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
-  # ggplot/dplyr doesn't like working with a dataframe of lists.
-  # In this case WL is set to a list since some values are numbers, some are strings, some are blank.
-  # To fix this, first drop all rows missing WL, then unlist.
-  # Must first drop NA rows since unlist will collapse NULL lists, then the unlisted WL is a shorter length than original WL column, which mutate doesn't like.
   drop_na(WL) %>%
   mutate(WL = unlist(WL)) %>%
-   mutate(ExpDate = ymd(ExpDate),
+  mutate(ExpDate = ymd(ExpDate),
           ExpEndDate = ymd_hms(`ExpEndDate`)) %>% 
   filter(str_detect(ID,  ProjectRows)) %>% 
   select(ProjectCols)          
-
-saveRDS(object = CultureCatalog, file = file.path("..", "Data", "CultureCatalog.Rds"), compress = "xz")
-
 ```
+
+# Filter MetaData for specific project
+
+```{r filter MetaData}
+CultureCatalog<-CultureCatalog %>% 
+  rename(CultureID=ID) %>% 
+  filter(Run == 39 | Run== 40 | Run == 43 | Run == 44| Run == 45| Run == 46| Run == 54 | Run == 55 | Run == 58 | Run == 60 | Run == 62 | Run == 65 | Run == 71 | Run == 74 | Run == 75 | Run == 77 | Run == 117 | Run == 121) %>% 
+  filter(Strain == "BA48R" | Strain == "BA127R" | Strain == "BA77G" | Strain == "BA56G") %>% 
+  filter(Par_ue != 600) %>% 
+  filter(WL == "WW")
+```
+
+# Calculate PAR photon dose
+
+```{r calculate daily PAR photon dose}
+CultureCatalog1 <- CultureCatalog %>%
+  filter(Photoperiod != "24") %>% 
+  mutate(PARPhotonDose =(Par_ue/2)*Photoperiod*3600)
+  
+CultureCatalog2 <- CultureCatalog %>%
+  filter(Photoperiod == "24") %>% 
+  mutate(PARPhotonDose = Par_ue*Photoperiod*3600) 
+  
+CultureCatalog <-rbind(CultureCatalog1, CultureCatalog2)
+
+rm(CultureCatalog1, CultureCatalog2)
+```
+
+```{r save rds}
+saveRDS(object = CultureCatalog, file = file.path("..", "Data", "CultureCatalog.Rds"), compress = "xz")
+```
+
