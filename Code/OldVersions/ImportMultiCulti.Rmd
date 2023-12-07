@@ -1,7 +1,10 @@
 ---
 title: "ImportMultiCulti"
 author:
-- Sylwia Sliwinska-Wilczewska
+- Laurel Genge
+- Carlie Barnhill
+- Max Berthold
+- Mireille Savoie
 - Douglas A. Campbell
 date: "`r format(Sys.Date())`"
 output:
@@ -12,18 +15,14 @@ bookdown::html_document2:
     toc_float: TRUE
     toc_depth: 6
     fig_caption: yes
-bibliography: BalticPhotoperiod.bib
+bibliography: Prochlorococcus_O2_NPQ.bib
 csl: plos-one.csl
 editor_options: 
   markdown: 
     wrap: 72
 ---
 
-# Set Options
-
-## Set figure caption font size
-
-```{css, echo=FALSE}
+```{css, Set figure caption font size, echo=FALSE}
 p.caption {
   font-size: 18px;
 }
@@ -32,42 +31,11 @@ p.caption {
 ## Set Chunk Options
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE)
-knitr::opts_chunk$set(fig.path='Figs/')
+# knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+# knitr::opts_chunk$set(fig.path='Figs/')
 ```
 
-# Introduction
-
-The PSI Multicultivator is used to grow 8 x 80 ml of phytoplankton
-culture under a common temperature regime, with individual control of
-bubbling, light level, light spectral quality and photoperiod for each
-of the 8 culture tubes.
-
-This .Rmd Rworkbook imports data in simple .csv long form exported from
-PSI Multicultivators based upon project specific values for variables
-set by the user.
-
-It tidies and organizes the data. It uses a pivot_wider and
-interpolation approach to get the Actinic_par and OD values in line
-rowwise. This requires careful 'arrange' of the rows. It imports a
-metadata Catalog and merges the metadata with the imported data based
-upon shared values for the variables 'MC', 'Tube', and 'Filename' which
-should unambiguously identify a given growth trajectory measured at
-OD680 or OD720.
-
-It generates preliminary data plots. It filters the data for outliers by
-screening out values distant from the moving average of a window in the
-stream; this requires careful 'arrange' of the rows so sequential rows
-represent sequential time steps.
-
-This works because the OD680 & OD720 data are only episodically, but
-widely, aberrant when a bubble interrupts the measurement, and if the
-MultiCultivator is running properly these bubble aberration events are
-rare.
-
-# Load Libraries and set Project Variables
-
-```{r load libraries, warning = FALSE, echo=FALSE}
+```{r load libraries}
 library(tidyverse)
 library(lubridate)
 library(broom)
@@ -78,18 +46,7 @@ library(googlesheets4)
 library(photobiologyWavebands)
 ```
 
-```{r set project variables}
-#"..", takes up a level in the directory path
-Project <- "Baltic_Photoperiod"
-DataIn <- file.path("..", "Data", "RawData", "MultiCulti.zip")
-DataOut <- file.path("..","Data", "ImportedData", "MultiCultiData")
-
-Skip <- 20
-```
-
-# set Photobiology colors
-
-```{r set colours}
+```{r set Photobiology colors}
 MyWavelengths = c(405, 445, 470, 530, 620, 660, 730, "WW")
 MCMIXColours = c(c(w_length2rgb(405), w_length2rgb(445), w_length2rgb(470), w_length2rgb(530),            w_length2rgb(620), w_length2rgb(660), w_length2rgb(730), "black"))
 
@@ -97,32 +54,29 @@ names(MCMIXColours) <- MyWavelengths
 MCMIXColours
 ```
 
-# Read MetaData
+```{r set project variables}
+Project <- "Baltic_Photoperiod"
+DataIn <- file.path("..", "Data", "RawData", "MultiCulti.zip")
+DataOut <- file.path("..","Data", "ImportedData", "MultiCultiData")
+Skip <- 20
+```
 
 ```{r read locally stored metadata from rds}
 CultureCatalog <- readRDS(file = file.path("..", "Data","CultureCatalog.Rds"))
 ```
 
-# List previously imported MultiCulti files
-
-```{r previously imported files}
+```{r List previously imported files}
 list.files(path = DataOut, pattern = Project, full.names = TRUE)
 ```
 
-# List MultiCulti files for Project that are saved in DataIn
-
-```{r MultiCulti files}
-#List files in the extracted folder with a ".asc" extension
+```{r List files in the extracted folder with a ".csv" extension}
 MCFiles <- unzip(DataIn, list = TRUE)
 MCFiles <- MCFiles[grepl(".csv$", MCFiles$Name), "Name"]
 print(MCFiles)
 ```
 
-# Set Target File
-
 ```{r set TargetFile and read csv}
-
-TargetFile <- "20211223_PICO_MCMIX006_RUN42.csv"
+TargetFile <- "20221021_PICO_MCMIX006_RUN96.csv"
 
 # This opens a compressed file without decompressing.
 TargetData <- read_csv(unz(DataIn, TargetFile),  skip = Skip, id = "Path", col_names = c("key", "time", "abs-time", "value")) %>% 
@@ -132,7 +86,7 @@ TargetFileName <- str_remove(string = TargetFile, pattern = ".csv")
 TargetFileName
 ```
 
-# Filter superfluous rows, add ToD column, extract ExpDate, extract MC, 
+# Filter superfluous rows, Add ToD column, extract ExpDate, extract MC, 
 
 ```{r tidy MultiDataTarget}
 #filter superfluous rows to simplify later pivot
@@ -142,7 +96,6 @@ TargetData <- TargetData %>%
   #        key != "mc-airpump.airpump") %>%
   filter(str_detect(key, "od-720|od-680|actinic-lights.light"))
 
-# some files have "V5"  instead of "value" column
 TargetData <- TargetData %>%
   select(key, time, `abs-time`, value, Filename) %>% #, CDateTime
   mutate(Tube = str_extract(key, "-[:digit:]"),
@@ -176,20 +129,29 @@ TargetData <- TargetData %>%
            MC = str_remove(MC, pattern = "\\_.*"))
 ```
 
-# Create preliminary plot for TargetData
+## Create preliminary plot for TargetData
 
 ```{r prelim plot}
-TargetData %>%
+#Run <- c("MultiCulti/20200124_PICO_MCMIX004_RUN1.csv", "MultiCulti/20200124_PICO_MCMIX006_RUN2.csv")
+
+
+  TargetData %>%
   filter(grepl("od-", key)) %>%
+  #filter(grepl("od-sensors-", key)) %>%
   ggplot(data = .) +
   geom_point(aes(x = time, y = value, colour = as.factor(str_detect(key, "680"))), size = 0.5) +
+  #scale_x_continuous(breaks=seq(0, 800, by = 125)) + 
+  #coord_cartesian(xlim = c(-5, 800)) +
   geom_vline(aes(xintercept = 7 * 24), linetype = "dashed") + 
   geom_vline(aes(xintercept = 14 * 24), linetype = "dashed") + 
   scale_colour_manual(values = c("black", "red")) +
   labs(y = "Optical Density (OD)", x = "Elapsed Time (h)", title = "Tubes") +
   facet_grid(cols = vars(as.factor(Tube))) +
   theme_bw() 
+
+
 ```
+
 
 # Generate par_ue column with rows aligned with OD measures
 
@@ -229,8 +191,16 @@ Small glitching adding actinic_light values for tubes where
 actinic_light column should be 0; issue with interpolation we think.
 
 ```{r interpolate and summarize actinic_par by tube}
+#http://publish.illinois.edu/spencer-guerrero/2014/12/11/2-dealing-with-missing-data-in-r-omit-approx-or-spline-part-1/
+
+#https://dplyr.tidyverse.org/dev/articles/colwise.html
+
+#Interpolation causes problems with final rows that repeat last value.
+
 interpolate <- function(x){zoo::na.locf(x, na.rm = FALSE, fromLast = FALSE, type = "l", maxgap = Inf)}
 
+#possible problem with actinic_par for MC data b/c actinic-lights.light1 = NA generates actinic_par of 0 b/c in rowSums na.rm = TRUE, which treats NA as 0.
+#possibly not a big problem but watch for bugs
 #na.rm = FALSE fails to run
 TargetDataWide <- TargetDataWide %>%
   group_by(Tube) %>%
@@ -240,6 +210,9 @@ TargetDataWide <- TargetDataWide %>%
   mutate(Actinic_par = rowSums(.[grep("actinic-lights.light", names(.))], na.rm = TRUE)) %>%
   filter(!is.na(Actinic_par)) %>%
    select(!contains("actinic-lights.light"))
+
+#drop original actinic light columns?
+# select(!contains("actinic-lights.light")) 
 
 TargetDataWide[1:10,]
 ```
@@ -255,9 +228,12 @@ TargetDataWide <- TargetDataWide  %>%
    mutate(OD680 = rowSums(.[grep("od-680", names(.))], na.rm = TRUE),
           OD720 = rowSums(.[grep("od-720", names(.))], na.rm = TRUE)) %>%
    select(!contains("od-sensors"))
+  # filter(OD680 > 0,
+  #        OD720 > 0
 
 #move filtering for OD680 >0 until just before curve fitting to avoid data structure problems
 TargetDataWide[1:10,]
+
 ```
 
 # Merge Data with meta data
@@ -271,21 +247,27 @@ TargetDataMeta
 rm(TargetDataWide)
 ```
 
-# Create preliminary plot
+```{r second prelim plot}
 
-```{r prelim plot}
-TargetDataMeta %>% ggplot() +
+  TargetDataMeta %>% ggplot() +
   geom_point(aes(x = time, y = OD680, colour = as.factor(WL)), size = 0.15) +
   geom_point(aes(x = time, y = OD720), size = 0.15, colour = "orange") +
   #geom_point(aes(x = time, y = Actinic_par/1000),  colour = "orange", size = 0.0001) +
   geom_vline(aes(xintercept = 7 * 24), linetype = "dashed") + 
   geom_vline(aes(xintercept = 14 * 24), linetype = "dashed") + 
+  #scale_x_continuous(breaks=seq(0, 800, by = 125)) +
+  #coord_cartesian(xlim = c(-10, 800)) +
   scale_colour_manual(values = MCMIXColours) +
   labs(y = "Optical Density (OD)", x = "Elapsed Time (h)", subtitle = "Growth Light (µE); Strain; ID; Tube") +
   facet_grid(rows = vars(as.factor(O2)), cols = vars(as.factor(Tube), as.factor(Par_ue),Strain, ID)) +
   theme_bw() +  
   labs(colour = "Actinic PAR (nm)")
+
+
+
 ```
+
+
 
 # Filter OD outliers
 
@@ -296,18 +278,18 @@ Experiment end times are tube specific taken from metacatalog
 StartDate taken from first abs_time point from MC software
 
 MAD is median absolute deviation Used median as opposed to mean to filter anomalous OD values due to affects of bubbling interference because determining outliers from the mean in a given window with many outliers were not detected since deviations from the mean were low. 
-
 ```{r filter bad OD and data points after experiment end time }
+
 #moving average screen
-MovAvgScreen <- 6 # 2
-MovAvgWindow <- 20 # 2
+MovAvgScreen <- 6 # 6
+MovAvgWindow <- 20 # 20
 
 TargetDataMetaFilter <- TargetDataMeta %>%
-  filter(OD680 > 0) %>% # consider this rule for OD720 as well
+  # filter(OD680 > 0) %>% # consider this rule for OD720 as well
   group_by(ID) %>%
   arrange(Filename, MC, Tube, time) %>%
   mutate(ExpEndHour = (difftime(ExpEndDate, StartDate, units = "hours"))) %>%
-  mutate(TimeFlag = case_when(time >= ExpEndHour  ~ 1, 
+   mutate(TimeFlag = case_when(time >= ExpEndHour  ~ 1, 
                               time < ExpEndHour ~ 0)) %>%
   mutate(MovMedian680 = rollapply(OD680, MovAvgWindow, median, fill = "extend",  align = "left"),
          MovMedian720 = rollapply(OD720, MovAvgWindow, median, fill = "extend",  align = "left"),
@@ -316,8 +298,10 @@ TargetDataMetaFilter <- TargetDataMeta %>%
          IsMovMAD680Outlier = if_else(OD680 > MovMedian680 + (MovMAD680 * MovAvgScreen) | OD680 < MovMedian680 - (MovMAD680 * MovAvgScreen), 1,0),
          IsMovMAD720Outlier = if_else(OD720 > MovMedian720 + (MovMAD720 * MovAvgScreen) | OD720 < MovMedian720 - (MovMAD720 * MovAvgScreen), 1,0))
 
+
          # OD680 = if_else(OD680 > MovMedian680 + (MovMAD680 * MovAvgScreen) | OD680 < MovMedian680 - (MovMAD680 * MovAvgScreen), MovMedian680, OD680), #consider replacing OD680 and OD720 rather than filter
          # OD720 = if_else(OD720 > MovMedian720 + (MovMAD720 * MovAvgScreen) | OD720 < MovMedian720 - (MovMAD720 * MovAvgScreen), MovMedian720, OD720)
+
 
 print(paste("Outliers caught by IsMovMAD680Outlier filter:",
             sum(TargetDataMetaFilter$IsMovMAD680Outlier, na.rm = TRUE)))
@@ -325,33 +309,43 @@ print(paste("Outliers caught by IsMovMAD720Outlier filter:",
             sum(TargetDataMetaFilter$IsMovMAD720Outlier, na.rm = TRUE)))
 
 TargetDataMetaFilter <- TargetDataMetaFilter %>%
-    filter(
+  filter(
     !is.na(IsMovMAD680Outlier),
     !is.na(IsMovMAD720Outlier),
     IsMovMAD680Outlier == 0,
     IsMovMAD720Outlier == 0
          )%>%
     filter(TimeFlag == 0) 
+
+# "actinic-lights.light"
+
+#rm(TargetDataMeta)
 ```
 
-# Create preliminary plot 
 ```{r filterdataplot}
+
 TargetDataMetaFilter %>% 
   ggplot() +
   geom_point(aes(x = time, y = OD680, colour = as.factor(WL)), size = 0.15) +
   geom_point(aes(x = time, y = OD720), size = 0.15, colour = "orange") +
   geom_vline(aes(xintercept = 7 * 24), linetype = "dashed") + 
   geom_vline(aes(xintercept = 14 * 24), linetype = "dashed") + 
+  #geom_point(aes(x = time, y = Actinic_par/1000),  colour = "orange", size = 0.0001) +
+ # geom_point(aes(x = time, y = IsMovAvgOutlier680)) +
+#scale_x_continuous(limits = c(0,100))+
+  #scale_x_continuous(breaks=seq(0, 800, by = 125)) +
+  #coord_cartesian(xlim = c(-10, 800)) +
   scale_colour_manual(values = MCMIXColours) +
   labs(y = "Optical Density (OD)", x = "Elapsed Time (h)", subtitle = "Growth Light (µE); Strain; ID; Tube") +
-  facet_grid(rows = vars(as.factor(O2)), cols = vars(as.factor(Tube), as.factor(Par_ue),Strain, ID)) +
+ facet_grid(rows = vars(as.factor(O2)), cols = vars(as.factor(Tube), as.factor(Par_ue),Strain, ID)) +
   theme_bw() +  
   labs(colour = "Actinic PAR (nm)")
+
 ```
 
-#Create preliminary plot
 
 ```{r filterdataplotexpand}
+
 #labelling dynamically offset from data traces.
 #use 'median' for 'x' and OD680 + offset for 'y'
 ExpandTube = 2
@@ -373,24 +367,30 @@ TargetDataMetaFilter %>%
   geom_point(aes(x = time, y = OD720), size = 0.1, alpha = 0.1, colour = "blue") +
   scale_colour_manual(values = MCMIXColours) +
   geom_point(aes(x = time, y = Actinic_par/1000), colour = "orange",  size = 0.0001) +
-  geom_vline(aes(xintercept = 7 * 24), linetype = "dashed") + 
+   geom_vline(aes(xintercept = 7 * 24), linetype = "dashed") + 
   geom_vline(aes(xintercept = 14 * 24), linetype = "dashed") + 
+  # scale_x_continuous(breaks=seq(0, 800, by = 125)) +
+  # coord_cartesian(xlim = c(0, 800)) +
   labs(y = "Optical Density (OD)", x = "Elapsed Time (h)",subtitle = "Growth Light (µE); Strain; ID; Tube") +
+  # facet_grid(rows = vars(O2), cols = vars(Tube, Par_ue, Strain, ID)) +
   annotate(geom = "text", x = OD680_x, y = OD680_y, label = "OD680", size = 5, colour = "darkblue") +
   annotate(geom = "text", x = OD720_x, y = OD720_y, label = "OD720", size = 5, colour = "black") +
   annotate(geom = "text", x = Light_x, y = Light_y, label = "Light level", size = 5, colour = "orange") +
   theme_bw() +
   labs(colour = "Actinic PAR (nm)")
+
+
 ```
 
-# Create daily PAR photon dose
+
 ```{r DailyPAR}
 TargetDataMetaFilter <- TargetDataMetaFilter %>%
   mutate(SetActinic_day = case_when(LightShape == 'Sine' ~ Par_ue/2 * 3600 * Photoperiod,
                                   LightShape == 'Square' ~ Par_ue * 3600 * Photoperiod))
+
 ```
 
-# Implement Daily Cumulative PAR for Corrected Actinic by numeric integration
+Implement Daily Cumulative PAR for Corrected Actinic by numeric integration
 
 ```{r Actinic_parOD}
 #generate corrected values of Actinic_par accounting for OD
@@ -408,9 +408,8 @@ TargetDataMetaFilter <- TargetDataMetaFilter %>%
   group_by(MC, Tube, Day) %>%
   mutate(ActinicMid_intervalOD720 = ActinicMid_parOD720 * ((time - dplyr::lag(time)) * 3600),
          ActinicMid_dayOD720 = sum(ActinicMid_intervalOD720, na.rm = TRUE))
-``` 
 
-# Create preliminary plot 
+``` 
 
 ```{r filterdataplotexpandActinicMid_parOD720}
 #labelling dynamically offset from data traces.
@@ -444,13 +443,8 @@ TargetDataMetaFilter %>%
   theme_bw() +
   labs(colour = "Actinic PAR (nm)")+ 
   guides(colour = guide_legend(override.aes = list(size = 3,  alpha = 1))) 
-```
 
-# Remove redundant columns
 
-```{r remove redundant columns}
-TargetDataMetaFilter <- TargetDataMetaFilter %>% 
-select(-c("MovMAD680", "MovMAD720",  "MovMedian680", "MovMedian720", "IsMovMAD680Outlier", "IsMovMAD720Outlier","ActinicMin_parOD680", "ActinicMid_parOD680", "ActinicMin_parOD720", "ActinicMid_intervalOD720", "abs_time" , "TimeFlag"))
 ```
 
 # Save .Rds of Imported Data from TargetFile
