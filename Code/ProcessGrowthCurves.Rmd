@@ -1,26 +1,36 @@
 ---
-title: "Process pigments data taken (for now) from different repository"
-author: "Douglas A. Campbell, Sylwia Sliwinska-Wilczewska"
+title: "ProcessGrowthCurve"
+author:
+- Sylwia Sliwinska-Wilczewska
+- Douglas A. Campbell
 date: "`r format(Sys.Date())`"
 output:
-  html_document:
-    df_print: paged
+bookdown::html_document2:
+    code_folding: show
+    keep_md: yes
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 6
+    fig_caption: yes
+bibliography: BalticPhotoperiod.bib
+csl: plos-one.csl
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
+# Set Chunk Options
+
 ```{r setup, include = FALSE}
-# knitr::opts_chunk$set(echo = TRUE, message = FALSE)
-# knitr::opts_chunk$set(fig.path='Figs/')
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(fig.path='Figs/')
 ```
 
-```{r set project variables}
-Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ProcessedData")
-DataIn <- file.path("..", "Data", "ImportedData", fsep = .Platform$file.sep)
+# Introduction
 
-FileEncode <- "UTF-8" 
-Delimiter <- ""
-HeaderRows <- 0
-```
+This RMD process MultiCulti files and generate growth curves plot.
+
+# Load Libraries and set Project Variables
 
 ```{r load libraries} 
 library(tidyverse)
@@ -31,20 +41,27 @@ library(knitr)
 library(OneR)
 library(zoo)
 library(strucchange)
-library(ggspectra)
 library(ggpubr)
-library(caret)
-library(photobiologyWavebands)
 library(reshape2)
 library(photobiology)
 library(gcookbook)
-library(RColorBrewer)
-library(viridis)
 library(scales)
 library(googledrive)
 library(googlesheets4)
 library(readxl)
 ```
+
+```{r set project variables}
+Project <- "Baltic_Photoperiod"
+DataOut <- file.path("..", "Data", "ProcessedData", "ProcessedGrowthCurveData")
+DataIn <- file.path("..", "Data", "ImportedData", "ImportedMCData", fsep = .Platform$file.sep)
+
+FileEncode <- "UTF-8" 
+Delimiter <- ""
+HeaderRows <- 0
+```
+
+# List and read imported MC files
 
 ```{r Exported Rmd only first time in session}
 list.files(path = DataIn, pattern = Project, full.names = TRUE)
