@@ -100,7 +100,7 @@ JazData <- readRDS(JazFile)  %>%
 
 # Preparing df for further analysis
 
-```{r}
+```{r round nm}
 JazData <- JazData %>%
    mutate(WavelengthRound = round(Wavelength))
 colnames(JazData)
