@@ -527,8 +527,9 @@ rm(MultiCultiData, MultiCultiData39, MultiCultiData40, MultiCultiData43, MultiCu
 ```
 
 54, 75, 117
+55, 58, 77
 ```{r}
-MultiCultiData117 %>%
+MultiCultiData121 %>%
   ggplot() +
   geom_area(aes(x = time_h, y = meanActinic_par), size = 0.1, fill = "tan1", alpha = 0.6) +
   geom_point(aes(x = time_h, y = meanOD680, colour = as.factor(Strain)), size = 0.7, show.legend = T) +
