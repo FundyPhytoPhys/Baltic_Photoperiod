@@ -46,7 +46,10 @@ library(googlesheets4)
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..","Data")
 ProjectRows <- c("SySl")
-ProjectCols <- c("Run", "SampleID", "Strain", "ExpDate", "Par_ue", "Photoperiod", "MC", "Tube", "O2", "WL","LightShape", "ExpEndDate")
+
+ProjectCols <- c("PrimaryOperator", "SampleID", "Run", "Strain", "ExpCul", "ExpDate", "ExpStartTime", "Par_ue", "Photoperiod", "Temp_c", "MC", "Tube","O2", "O2_Category", "WL","LightShape", "Optode","OptodeCh","OptodeMeasure", "ExpEndDate")
+
+# ProjectCols <- c("Run", "SampleID", "Strain", "ExpDate", "Par_ue", "Photoperiod", "MC", "Tube", "O2", "WL","LightShape", "PrimaryOperator", "ExpEndDate")
 ```
 
 # Import MetaData 
@@ -78,11 +81,11 @@ CultureCatalog<-CultureCatalog %>%
 ```{r calculate PAR photon dose}
 CultureCatalog1 <- CultureCatalog %>%
   filter(Photoperiod != "24") %>% 
-  mutate(PARPhotonDose =(Par_ue/2)*Photoperiod*3600)
+  mutate(PARPhotonDose_day =(Par_ue/2)*Photoperiod*3600)
   
 CultureCatalog2 <- CultureCatalog %>%
   filter(Photoperiod == "24") %>% 
-  mutate(PARPhotonDose = Par_ue*Photoperiod*3600) 
+  mutate(PARPhotonDose_day = Par_ue*Photoperiod*3600) 
   
 CultureCatalog <-rbind(CultureCatalog1, CultureCatalog2)
 
