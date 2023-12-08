@@ -196,8 +196,6 @@ GSMetaSt <-GScatalogMeta %>%
   mutate(.fitted=0)
 
 GScatalogMetaFinalPlot<-rbind(GSMetaExpPlot, GSMetaSt)
-
-rm(augmented, fitted, GSMetaSt)
 ```
 
 # Create GS and AccLen plots
@@ -355,10 +353,87 @@ labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
         legend.text = element_text(size=10))
 ```
 
+# Calculate Par_ue Sine and PARphotondose Sine (because of sine shape of light)
+
+```{r change as character to extract first digit without round - b/c this is hours}
+GScatalogSine<-GScatalogMeta %>% 
+  mutate(meanAccLen = as.character(meanAccLen)) 
+
+GScatalogSine$meanAccLenRound<- substr(GScatalogSine$meanAccLen, 1, 1)
+
+GScatalogSine<-GScatalogSine %>% 
+  mutate(meanAccLen = as.numeric(meanAccLen)) %>% 
+  mutate(meanAccLenRound = as.numeric(meanAccLenRound)) 
+```
+
+# Read Sine Par_ue catalog
+
+```{r load df with calculated Par_ue sine per hour, results = "hide", warning = FALSE, echo=FALSE}
+gs4_deauth()
+# this is the URL or ID of a Sheet readable by anyone (with a link)
+ParSine<- read_sheet("https://docs.google.com/spreadsheets/d/1oZLemHtd6H3j2MgXbgNzqtZ2Gy3EKH6Vnn14PnEpPTw/edit#gid=0")
+
+as.data.frame(ParSine)
+ParSine <- ParSine
+
+ParSine<-ParSine %>%
+  mutate(PAR_Sine = as.numeric(PAR_Sine)) %>%
+  mutate(Par_ue = as.numeric(Par_ue)) %>%
+  mutate(Photoperiod = as.numeric(Photoperiod)) %>%
+  mutate(RealTime = as.numeric(RealTime)) %>%
+  mutate(Photoperiod_h_Sine = as.numeric(Photoperiod_h_Sine)) %>%
+  mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
+         Strain=="BA48R"~"PE-rich_048",
+        Strain=="BA56G"~"PC-rich_056",
+         Strain=="BA77G"~"PC-rich_077")) %>% 
+  mutate(PARPhotonDoseSine = (PAR_Sine*Photoperiod/2)*3600)
+```
+
+# combine GScatalogAllSine with ParSine
+
+```{r combine GScatalogAllSine with ParSine}
+GScatalogSineMeta <- GScatalogSine %>%
+  left_join(., ParSine, by = c("Strain" = "Strain", "Photoperiod" = "Photoperiod", "Par_ue" = "Par_ue", "meanAccLenRound" = "Photoperiod_h_Sine"))
+```
+
+# Create preliminary plots
+
+```{r preliminary Plot, fig.height = 8, fig.width = 8, warning = FALSE}
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
+lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
+GScatalogSineMeta %>%
+  ggplot() +
+  geom_point(aes(x = PARPhotonDoseSine, y = meanGS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
+  geom_errorbar(aes(x = PARPhotonDoseSine, ymin = meanGS - sdGS, ymax = meanGS + sdGS, colour = as.factor(Par_ue)), show.legend = F, width=0) +
+  geom_hline(yintercept = 1, linetype="dashed") +
+  #labs(y = "Diel growth symmetry (AccLen/DecLen)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
+  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
+  scale_x_continuous(label=scientific_10) +
+  ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(Strain), labeller = label_parsed) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="white"),
+        legend.position = c(0.92,0.89),
+        legend.key.height= unit(0.005, 'cm'),
+        legend.spacing.y = unit(-0.1, "cm"),
+        legend.title = element_blank(),
+        legend.text = element_text(size=10))
+```
+
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
 ```{r cleaning the environment}
-rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  CultureCatalog, data_vline_048, data_vline_127, data_vline_056, data_vline_077, GScatalogMetaFinalPlot, GScatalogSineMeta, GSMetaExp, GSMetaExpPlot)
+rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GSMetaSt, augmented, fitted, GScatalog, GScatalogMetaExp, GSMetaExp, CultureCatalog, data_vline_048, data_vline_127, data_vline_056, data_vline_077, ParSine, GSMetaExpPlot, GScatalogSine, GScatalogMetaFinalPlot, GScatalogSineMeta)
 ```
 
 # Save rds for further analysis

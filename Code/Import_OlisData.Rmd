@@ -119,7 +119,7 @@ TargetSpectra <- TargetFile %>%
   select(-c(`OLIS.3D.ASCII`))   
 
 TargetSpectraLong <- TargetSpectra %>%
-  separate(col = Filename, into = c("fp3", "ObsDate", "Project", "CultureID", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
+  separate(col = Filename, into = c("fp3", "ObsDate", "Project", "SampleID", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
 TargetSpectraLong <- TargetSpectraLong %>%
   select(-c(fp3, Type, Correction, Smooth, SampleID, Project)) %>% 
   mutate(ObsDate = ymd(`ObsDate`))
@@ -135,10 +135,10 @@ CultureCatalog <- readRDS(file = file.path("..", "Data","CultureCatalog.Rds"))
 
 ```{r merge OlisSpectra with MetaData, warning = FALSE, echo=FALSE}
 OLISSpectraMeta <- CultureCatalog %>%
-  left_join(., TargetSpectraLong, by = c("CultureID" = "CultureID")) 
+  left_join(., TargetSpectraLong, by = c("SampleID" = "SampleID")) 
 
 OLISSpectraMeta <- OLISSpectraMeta %>%
-group_by(CultureID) %>%
+group_by(SampleID) %>%
   arrange(ObsDate) %>%
   mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
   mutate(SumAb = sum(Absorbance)) %>% 
@@ -154,14 +154,14 @@ OLISSpectraMeta <- OLISSpectraMeta %>%
 Absorbance440 <- OLISSpectraMeta %>% 
   filter(nm == 440) %>%
   mutate(Abs440 = Absorbance) %>%
-  select(CultureID, Strain, Abs440, Par_ue, Photoperiod, E_days)
+  select(SampleID, Strain, Abs440, Par_ue, Photoperiod, E_days)
   
 OLISSpectraMeta440 <- OLISSpectraMeta %>%
   left_join(., Absorbance440) %>%
   mutate(AbsNorm440 = Absorbance / Abs440) 
   
 OLISSpectraMeta440 <- OLISSpectraMeta440 %>%
-group_by(CultureID, E_days, Par_ue, Photoperiod) %>%
+group_by(SampleID, E_days, Par_ue, Photoperiod) %>%
   mutate(SumAbNorm = sum(AbsNorm440)) %>% 
 ungroup()
 ```
@@ -171,7 +171,7 @@ ungroup()
 OLISSpectraMeta440<-OLISSpectraMeta440 %>% 
   mutate(FilenameOlis=Filename) %>% 
   select(-c(CDateTime, Range, Filename)) %>% 
-  select(c(Run, CultureID, Strain, ExpDate, Par_ue, Photoperiod, PARPhotonDose, MC, Tube, O2, WL, LightShape, ExpEndDate, FilenameOlis, ObsDate, Absorbance, nm, E_days, SumAb, Abs440, AbsNorm440, SumAbNorm))
+  select(c(Run, SampleID, Strain, ExpDate, Par_ue, Photoperiod, PARPhotonDose, MC, Tube, O2, WL, LightShape, ExpEndDate, FilenameOlis, ObsDate, Absorbance, nm, E_days, SumAb, Abs440, AbsNorm440, SumAbNorm))
 ```
 
 ```{r removed unnecessary df from the environment}

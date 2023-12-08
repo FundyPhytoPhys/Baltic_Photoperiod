@@ -46,7 +46,7 @@ library(googlesheets4)
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..","Data")
 ProjectRows <- c("SySl")
-ProjectCols <- c("Run", "ID", "Strain", "ExpDate", "Par_ue", "Photoperiod", "MC", "Tube", "O2", "WL","LightShape", "ExpEndDate")
+ProjectCols <- c("Run", "SampleID", "Strain", "ExpDate", "Par_ue", "Photoperiod", "MC", "Tube", "O2", "WL","LightShape", "ExpEndDate")
 ```
 
 # Import MetaData 
@@ -59,7 +59,7 @@ CultureCatalog <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto
   mutate(WL = unlist(WL)) %>%
   mutate(ExpDate = ymd(ExpDate),
           ExpEndDate = ymd_hms(`ExpEndDate`)) %>% 
-  filter(str_detect(ID,  ProjectRows)) %>% 
+  filter(str_detect(SampleID,  ProjectRows)) %>% 
   select(ProjectCols)          
 ```
 
@@ -67,7 +67,6 @@ CultureCatalog <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto
 
 ```{r filter MetaData}
 CultureCatalog<-CultureCatalog %>% 
-  rename(CultureID=ID) %>% 
   filter(Run == 39 | Run== 40 | Run == 43 | Run == 44| Run == 45| Run == 46| Run == 55 | Run == 58 | Run == 60 | Run == 62 | Run == 65 | Run == 71 | Run == 74 | Run == 77 | Run == 117 | Run == 121) %>% 
   filter(Strain == "BA48R" | Strain == "BA127R" | Strain == "BA77G" | Strain == "BA56G") %>% 
   filter(Par_ue != 600) %>% 
