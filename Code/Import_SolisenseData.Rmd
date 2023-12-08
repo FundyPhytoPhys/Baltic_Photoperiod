@@ -1,5 +1,5 @@
 ---
-title: "ImportSolisenseData"
+title: "Import_SolisenseData"
 author:
 - Sylwia Sliwinska-Wilczewska
 - Douglas A. Campbell

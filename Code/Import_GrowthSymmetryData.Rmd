@@ -1,5 +1,5 @@
 ---
-title: "ImportGrowthSymmetryData"
+title: "Import_GrowthSymmetryData"
 author:
 - Sylwia Sliwinska-Wilczewska
 - Douglas A. Campbell
