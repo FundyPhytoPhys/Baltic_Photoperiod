@@ -49,7 +49,7 @@ Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData", "ImportedOlisData")
 
 # Set the path to the zip folder and the destination folder
-zip_file <- file.path("..", "Data", "RawData", "OlisSpectra.zip")
+zip_file <- file.path("..", "Data", "RawData", "OlisData.zip")
 
 #List files in the extracted folder with a ".asc" extension
 OlisFiles <- unzip(zip_file, list = TRUE)
@@ -62,7 +62,7 @@ Delimiter <- ""
 headerrows <- 0
 ```
 
-# Set up fread_plus function
+# Set up fread_plus and read.delim_long function
 
 ```{r set up fread_plus and read.delim_long, warning = FALSE, echo=FALSE}
 # Define function to read and process each file
@@ -119,10 +119,12 @@ TargetSpectra <- TargetFile %>%
   select(-c(`OLIS.3D.ASCII`))   
 
 TargetSpectraLong <- TargetSpectra %>%
-  separate(col = Filename, into = c("fp3", "ObsDate", "Project", "SampleID", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
+  separate(col = Filename, into = c("ObsDate", "Project", "SampleID", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
+
 TargetSpectraLong <- TargetSpectraLong %>%
-  select(-c(fp3, Type, Correction, Smooth, Project)) %>% 
-  mutate(ObsDate = ymd(`ObsDate`))
+  mutate(FilenameOlis=Filename) %>% 
+  mutate(ObsDate = ymd(`ObsDate`)) %>% 
+  select(-c(Type, Correction, Smooth, Project, Filename)) 
 ```
 
 # Read MetaData
@@ -169,9 +171,7 @@ ungroup()
 
 ```{r cleaning and ordering OLISSpectraMeta440 before creating rds}
 OLISSpectraMeta440<-OLISSpectraMeta440 %>% 
-  mutate(FilenameOlis=Filename) %>% 
-  select(-c(CDateTime, Range, Filename)) %>% 
-  select(c(Run, SampleID, Strain, ExpDate, Par_ue, Photoperiod, PARPhotonDose, MC, Tube, O2, WL, LightShape, ExpEndDate, FilenameOlis, ObsDate, Absorbance, nm, E_days, SumAb, Abs440, AbsNorm440, SumAbNorm))
+  select(-c(CDateTime, Range)) 
 ```
 
 ```{r removed unnecessary df from the environment}
