@@ -43,7 +43,7 @@ Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData", "ImportedJazEmData")
 
 # Set the path to the zip folder and the destination folder
-zip_file <- file.path("..", "Data", "RawData", "JazEm.zip")
+zip_file <- file.path("..", "Data", "RawData", "JazEmData.zip")
 
 # List files in the extracted folder with a ".txt" extension
 Jazfile <- unzip(zip_file, list = TRUE)
@@ -90,9 +90,9 @@ colnames(JazSpec)[2] <- "Counts"
 ```{r filename separation, warning = FALSE, echo=FALSE}
 JazSpec <- JazSpec %>% 
   mutate(Filename = str_remove(Filename, pattern = " "))  %>% 
-  separate(col = Filename, into = c("Instrument","ObsDate", "Strain", "Par_ue", "WL"), sep = "([\\/\\/\\_\\_\\_\\_\\_\\_\\.])", remove = FALSE) %>% 
+  separate(col = Filename, into = c("ObsDate", "Strain", "Par_ue", "WL"), sep = "([\\/\\/\\_\\_\\_\\_\\_\\_\\.])", remove = FALSE) %>% 
   mutate(FilenameJaz=Filename) %>% 
-  select(-c("Instrument", "Filename"))
+  select(-c("Filename"))
 
 JazSpec <- JazSpec %>% 
 mutate(ObsDate = ymd(ObsDate),
