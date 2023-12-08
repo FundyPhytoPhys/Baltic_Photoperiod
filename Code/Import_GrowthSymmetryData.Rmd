@@ -365,6 +365,7 @@ GScatalogSine<-GScatalogSine %>%
   mutate(meanAccLen = as.numeric(meanAccLen)) %>% 
   mutate(meanAccLenRound = as.numeric(meanAccLenRound)) 
 ```
+
 # Read Sine Par_ue catalog
 
 ```{r load df with calculated Par_ue sine per hour, results = "hide", warning = FALSE, echo=FALSE}
@@ -387,6 +388,7 @@ ParSine<-ParSine %>%
          Strain=="BA77G"~"PC-rich_077")) %>% 
   mutate(PARPhotonDoseSine = (PAR_Sine*Photoperiod/2)*3600)
 ```
+
 # combine GScatalogAllSine with ParSine
 
 ```{r combine GScatalogAllSine with ParSine}
