@@ -1,0 +1,460 @@
+---
+title: "MultiDataGrowthAssessPico"
+author:
+- Laurel Genge
+- Carlie Barnhill
+- Max Berthold
+- Douglas A. Campbell
+- Mireille Savoie
+date: "`r format(Sys.Date())`"
+output:
+  bookdown::html_document2:
+    code_folding: show
+    keep_md: yes
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 6
+    fig_caption: yes
+bibliography: Prochlorococcus_O2_NPQ.bib
+csl: plos-one.csl
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+## Set figure caption font size
+```{css, echo=FALSE}
+p.caption {
+  font-size: 25px;
+}
+```
+
+## Set Chunk Options
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(fig.path='Figs/')
+```
+
+
+# Introduction
+
+# Materials and Methods
+
+## Load Libraries and set project variables
+
+```{r load libraries, message= TRUE}
+# libraries; Note check actual dependencies
+
+library(lubridate)
+library(broom)
+library(knitr)
+library(zoo)
+library(RColorBrewer)
+library(grid)
+library(photobiologyWavebands)
+library(tidyverse)
+
+```
+
+```{r set project variables}
+#"..", takes up a level in the directory path
+
+Project <- "PICO"
+
+DataOut <- file.path("..", "Data", "CleanData", "CleanedMCData")
+DataIn <- file.path("..", "Data","ProcessedData", "ProcessedMCData")
+
+
+GrowthFlagError <- 0.2     # percentage of mu that std error must be less than
+
+OD720GrowthAmpFlagValue = 0.010 # OD720 absolute change for setting GrowthFlag = 1 and DeclineFlag = 1; did culture show  growth; 
+
+deltaODGrowthAmpFlagValue = 0.007 # deltaOD absolute change for setting GrowthFlag = 1 and DeclineFlag = 1; did culture show  growth; 
+
+```
+
+```{r set colours}
+
+MyWavelengths = c(405, 450, 470, 530, 620, 660, 730, "WW")
+MCMIXColours = c(c(w_length2rgb(405), w_length2rgb(450), w_length2rgb(470), w_length2rgb(530),
+                   w_length2rgb(620), w_length2rgb(660), w_length2rgb(730), "black"))
+
+
+names(MCMIXColours) <- MyWavelengths
+MCMIXColours
+
+```
+
+## List processed data
+
+```{r previous ProcessedData}
+
+ProcessedFiles <- list.files(path = DataIn, pattern = Project, full.names = TRUE)
+
+ProcessedFiles
+
+```
+
+# Read .Rds, Summarize, Combine to single data frame
+
+## Create function using to read in .Rds, adding source filename as a column
+
+```{r readRDS_plus}
+readRDS_plus <- function(Flnm){readRDS(file = Flnm) %>%
+    mutate(Filename = Flnm)
+}
+```
+
+## Read in ProcessedFiles .Rds 
+
+```{r read selected ProcessedData}
+                                    
+LogFitsData <-  ProcessedFiles %>%
+    map_df(~readRDS_plus(Flnm = .)) 
+
+glimpse(LogFitsData)
+
+
+```
+
+#Unnest data
+# assign growth rate to zero if model returns mu < 0 or if growth amplitude flag = 0 
+
+```{r unnest fits}
+
+# OD720 logistic fits
+# assign 0 to growth fits that are NA's and for tubes with absolute amplitude change defined in project variables chunk. 
+
+OD720_unnest <- LogFitsData %>%
+  select(c(Filename, Tube, ExpDate, MC, PrimaryOperator, Run,  SampleID, Strain, ExpCul, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape, Optode, OptodeCh, OptodeMeasure, ExpEndDate, ExpEndHour, PARPhotonDose_day, tubedata, minRollMeanOD720, maxRollMeanOD720, minRollMeandeltaOD, maxRollMeandeltaOD,  GrowthAmpOD720_14days,  GrowthAmpdeltaOD_14days, OD720_logistic_tidied, OD720_logistic_predict, O2_Category)
+         ) %>%
+  unnest(cols = c(OD720_logistic_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  OD720_logistic_tidied_term, values_from = c(OD720_logistic_tidied_estimate, OD720_logistic_tidied_std.error, OD720_logistic_tidied_statistic, OD720_logistic_tidied_p.value), names_sep = "_") %>%
+  rename(OD720_Lmax = OD720_logistic_tidied_estimate_Lmax,
+         OD720_Lmax_se = OD720_logistic_tidied_std.error_Lmax,
+         OD720_Lmu_raw = OD720_logistic_tidied_estimate_Lmu,
+         OD720_Lmu_se = OD720_logistic_tidied_std.error_Lmu,
+         OD720_Lintercept = OD720_logistic_tidied_estimate_Lintercept,             
+         OD720_Lintercept_se = OD720_logistic_tidied_std.error_Lintercept)  %>%
+   mutate(OD720_Lmu_corr = if_else(!is.na(OD720_Lmu_raw), OD720_Lmu_raw, 0),
+          OD720_Lmu_se = if_else(!is.na(OD720_Lmu_se), OD720_Lmu_se, 0),
+          OD720_Lintercept = if_else(!is.na(OD720_Lintercept), OD720_Lintercept, 0),
+          OD720_Lintercept_se = if_else(!is.na(OD720_Lintercept_se), OD720_Lintercept_se, 0),
+          OD720_Lmax = if_else(!is.na(OD720_Lmax), OD720_Lmax, 0),
+          OD720_Lmax_se = if_else(!is.na(OD720_Lmax_se), OD720_Lmax_se, 0),
+          GrowthAmpOD720Flag_14days = if_else(GrowthAmpOD720_14days >= OD720GrowthAmpFlagValue, 1, 0),
+          OD720_Lmu_corr = if_else(GrowthAmpOD720Flag_14days == 1 & OD720_Lmu_corr >= 0 , OD720_Lmu_corr, 0),
+          OD720_LseGrowthFlag = if_else(OD720_Lmu_se < OD720_Lmu_corr * GrowthFlagError, 1, 0)
+          )
+
+
+# deltaOD logistic fits
+# assign 0 to growth fits that are NA's and for tubes with absolute amplitude change defined in project variables chunk. 
+
+deltaOD_unnest <- LogFitsData %>%
+   select(c(Filename,  Tube, ExpDate, MC, PrimaryOperator, Run,  SampleID, Strain, ExpCul, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape,  Optode, OptodeCh, OptodeMeasure,  ExpEndDate, ExpEndHour, PARPhotonDose_day, tubedata, minRollMeanOD720, maxRollMeanOD720, minRollMeandeltaOD, maxRollMeandeltaOD, GrowthAmpOD720_14days,  GrowthAmpdeltaOD_14days, deltaOD_logistic_tidied, deltaOD_logistic_predict, O2_Category)
+          ) %>%
+unnest(cols = c(deltaOD_logistic_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  deltaOD_logistic_tidied_term, values_from = c(deltaOD_logistic_tidied_estimate, deltaOD_logistic_tidied_std.error, deltaOD_logistic_tidied_statistic, deltaOD_logistic_tidied_p.value), names_sep = "_")  %>%
+  rename(deltaOD_Lmax = deltaOD_logistic_tidied_estimate_Lmax,
+         deltaOD_Lmax_se = deltaOD_logistic_tidied_std.error_Lmax,
+         deltaOD_Lmu_raw = deltaOD_logistic_tidied_estimate_Lmu,
+         deltaOD_Lmu_se = deltaOD_logistic_tidied_std.error_Lmu,
+         deltaOD_Lintercept = deltaOD_logistic_tidied_estimate_Lintercept,
+         deltaOD_Lintercept_se = deltaOD_logistic_tidied_std.error_Lintercept) %>%
+   mutate(deltaOD_Lmu_corr = if_else(!is.na(deltaOD_Lmu_raw), deltaOD_Lmu_raw, 0),
+          deltaOD_Lmu_se = if_else(!is.na(deltaOD_Lmu_se), deltaOD_Lmu_se, 0),
+          deltaOD_Lintercept = if_else(!is.na(deltaOD_Lintercept), deltaOD_Lintercept, 0),
+          deltaOD_Lintercept_se = if_else(!is.na(deltaOD_Lintercept_se), deltaOD_Lintercept_se, 0),
+          deltaOD_Lmax = if_else(!is.na(deltaOD_Lmax), deltaOD_Lmax, 0),
+          deltaOD_Lmax_se = if_else(!is.na(deltaOD_Lmax_se), deltaOD_Lmax_se, 0),
+          GrowthAmpdeltaODFlag_14days = if_else(GrowthAmpdeltaOD_14days >= deltaODGrowthAmpFlagValue, 1, 0),
+          deltaOD_Lmu_corr = if_else(GrowthAmpdeltaODFlag_14days == 1 & deltaOD_Lmu_corr >= 0, deltaOD_Lmu_corr, 0),
+         deltaOD_LseGrowthFlag = if_else(deltaOD_Lmu_se < deltaOD_Lmu_corr * GrowthFlagError, 1, 0)
+          )
+ 
+# OD720 truncated logistic fits
+# assign 0 to growth fits that are NA's and for tubes with absolute amplitude change defined in project variables chunk. 
+
+OD720truncLog_unnest <- LogFitsData %>%
+   select(c(Filename, Tube, ExpDate, MC, PrimaryOperator, Run,  SampleID, Strain, ExpCul, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape,  Optode, OptodeCh, OptodeMeasure,  ExpEndDate, ExpEndHour, PARPhotonDose_day, tubedata, minRollMeanOD720, maxRollMeanOD720, minRollMeandeltaOD, maxRollMeandeltaOD, GrowthAmpOD720_14days,  GrowthAmpdeltaOD_14days,OD720trunc_logistic_tidied, OD720trunc_logistic_predict, O2_Category)
+          ) %>%
+  unnest(cols = c(OD720trunc_logistic_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  OD720trunc_logistic_tidied_term, values_from = c(OD720trunc_logistic_tidied_estimate, OD720trunc_logistic_tidied_std.error, OD720trunc_logistic_tidied_statistic, OD720trunc_logistic_tidied_p.value), names_sep = "_") %>%
+  rename(OD720trunc_Lmax = OD720trunc_logistic_tidied_estimate_Lmax,
+         OD720trunc_Lmax_se = OD720trunc_logistic_tidied_std.error_Lmax,
+         OD720trunc_Lmu_raw = OD720trunc_logistic_tidied_estimate_Lmu,
+         OD720trunc_Lmu_se = OD720trunc_logistic_tidied_std.error_Lmu,
+         OD720trunc_Lintercept = OD720trunc_logistic_tidied_estimate_Lintercept,             
+         OD720trunc_Lintercept_se = OD720trunc_logistic_tidied_std.error_Lintercept)  %>%
+   mutate(OD720trunc_Lmu_corr = if_else(!is.na(OD720trunc_Lmu_raw), OD720trunc_Lmu_raw, 0),
+          OD720trunc_Lmu_se = if_else(!is.na(OD720trunc_Lmu_se), OD720trunc_Lmu_se, 0),
+          OD720trunc_Lintercept = if_else(!is.na(OD720trunc_Lintercept), OD720trunc_Lintercept, 0),
+          OD720trunc_Lintercept_se = if_else(!is.na(OD720trunc_Lintercept_se), OD720trunc_Lintercept_se, 0),
+          OD720trunc_Lmax = if_else(!is.na(OD720trunc_Lmax), OD720trunc_Lmax, 0),
+          OD720trunc_Lmax_se = if_else(!is.na(OD720trunc_Lmax_se), OD720trunc_Lmax_se, 0),
+          GrowthAmpOD720Flag_14days = if_else(GrowthAmpOD720_14days >= OD720GrowthAmpFlagValue, 1, 0),
+          OD720trunc_Lmu_corr = if_else(GrowthAmpOD720Flag_14days == 1 & OD720trunc_Lmu_corr >= 0 , OD720trunc_Lmu_corr, 0),
+          OD720trunc_LseGrowthFlag = if_else(OD720trunc_Lmu_se < OD720trunc_Lmu_corr * GrowthFlagError, 1, 0)
+          )
+
+
+# deltaOD truncated logistic fits
+# assign 0 to growth fits that are NA's and for tubes with absolute amplitude change defined in project variables chunk. 
+
+deltaODtruncLog_unnest <- LogFitsData %>%
+   select(c(Filename, Tube, ExpDate, MC, PrimaryOperator, Run,  SampleID, Strain, ExpCul, ExpStartTime, Par_ue, Photoperiod, Temp_c, O2, WL, LightShape,  Optode, OptodeCh, OptodeMeasure,  ExpEndDate, ExpEndHour, PARPhotonDose_day, tubedata, minRollMeanOD720, maxRollMeanOD720, minRollMeandeltaOD, maxRollMeandeltaOD, GrowthAmpOD720_14days,  GrowthAmpdeltaOD_14days, deltaODtrunc_logistic_tidied, deltaODtrunc_logistic_predict, O2_Category)
+          ) %>%
+unnest(cols = c(deltaODtrunc_logistic_tidied), names_sep = "_", keep_empty = TRUE) %>%
+  pivot_wider(names_from =  deltaODtrunc_logistic_tidied_term, values_from = c(deltaODtrunc_logistic_tidied_estimate, deltaODtrunc_logistic_tidied_std.error, deltaODtrunc_logistic_tidied_statistic, deltaODtrunc_logistic_tidied_p.value), names_sep = "_")  %>%
+  rename(deltaODtrunc_Lmax = deltaODtrunc_logistic_tidied_estimate_Lmax,
+         deltaODtrunc_Lmax_se = deltaODtrunc_logistic_tidied_std.error_Lmax,
+         deltaODtrunc_Lmu_raw = deltaODtrunc_logistic_tidied_estimate_Lmu,
+         deltaODtrunc_Lmu_se = deltaODtrunc_logistic_tidied_std.error_Lmu,
+         deltaODtrunc_Lintercept = deltaODtrunc_logistic_tidied_estimate_Lintercept,
+         deltaODtrunc_Lintercept_se = deltaODtrunc_logistic_tidied_std.error_Lintercept) %>%
+   mutate(deltaODtrunc_Lmu_corr = if_else(!is.na(deltaODtrunc_Lmu_raw), deltaODtrunc_Lmu_raw, 0),
+          deltaODtrunc_Lmu_se = if_else(!is.na(deltaODtrunc_Lmu_se), deltaODtrunc_Lmu_se, 0),
+          deltaODtrunc_Lintercept = if_else(!is.na(deltaODtrunc_Lintercept), deltaODtrunc_Lintercept, 0),
+          deltaODtrunc_Lintercept_se = if_else(!is.na(deltaODtrunc_Lintercept_se), deltaODtrunc_Lintercept_se, 0),
+          deltaODtrunc_Lmax = if_else(!is.na(deltaODtrunc_Lmax), deltaODtrunc_Lmax, 0),
+          deltaODtrunc_Lmax_se = if_else(!is.na(deltaODtrunc_Lmax_se), deltaODtrunc_Lmax_se, 0),
+          GrowthAmpdeltaODFlag_14days = if_else(GrowthAmpdeltaOD_14days >= deltaODGrowthAmpFlagValue, 1, 0),
+          deltaODtrunc_Lmu_corr = if_else(GrowthAmpdeltaODFlag_14days == 1 & deltaODtrunc_Lmu_corr >= 0, deltaODtrunc_Lmu_corr, 0),
+          deltaODtrunc_LseGrowthFlag = if_else(deltaODtrunc_Lmu_se < deltaODtrunc_Lmu_corr * GrowthFlagError, 1, 0)
+          )
+
+```
+
+```{r combine unnested fits for PICO Shiny App}
+
+
+# OD720 logistic fits
+OD720_unnest <- OD720_unnest %>%
+select(-c(
+          OD720_logistic_tidied_statistic_Lintercept,
+          OD720_logistic_tidied_statistic_Lmax,
+          OD720_logistic_tidied_statistic_Lmu,
+          OD720_logistic_tidied_p.value_Lintercept,
+          OD720_logistic_tidied_p.value_Lmax,
+          OD720_logistic_tidied_p.value_Lmu)
+       )
+
+# deltaOD logistic fits
+deltaOD_unnest <- deltaOD_unnest %>%
+  select(-c(
+            deltaOD_logistic_tidied_statistic_Lintercept,
+            deltaOD_logistic_tidied_statistic_Lmax,
+            deltaOD_logistic_tidied_statistic_Lmu,
+            deltaOD_logistic_tidied_p.value_Lintercept,
+            deltaOD_logistic_tidied_p.value_Lmax,
+            deltaOD_logistic_tidied_p.value_Lmu)
+         )
+
+
+# OD720 truncated logistic fits
+OD720truncLog_unnest <- OD720truncLog_unnest %>%
+select(-c(
+            OD720trunc_logistic_tidied_statistic_Lintercept,
+            OD720trunc_logistic_tidied_statistic_Lmax,
+            OD720trunc_logistic_tidied_statistic_Lmu,
+            OD720trunc_logistic_tidied_p.value_Lintercept,
+            OD720trunc_logistic_tidied_p.value_Lmax,
+            OD720trunc_logistic_tidied_p.value_Lmu)
+       )
+
+# deltaOD truncated logistic fits
+deltaODtruncLog_unnest <- deltaODtruncLog_unnest %>%
+  select(-c(
+            deltaODtrunc_logistic_tidied_statistic_Lintercept,
+            deltaODtrunc_logistic_tidied_statistic_Lmax,
+            deltaODtrunc_logistic_tidied_statistic_Lmu,
+            deltaODtrunc_logistic_tidied_p.value_Lintercept,
+            deltaODtrunc_logistic_tidied_p.value_Lmax,
+            deltaODtrunc_logistic_tidied_p.value_Lmu)
+         )
+
+
+# Join Full Growth Rate Data
+
+UnnestedLogData <- left_join(x = OD720_unnest, y = deltaOD_unnest)
+
+# Join Truncated Growth Rate Data
+UnnestedTruncLogData <- left_join(x = OD720truncLog_unnest, y =  deltaODtruncLog_unnest)
+
+#combine Full and Truncated unnested data
+NestedFitsData <- left_join(x = UnnestedLogData, y = UnnestedTruncLogData)
+
+
+#remove redundant objects
+remove(OD720_unnest,
+       deltaOD_unnest,
+       UnnestedLogData,
+       OD720truncLog_unnest,
+       deltaODtruncLog_unnest,
+       UnnestedTruncLogData
+       )
+
+```
+
+
+<!-- Chunk to convert categorize oxygen levels based on input in metacatalog. Have to do this here as this column was added after many runs were already processed and the merge with metacatalog already occured. Run numbers >= 36 and <= 91 and 0% oxygen are labelled 'Low', runs <= 35  and 0% oxygen are labelled 'Intermediate'.  All runs >= 92 are from the metacatelog. All runs with 21% oxygen are labelled 'High'.  Assign [O2] to O2_uM based on category -->
+
+```{r}
+
+NestedFitsData <- NestedFitsData %>% 
+  mutate(O2_uM = case_when(O2_Category == "Low" ~ 2.5,
+                            O2_Category == "Intermediate" ~ 25,
+                            O2_Category == "High" ~ 250))
+
+```
+
+
+
+```{r, pivot Nested data longer for GAM}
+
+# OD720 pivot longer Gmax, Gmu, Glag, Lmu, Lmax and Lintercept estimates
+Pivot_Longer_OD720_est <- NestedFitsData %>%
+  select(c(Filename, Tube, SampleID, Run, PrimaryOperator, Strain, Par_ue, Photoperiod, PARPhotonDose_day, Temp_c, O2, O2_Category,O2_uM, WL, LightShape,  GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days,  OD720_LseGrowthFlag, OD720trunc_LseGrowthFlag,  OD720_Lmu_corr, OD720_Lmax, OD720_Lintercept, OD720trunc_Lmu_corr, OD720trunc_Lmax, OD720trunc_Lintercept
+            )) %>%
+   pivot_longer(c(OD720_Lmu_corr, OD720_Lmax, OD720_Lintercept, OD720trunc_Lmu_corr, OD720trunc_Lmax, OD720trunc_Lintercept), names_to = c("Wavelength", "term"), values_to = c("estimate"), names_sep = '\\_')
+
+
+# OD720 pivot longer Gmax, Gmu, Glag , Lmu, Lmax and Lintercept standard error
+Pivot_Longer_OD720_se <- NestedFitsData %>%
+  select(c(Filename, Tube, SampleID, Run, PrimaryOperator, Strain, Par_ue,  Photoperiod, PARPhotonDose_day, Temp_c, O2, O2_Category,O2_uM, WL, LightShape, GrowthAmpOD720_14days, GrowthAmpOD720Flag_14days,  OD720_LseGrowthFlag, OD720trunc_LseGrowthFlag,   OD720_Lmu_se, OD720_Lmax_se, OD720_Lintercept_se,OD720trunc_Lmu_se, OD720trunc_Lmax_se, OD720trunc_Lintercept_se
+            )) %>%
+   pivot_longer(c(OD720_Lmu_se, OD720_Lmax_se, OD720_Lintercept_se, OD720trunc_Lmu_se, OD720trunc_Lmax_se, OD720trunc_Lintercept_se), names_to = c("Wavelength", "term"), values_to = c("se"), names_sep = '\\_') 
+
+# Join OD720 estimate and se DF 
+Longer_OD720_Joined <- full_join(Pivot_Longer_OD720_est, Pivot_Longer_OD720_se)
+
+remove(Pivot_Longer_OD720_est, Pivot_Longer_OD720_se)
+
+
+# rename common columns for full join
+Longer_OD720_Joined <- Longer_OD720_Joined %>%
+  rename(GrowthAmp_14days = 'GrowthAmpOD720_14days',
+         GrowthAmp_14daysFlag = 'GrowthAmpOD720Flag_14days',
+         Lmu_seFlag = 'OD720_LseGrowthFlag',
+         Lmutrunc_seFlag = 'OD720trunc_LseGrowthFlag'
+         )
+
+
+# deltaOD pivot longer Gmax, Gmu, Glag, Lmu, Lmax and Lintercept estimates
+Pivot_Longer_deltaOD_est <- NestedFitsData %>%
+  select(c(Filename, Tube, SampleID, Run, PrimaryOperator, Strain, Par_ue,  Photoperiod, PARPhotonDose_day, Temp_c, O2, O2_Category,O2_uM, WL, LightShape,  GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days,  deltaOD_LseGrowthFlag, deltaODtrunc_LseGrowthFlag,  deltaOD_Lmu_corr, deltaOD_Lmax, deltaOD_Lintercept, deltaODtrunc_Lmu_corr, deltaODtrunc_Lmax, deltaODtrunc_Lintercept
+            )) %>%
+   pivot_longer(c( deltaOD_Lmu_corr, deltaOD_Lmax, deltaOD_Lintercept, deltaODtrunc_Lmu_corr, deltaODtrunc_Lmax, deltaODtrunc_Lintercept), names_to = c("Wavelength", "term"), values_to = c("estimate"), names_sep = '\\_') 
+
+# deltaOD pivot longer Gmax, Gmu, Glag , Lmu, Lmax and Lintercept standard error
+Pivot_Longer_deltaOD_se <- NestedFitsData %>%
+  select(c(Filename, Tube, SampleID, Run, PrimaryOperator, Strain, Par_ue,  Photoperiod, PARPhotonDose_day, Temp_c, O2, O2_Category,O2_uM, WL, LightShape,  GrowthAmpdeltaOD_14days, GrowthAmpdeltaODFlag_14days,  deltaOD_LseGrowthFlag, deltaODtrunc_LseGrowthFlag,  deltaOD_Lmu_se, deltaOD_Lmax_se, deltaOD_Lintercept_se, deltaODtrunc_Lmu_se, deltaODtrunc_Lmax_se, deltaODtrunc_Lintercept_se
+            )) %>%
+   pivot_longer(c(deltaOD_Lmu_se, deltaOD_Lmax_se, deltaOD_Lintercept_se, deltaODtrunc_Lmu_se, deltaODtrunc_Lmax_se, deltaODtrunc_Lintercept_se), names_to = c("Wavelength", "term"), values_to = c("se"), names_sep = '\\_') 
+
+# Join deltaOD estimate and se DF 
+Longer_deltaOD_Joined <- full_join(Pivot_Longer_deltaOD_est, Pivot_Longer_deltaOD_se)
+
+remove(Pivot_Longer_deltaOD_est, Pivot_Longer_deltaOD_se)
+
+
+# rename common columns for full join
+Longer_deltaOD_Joined <- Longer_deltaOD_Joined %>%
+  rename(GrowthAmp_14days = 'GrowthAmpdeltaOD_14days',
+         GrowthAmp_14daysFlag = 'GrowthAmpdeltaODFlag_14days',
+         Lmu_seFlag = 'deltaOD_LseGrowthFlag',
+         Lmutrunc_seFlag = 'deltaODtrunc_LseGrowthFlag'
+         )
+
+
+#Join OD720 and deltaOD fits data
+LongerFitsData <- rbind(Longer_OD720_Joined, Longer_deltaOD_Joined) %>%
+  mutate_if(is.numeric, round, digits = 3)
+
+remove(Longer_OD720_Joined, Longer_deltaOD_Joined)
+  
+glimpse(LongerFitsData)
+
+```
+
+Save Long DF for GAM and Nested for further analysis 
+```{r save files}
+
+saveRDS(object = LongerFitsData, file = file.path(DataOut, paste(Project, "LongerFitsData.Rds",  sep = "_")), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(object = NestedFitsData, file = file.path(DataOut, paste(Project, "NestedFitsData.Rds",  sep = "_")), ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
+
+```
+
+Plot All
+```{r LogisticdeltaODPlots, fig.height= 10, fig.width= 10}
+
+NestedFitsData %>%
+
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), linewidth = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, [Oxygen], Photoperiod, Actinic PAR (nm)", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run), alpha = 0.5 ,hjust = 0.5, vjust=-0.5) +
+  #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(Strain, O2_uM, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2_uM = label_both, Strain = label_both, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+NestedFitsData %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), linewidth = 0.1, alpha = 0.4) +
+ labs(subtitle = "Strain, [Oxygen],Photoperiod, Actinic PAR (nm) - Of cultures that grew, outliers filtered by standard error > 20% of growth rate.", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+   geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run), alpha = 0.5,hjust = 0.5, vjust=-0.5) +
+  # geom_jitter(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 6) +
+  #   scale_y_continuous(breaks=seq(0, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (0, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(Strain, O2_uM, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2_uM = label_both, Strain = label_both, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+ NestedFitsData %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.4) +
+ geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), linewidth = 0.1, alpha = 0.4) +
+   labs(subtitle = "Strain, [Oxygen],Photoperiod, Actinic PAR (nm) - Of cultures that grew, outliers filtered by standard error > 20% of growth rate.", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run), alpha = 0.5,hjust = 0.5, vjust=-0.5) +
+  #   scale_y_continuous(breaks=seq(0, 0.115, by = 0.01)) +
+  # coord_cartesian(ylim = c (0, 0.115)) +
+  scale_colour_manual(values = MCMIXColours) +
+ ggh4x::facet_nested(cols = vars(Strain, O2_uM, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2_uM = label_both, Strain = label_both, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+ NestedFitsData %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), size = 3, alpha = 0.5) +
+  geom_line(aes(x = Par_ue, y = deltaOD_Lmu_corr, colour = as.factor(WL)), linewidth = 0.1, alpha = 0.4) +
+labs(subtitle = "Strain, [Oxygen], Photoperiod, Actinic PAR (nm)", y = "deltaOD [~Chl] " ~ "Logistic Growth Rate" ~ "("~h^-1~")" , x = "Growth Light (µmol photons" ~m^-2 ~s^-1~")") +
+ geom_text(aes(x = Par_ue, y = deltaOD_Lmu_corr, label= Run),alpha = 0.5 ,hjust = 0.5, vjust=-0.5) +
+ #   scale_y_continuous(breaks=seq(-0.03, 0.07, by = 0.01)) +
+  # coord_cartesian(ylim = c (-0.03, 0.07)) +
+  scale_colour_manual(values = MCMIXColours) +
+  ggh4x::facet_nested(cols = vars(Strain, O2_uM, Photoperiod), rows = vars(WL), 
+                    labeller = labeller(WL = label_both, O2_uM = label_both, Strain = label_both, Photoperiod = label_value)) +
+  theme_bw() +
+  labs(colour = "Actinic PAR (nm)")
+
+
+
+
+```
+
+
+
+

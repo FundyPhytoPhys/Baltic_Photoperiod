@@ -47,9 +47,7 @@ Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..","Data")
 ProjectRows <- c("SySl")
 
-ProjectCols <- c("PrimaryOperator", "SampleID", "Run", "Strain", "ExpCul", "ExpDate", "ExpStartTime", "Par_ue", "Photoperiod", "Temp_c", "MC", "Tube","O2", "O2_Category", "WL","LightShape", "Optode","OptodeCh","OptodeMeasure", "ExpEndDate")
-
-# ProjectCols <- c("Run", "SampleID", "Strain", "ExpDate", "Par_ue", "Photoperiod", "MC", "Tube", "O2", "WL","LightShape", "PrimaryOperator", "ExpEndDate")
+ProjectCols <- c("PrimaryOperator", "SampleID", "Run", "Strain", "ExpCul", "ExpDate", "ExpStartTime", "Par_ue", "Photoperiod", "Temp_c", "MC", "Tube","O2", "O2_Category", "WL","LightShape", "Optode", "OptodeCh", "OptodeMeasure", "ExpEndDate")
 ```
 
 # Import MetaData 

@@ -62,6 +62,9 @@ HeaderRows <- 0
 
 ```{r read locally stored metadata from rds}
 CultureCatalog <- readRDS(file = file.path("..", "Data","CultureCatalog.Rds"))
+
+CultureCatalog<-CultureCatalog %>% 
+  select(-c(PrimaryOperator, Temp_c, ExpCul, ExpStartTime, O2_Category, Optode, OptodeCh, OptodeMeasure))
 ```
 
 # Read Growth Symmetry (GS) catalog
