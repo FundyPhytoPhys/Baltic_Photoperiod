@@ -84,7 +84,7 @@ CultureCatalog <- readRDS(file = file.path("..", "Data","CultureCatalog.Rds"))
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
 
-zip_file <- file.path("..", "Data", "RawData", "SolisenseOS.zip")
+zip_file <- file.path("..", "Data", "RawData", "SolisenseOSData.zip")
 
 SolisenseFilesOS <- unzip(zip_file, list = TRUE)
 SolisenseFilesOS <- SolisenseFilesOS[grepl(".csv$", SolisenseFilesOS$Name), "Name"]
@@ -398,7 +398,7 @@ rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFits
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ImportedData")
 
-zip_file <- file.path("..", "Data", "RawData", "SolisenseNS.zip")
+zip_file <- file.path("..", "Data", "RawData", "SolisenseNSData.zip")
 
 SolisenseFilesNS <- unzip(zip_file, list = TRUE)
 SolisenseFilesNS <- SolisenseFilesNS[grepl(".csv$", SolisenseFilesNS$Name), "Name"]
