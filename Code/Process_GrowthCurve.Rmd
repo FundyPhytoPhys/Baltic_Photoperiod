@@ -80,8 +80,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData39 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -106,8 +106,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData40 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -132,8 +132,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData43 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -158,8 +158,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData44 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -184,8 +184,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData45 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -210,8 +210,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData46 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -236,8 +236,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData60 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -262,8 +262,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData62 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -288,8 +288,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData65 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -314,8 +314,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData71 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -340,8 +340,8 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData74 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
@@ -366,12 +366,13 @@ MultiCultiData <- MultiCultiData %>%
   mutate(DeltaOD = OD680-OD720) 
   
 MultiCultiData121 <- MultiCultiData %>%   
-  group_by(CultureID, Day, ToD, time_h) %>% 
-  summarize(Run, CultureID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
+  group_by(SampleID, Day, ToD, time_h) %>% 
+  summarize(Run, SampleID, Strain, ExpDate, Filename, Tube, time_h, ToD, Day, ExpDate, Actinic_par, OD680, OD720, DeltaOD, Par_ue, Photoperiod, O2, WL, LightShape, ExpEndDate, meanActinic_par_h = mean(Actinic_par), meanOD680_h = mean(OD680), meanOD720_h = mean(OD720), meanDeltaOD_h = mean(DeltaOD)) %>%
   ungroup() %>% 
   select(-c(Actinic_par, OD680, OD720, DeltaOD)) %>% 
   unique()
 ```
+
 # Merge selected Runs
 
 ```{r Mere selected Runs}

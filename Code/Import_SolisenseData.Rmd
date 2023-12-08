@@ -118,7 +118,7 @@ SolFitsTrimOS <- SolFitsOS %>%
   mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseOS.zip/"),
          Filename = str_remove(string = Filename, pattern = "_fit.csv")
          ) %>%
-  separate(Filename, into = c("fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "CultureID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
+  separate(Filename, into = c("fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "SampleID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
   mutate(RunDateTime = ymd_hm(RunDateTime),
          TIME = as.character(TIME)) %>%  #time-column may be read in as factor, and as.character changes it to numeric; using lubdridate::hms would only change the format to 13H 4M 2S but does not work later to merge into one DateTime-column
   mutate(SourceDataFile = `Source DataFile`,
@@ -138,7 +138,7 @@ SolFitsTrimOS <- SolFitsOS %>%
          ObsDate = ymd(ObsDate)) %>%
   mutate(ObsDateTime = ymd_hms(paste(ObsDate, ObsTime))) %>%
   relocate(ObsDateTime, .after = ObsTime) %>%
-  relocate(CultureID, .before = ObsDate) %>%
+  relocate(SampleID, .before = ObsDate) %>%
   #mutate(FvFm=as.numeric(FvFm)) %>%
   select(-c(Light_1,Light_2,Light_3,Light_4,Light_5,Light_6,`Source DataFile`,DATE,TIME,RunDateTime, fp0, fp1, fp2, fp3, fp4, fp5, fp6, fp7, Project))
 
@@ -186,7 +186,7 @@ SolFitsTrimOS <- SolFitsTrimOS %>%
 #add a column adding Dark1s based upon any step < 5 s
 #replace NA for first dark with nominal 181;  issue will be changing durations of light steps across each run
 SolFitsTrimOS_lightsteps <- SolFitsTrimOS %>%
-  group_by(SourceDataFile, Filename, CultureID, ObsDate, Ex_WL, TempCont) %>%
+  group_by(SourceDataFile, Filename, SampleID, ObsDate, Ex_WL, TempCont) %>%
   mutate(Step_s = replace_na(as.numeric(ObsDateTime - lag(ObsDateTime)), 181), .after = ObsDateTime) %>% 
   mutate(LR_s = as.numeric(ObsDateTime - ObsDateTime[1]), .after = Step_s) %>%
   mutate(Dark1s = if_else(Step_s > 5, 0, 1), .after = Step_s) %>%
@@ -199,7 +199,7 @@ SolFitsTrimOS_lightsteps <- SolFitsTrimOS %>%
 
 ```{r combine Solisense and MetaData catalog, warning = FALSE, echo=FALSE}
 SolFitsTrimMetaOS <- CultureCatalog %>%
-  left_join(., SolFitsTrimOS_lightsteps, by = c("CultureID" = "CultureID")) 
+  left_join(., SolFitsTrimOS_lightsteps, by = c("SampleID" = "SampleID")) 
 ```
 
 # Estimate parameters using Oxborough & Baker 1997 for Fo'
@@ -207,7 +207,7 @@ SolFitsTrimMetaOS <- CultureCatalog %>%
 ```{r estimate parameters, warning = FALSE, echo=FALSE}
 
 SolFitsTrimMetaOS_param <- SolFitsTrimMetaOS %>%
-  group_by(SourceDataFile, Filename, CultureID, ObsDate, Ex_WL, TempCont) %>%
+  group_by(SourceDataFile, Filename, SampleID, ObsDate, Ex_WL, TempCont) %>%
   mutate(Sig_m2psii = Sig/A2_m2,
          Fodark = Fo[1],
          Fmdark = Fm[1],
@@ -282,9 +282,9 @@ mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)
 
 ```{r calculate Sigma mean, warning = FALSE, echo=FALSE}
 SolFitsTrimMetaCleanOS <- SolFitsTrimMetaCleanOS %>%
-  group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
+  group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
   
-  summarize(CultureID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
             
             meanSig_nm2psii = mean(Sig_nm2psii),
             sdSig_nm2psii = sd(Sig_nm2psii),
@@ -293,7 +293,7 @@ SolFitsTrimMetaCleanOS <- SolFitsTrimMetaCleanOS %>%
   ungroup()
 
 SolFitsTrimMetaCleanOS<- SolFitsTrimMetaCleanOS %>%
-group_by(CultureID) %>%
+group_by(SampleID) %>%
   arrange(ObsDate) %>%
   mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
 ungroup()
@@ -360,16 +360,16 @@ mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)
 
 ```{r Calculate Sigma1s mean}
 SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
-  group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
+  group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
 
-  summarize(CultureID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
             
             meanSig1s_nm2psii = mean(Sig1s_nm2psii),
             sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
   ungroup()
 
 SolFitsTrimMetaDarkafterLightOS<- SolFitsTrimMetaDarkafterLightOS %>%
-group_by(CultureID) %>%
+group_by(SampleID) %>%
   arrange(ObsDate) %>%
   mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
 ungroup()
@@ -432,7 +432,7 @@ SolFitsTrimNS <- SolFitsNS %>%
   mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseNS.zip/"),
          Filename = str_remove(string = Filename, pattern = "_fit.csv")
          ) %>%
-  separate(Filename, into = c("fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "CultureID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
+  separate(Filename, into = c("fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "SampleID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
   mutate(RunDateTime = ymd_hm(RunDateTime),
          TIME = as.character(TIME)) %>%  #time-column may be read in as factor, and as.character changes it to numeric; using lubdridate::hms would only change the format to 13H 4M 2S but does not work later to merge into one DateTime-column
   mutate(SourceDataFile = `Source DataFile`,
@@ -452,7 +452,7 @@ SolFitsTrimNS <- SolFitsNS %>%
          ObsDate = ymd(ObsDate)) %>%
   mutate(ObsDateTime = ymd_hms(paste(ObsDate, ObsTime))) %>%
   relocate(ObsDateTime, .after = ObsTime) %>%
-  relocate(CultureID, .before = ObsDate) %>%
+  relocate(SampleID, .before = ObsDate) %>%
   #mutate(FvFm=as.numeric(FvFm)) %>%
   select(-c(Light_1,Light_2,Light_3,Light_4,Light_5,Light_6,`Source DataFile`,DATE,TIME,RunDateTime, fp0, fp1, fp2, fp3, fp4, fp5, fp6, fp7, Project))
 
@@ -500,7 +500,7 @@ SolFitsTrimNS <- SolFitsTrimNS %>%
 #add a column adding Dark1s based upon any step < 5 s
 #replace NA for first dark with nominal 181;  issue will be changing durations of light steps across each run
 SolFitsTrimNS_lightsteps <- SolFitsTrimNS %>%
-  group_by(SourceDataFile, Filename, CultureID, ObsDate, Ex_WL, TempCont) %>%
+  group_by(SourceDataFile, Filename, SampleID, ObsDate, Ex_WL, TempCont) %>%
   mutate(Step_s = replace_na(as.numeric(ObsDateTime - lag(ObsDateTime)), 181), .after = ObsDateTime) %>% 
   mutate(LR_s = as.numeric(ObsDateTime - ObsDateTime[1]), .after = Step_s) %>%
   mutate(Dark1s = if_else(Step_s > 5, 0, 1), .after = Step_s) %>%
@@ -513,14 +513,14 @@ SolFitsTrimNS_lightsteps <- SolFitsTrimNS %>%
 
 ```{r Combine Solisense and MetaData catalog, warning = FALSE, echo=FALSE}
 SolFitsTrimMetaNS <- CultureCatalog %>%
-  left_join(., SolFitsTrimNS_lightsteps, by = c("CultureID" = "CultureID")) 
+  left_join(., SolFitsTrimNS_lightsteps, by = c("SampleID" = "SampleID")) 
 ```
 
 # Estimate parameters using Oxborough & Baker 1997 for Fo'
 
 ```{r estimate parameters, warning = FALSE, echo=FALSE}
 SolFitsTrimMetaNS_param <- SolFitsTrimMetaNS %>%
-  group_by(SourceDataFile, Filename, CultureID, ObsDate, Ex_WL, TempCont) %>%
+  group_by(SourceDataFile, Filename, SampleID, ObsDate, Ex_WL, TempCont) %>%
   mutate(Sig_m2psii = Sig/A2_m2,
          Fodark = Fo[1],
          Fmdark = Fm[1],
@@ -595,9 +595,9 @@ mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)
 
 ```{r calculate Sigma mean, warning = FALSE, echo=FALSE}
 SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
-  group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
+  group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
   
-  summarize(CultureID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
             
             meanSig_nm2psii = mean(Sig_nm2psii),
             sdSig_nm2psii = sd(Sig_nm2psii),
@@ -606,7 +606,7 @@ SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
   ungroup()
 
 SolFitsTrimMetaCleanNS<- SolFitsTrimMetaCleanNS %>%
-group_by(CultureID) %>%
+group_by(SampleID) %>%
   arrange(ObsDate) %>%
   mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
 ungroup()
@@ -673,16 +673,16 @@ mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)
 
 ```{r calculate Sigma1s mean, warning = FALSE, echo=FALSE}
 SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
-  group_by(CultureID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
+  group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
 
-  summarize(CultureID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
             
             meanSig1s_nm2psii = mean(Sig1s_nm2psii),
             sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
   ungroup()
 
 SolFitsTrimMetaDarkafterLightNS<- SolFitsTrimMetaDarkafterLightNS %>%
-group_by(CultureID) %>%
+group_by(SampleID) %>%
   arrange(ObsDate) %>%
   mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
 ungroup()

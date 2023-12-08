@@ -121,7 +121,7 @@ TargetSpectra <- TargetFile %>%
 TargetSpectraLong <- TargetSpectra %>%
   separate(col = Filename, into = c("fp3", "ObsDate", "Project", "SampleID", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
 TargetSpectraLong <- TargetSpectraLong %>%
-  select(-c(fp3, Type, Correction, Smooth, SampleID, Project)) %>% 
+  select(-c(fp3, Type, Correction, Smooth, Project)) %>% 
   mutate(ObsDate = ymd(`ObsDate`))
 ```
 
