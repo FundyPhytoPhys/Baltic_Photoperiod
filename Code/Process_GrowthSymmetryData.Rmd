@@ -1,5 +1,5 @@
 ---
-title: "Import_GrowthSymmetryData"
+title: "Process_GrowthSymmetryData"
 author:
 - Sylwia Sliwinska-Wilczewska
 - Douglas A. Campbell
@@ -367,7 +367,7 @@ rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  
 # Save rds for further analysis
 
 ```{r save rds}
-saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Imported_GrowthSymmetryData.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Processed_GrowthSymmetryData.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 
