@@ -76,6 +76,9 @@ A2_m2 <- 1E20 #for sigma -> angstrom (Å) – a metric unit of length equal to 1
 
 ```{r read locally stored metadata from rds}
 CultureCatalog <- readRDS(file = file.path("..", "Data","CultureCatalog.Rds"))
+
+CultureCatalog<-CultureCatalog %>% 
+  select(-c(PrimaryOperator, Temp_c, ExpCul, ExpStartTime, O2_Category, Optode, OptodeCh, OptodeMeasure))
 ```
 
 # Set Project Variables from old software (OS)
@@ -284,7 +287,7 @@ mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)
 SolFitsTrimMetaCleanOS <- SolFitsTrimMetaCleanOS %>%
   group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
   
-  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
             
             meanSig_nm2psii = mean(Sig_nm2psii),
             sdSig_nm2psii = sd(Sig_nm2psii),
@@ -362,7 +365,7 @@ mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)
 SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
   group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
 
-  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
             
             meanSig1s_nm2psii = mean(Sig1s_nm2psii),
             sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
@@ -597,7 +600,7 @@ mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)
 SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
   group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
   
-  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
             
             meanSig_nm2psii = mean(Sig_nm2psii),
             sdSig_nm2psii = sd(Sig_nm2psii),
@@ -675,7 +678,7 @@ mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)
 SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
   group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
 
-  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
             
             meanSig1s_nm2psii = mean(Sig1s_nm2psii),
             sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
