@@ -112,10 +112,10 @@ GScatalogMeta<-GScatalogMeta %>%
   filter(AccDecRatio_perc<10)
   
 GScatalogMeta1 <-GScatalogMeta %>% 
-  filter(PARPhotonDose>=19440000) %>% 
+  filter(PARPhotonDose_day>=19440000) %>% 
   filter(GS<=2)
 GScatalogMeta2 <-GScatalogMeta %>% 
-  filter(PARPhotonDose<19440000) %>% 
+  filter(PARPhotonDose_day<19440000) %>% 
 filter(GS<4)
 
 GScatalogMeta<-rbind(GScatalogMeta1,GScatalogMeta2)
@@ -127,7 +127,7 @@ rm(GScatalogMeta1,GScatalogMeta2)
 ```{r calculate mean of GS, warning = FALSE}
 GScatalogMeta<-GScatalogMeta %>% 
   group_by(Strain, Photoperiod, Par_ue, Phase) %>%
-  summarize(Run, SampleID, Strain, ExpDate, Par_ue, Photoperiod, PARPhotonDose, MC, Tube, O2, LightShape, ExpEndDate, PhotoperiodTstart_h, PhotoperiodTend_h,tMaxDG,tMaxAG, Phase, AchivePreStationary, MaxDG, MaxAG, Acc_perc, Dec_perc, Strain, Par_ue, Photoperiod, O2, WL, OD680start, OD680end, TDG, AccDecRatio_perc, AccLen, DecLen, GS, 
+  summarize(Run, SampleID, Strain, ExpDate, Par_ue, Photoperiod, PARPhotonDose_day, MC, Tube, O2, LightShape, ExpEndDate, PhotoperiodTstart_h, PhotoperiodTend_h,tMaxDG,tMaxAG, Phase, AchivePreStationary, MaxDG, MaxAG, Acc_perc, Dec_perc, Strain, Par_ue, Photoperiod, O2, WL, OD680start, OD680end, TDG, AccDecRatio_perc, AccLen, DecLen, GS, 
             meanAccLen = mean(AccLen), 
             sdAccLen = sd(AccLen),
             meanDecLen = mean(DecLen), 
@@ -165,13 +165,13 @@ data_hlineGS16 <- data.frame(Photoperiod= c(16),facets2= c("Photoperiod~(h)"),va
 GScatalogMetaExp <-GScatalogMeta %>% 
   drop_na(GS) %>%
   filter(Phase == "Exponential") %>% 
-  select(c(GS, PARPhotonDose, Strain)) 
+  select(c(GS, PARPhotonDose_day, Strain)) 
 
 # Fit the data
 fitted <- GScatalogMetaExp %>% 
   nest(-Strain) %>%
   mutate(
-    fit = map(data, ~nls(GS ~ SSasymp(PARPhotonDose, yf, y0, log_alpha), data = .)),
+    fit = map(data, ~nls(GS ~ SSasymp(PARPhotonDose_day, yf, y0, log_alpha), data = .)),
     tidied = map(fit, tidy),
     augmented = map(fit, augment)) 
 
@@ -186,13 +186,13 @@ pivot_wider(., names_from = c(term), values_from = c(estimate)) %>%
 ```{r unnest, preparing df to preparing final plot, warning = FALSE}
 augmented<-fitted  %>%
   unnest(augmented) %>%
-  select(c(Strain, PARPhotonDose,GS, .fitted)) 
+  select(c(Strain, PARPhotonDose_day,GS, .fitted)) 
 
 GSMetaExp <-GScatalogMeta %>% 
   filter(Phase == "Exponential") 
 
 GSMetaExpPlot <- GSMetaExp %>%
-  left_join(., augmented, by = c("Strain"="Strain", "PARPhotonDose"="PARPhotonDose", "GS"="GS"))
+  left_join(., augmented, by = c("Strain"="Strain", "PARPhotonDose_day"="PARPhotonDose_day", "GS"="GS"))
 
 GSMetaSt <-GScatalogMeta %>% 
   filter(Phase == "Pre-stationary") %>% 
@@ -211,10 +211,10 @@ scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::sc
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
-  ggplot(GScatalogMetaFinalPlot, aes(x = PARPhotonDose, y = meanGS)) +
-  geom_point(aes(x = PARPhotonDose, y = meanGS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T, GScatalogMetaFinalPlot) +
-  geom_errorbar(aes(x = PARPhotonDose, ymin = meanGS - sdGS, ymax = meanGS + sdGS, colour = as.factor(Par_ue)), show.legend = F, width=0, GScatalogMetaFinalPlot) +
-  geom_line(aes(PARPhotonDose, .fitted), show.legend = F, GSMetaExpPlot) +
+  ggplot(GScatalogMetaFinalPlot, aes(x = PARPhotonDose_day, y = meanGS)) +
+  geom_point(aes(x = PARPhotonDose_day, y = meanGS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T, GScatalogMetaFinalPlot) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanGS - sdGS, ymax = meanGS + sdGS, colour = as.factor(Par_ue)), show.legend = F, width=0, GScatalogMetaFinalPlot) +
+  geom_line(aes(PARPhotonDose_day, .fitted), show.legend = F, GSMetaExpPlot) +
   geom_hline(yintercept = 1, linetype="dashed") +
    labs(y = "Diel growth symmetry (AccLen/DecLen)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
@@ -247,9 +247,9 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 GScatalogMeta %>%
   filter(meanAccLen>0) %>% 
   ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = meanAccLen, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
-    geom_line(aes(x = PARPhotonDose, y = meanAccLen, colour = as.factor(Par_ue)), size = 0.7, show.legend = F) +
-  geom_errorbar(aes(x = PARPhotonDose, ymin = meanAccLen - sdAccLen, ymax = meanAccLen + sdAccLen, colour = as.factor(Par_ue)), show.legend = F, width=0) +
+  geom_point(aes(x = PARPhotonDose_day, y = meanAccLen, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
+    geom_line(aes(x = PARPhotonDose_day, y = meanAccLen, colour = as.factor(Par_ue)), size = 0.7, show.legend = F) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanAccLen - sdAccLen, ymax = meanAccLen + sdAccLen, colour = as.factor(Par_ue)), show.legend = F, width=0) +
   geom_hline(data = data_hlineGS8, aes(yintercept = value), linetype="dotted") +
   geom_hline(data = data_hlineGS12, aes(yintercept = value), linetype="dotdash") +
   geom_hline(data = data_hlineGS16, aes(yintercept = value), linetype="dashed") +
@@ -361,7 +361,7 @@ labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
 ```{r cleaning the environment}
-rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  CultureCatalog, data_vline_048, data_vline_127, data_vline_056, data_vline_077, GScatalogMetaFinalPlot, GScatalogSineMeta, GSMetaExp, GSMetaExpPlot)
+rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  CultureCatalog, data_vline_048, data_vline_127, data_vline_056, data_vline_077, GScatalogMetaFinalPlot, GSMetaExp, GSMetaExpPlot)
 ```
 
 # Save rds for further analysis
