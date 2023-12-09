@@ -19,17 +19,7 @@ editor_options:
     wrap: 72
 ---
 
-# Set Options
-
-## Set figure caption font size
-
-```{css, echo=FALSE}
-p.caption {
-  font-size: 18px;
-}
-```
-
-## Set Chunk Options
+# Set Chunk Options
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
@@ -58,12 +48,6 @@ library(photobiologyWavebands)
 library(reshape2)
 library(photobiology)
 library(gcookbook)
-library(RColorBrewer)
-library(viridis)
-library(scales)
-library(googledrive)
-library(googlesheets4)
-library(readxl)
 ```
 
 ```{r set project variables}
@@ -158,11 +142,11 @@ OLISSpectraMetaPUR <- OLISSpectraMeta %>%
 ```{r calculate PUR Photon dose}
 OLISSpectraMetaPUR1 <- OLISSpectraMetaPUR %>%
   filter(Photoperiod != "24") %>% 
-  mutate(PURPhotonDose =(PUR/2)*Photoperiod*3600)
+  mutate(PURPhotonDose_day =(PUR/2)*Photoperiod*3600)
 
 OLISSpectraMetaPUR2 <- OLISSpectraMetaPUR %>%
   filter(Photoperiod == "24") %>% 
-  mutate(PURPhotonDose = PUR*Photoperiod*3600)
+  mutate(PURPhotonDose_day = PUR*Photoperiod*3600)
   
   OLISSpectraMetaPUR <-rbind(OLISSpectraMetaPUR1, OLISSpectraMetaPUR2)
   rm(OLISSpectraMetaPUR1,OLISSpectraMetaPUR2)
@@ -198,7 +182,7 @@ OLISSpectraMetaPURShortBA77G<- OLISSpectraMetaPUR %>%
   select(-c(PURNorm, FilenameJaz, FilenameOlis))
 
 OLISSpectraMetaPURShort <- OLISSpectraMetaPURShortBA127R %>%
-  full_join(., OLISSpectraMetaPURShortBA77G, by = c("SampleID" = "SampleID", "Run" = "Run", "Strain" = "Strain", "ExpDate" = "ExpDate", "Par_ue" = "Par_ue", "Photoperiod" = "Photoperiod", "MC"="MC", "Tube" = "Tube", "O2" = "O2", "WL" = "WL", "LightShape" = "LightShape", "ExpEndDate"="ExpEndDate", "nm" = "nm", "ObsDate" = "ObsDate", "Absorbance" = "Absorbance", "SumAb" = "SumAb", "Abs440" = "Abs440", "AbsNorm440" = "AbsNorm440", "SumAbNorm" = "SumAbNorm", "E_days" = "E_days", "CountsMean" = "CountsMean", "EmJaz439" = "EmJaz439", "EmNormJaz439" = "EmNormJaz439", "PURNormSum" = "PURNormSum", "SumEmNormJaz439" = "SumEmNormJaz439", "PUR" = "PUR", "PURPhotonDose" = "PURPhotonDose", "PARPhotonDose" = "PARPhotonDose")) 
+  full_join(., OLISSpectraMetaPURShortBA77G, by = c("SampleID" = "SampleID", "Run" = "Run", "Strain" = "Strain", "ExpDate" = "ExpDate", "Par_ue" = "Par_ue", "Photoperiod" = "Photoperiod", "MC"="MC", "Tube" = "Tube", "O2" = "O2", "WL" = "WL", "LightShape" = "LightShape", "ExpEndDate"="ExpEndDate", "nm" = "nm", "ObsDate" = "ObsDate", "Absorbance" = "Absorbance", "SumAb" = "SumAb", "Abs440" = "Abs440", "AbsNorm440" = "AbsNorm440", "SumAbNorm" = "SumAbNorm", "E_days" = "E_days", "CountsMean" = "CountsMean", "EmJaz439" = "EmJaz439", "EmNormJaz439" = "EmNormJaz439", "PURNormSum" = "PURNormSum", "SumEmNormJaz439" = "SumEmNormJaz439", "PUR" = "PUR", "PURPhotonDose_day" = "PURPhotonDose_day", "PARPhotonDose_day" = "PARPhotonDose_day")) 
 ```
 
 ```{r Changes strain names}
@@ -457,16 +441,8 @@ OLISSpectraMetaPURShort %>%
 
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
-```{r delete unused stuff from the environment}
+```{r delete unused df from the environment}
 rm(data_textpigment1,data_textpigment2,data_textpigment3,data_textpigment4,data_textpigment5,data_textpigment6, data_textpigment7, data_textpigment8, data_textpigment9, data_textpigment10, data_textpigment11, data_textpigment12, arrowdf1,arrowdf2,arrowdf3,arrowdf4,arrowdf5,arrowdf6, arrowdf7, arrowdf8, arrowdf9, arrowdf10, arrowdf11, arrowdf12, data_textPUR0, data_textPUR00, data_textPUR1,data_textPUR2, EmissionJazWW, JazData, JazDataRound, JazDataRoundMeta, OLISSpectraMetaPURShortBA127R, OLISSpectraMetaPURShortBA77G, OLISSpectraMeta, OLISSpectra)
-```
-
-# Save rds for further analysis
-
-```{r save rds}
-# saveRDS(OLISSpectraMetaPUR, file.path(DataOut, paste(Project, "Processed_OlisSpectraAll.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
-
-# saveRDS(OLISSpectraMetaPURShort, file.path(DataOut, paste(Project, "Processed_OlisSpectraPlot.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 # Create tidy df without all nm
@@ -491,7 +467,7 @@ OLISAllPURTidy <- OLISAllPURTidy %>%
 
 ```{r create tidy PAR photon dose and facets for plot}
 OLISAllPURTidy <- OLISAllPURTidy %>%
-    mutate(PARPhotonDoseTidy=PARPhotonDose/100000) %>% 
+    mutate(PARPhotonDoseTidy=PARPhotonDose_day/100000) %>% 
     mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
          Strain=="BA48R"~"PE-rich_048",
         Strain=="BA56G"~"PC-rich_056",
@@ -501,7 +477,7 @@ OLISAllPURTidy$facetsPar_ue = factor(OLISAllPURTidy$O2, labels = c("PAR~(µmol~p
 OLISAllPURTidy$facetsPhotoperiod = factor(OLISAllPURTidy$WL, labels = c("Photoperiod~(h)"))
 OLISAllPURTidy$facetsStrain = factor(OLISAllPURTidy$WL, labels = c("Strain"))
 OLISAllPURTidy$facetsPhase = factor(OLISAllPURTidy$WL, labels = c("Phase~of~growth"))
-OLISAllPURTidy$facetsPARPhotonDose = factor(OLISAllPURTidy$WL, labels = c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"))
+OLISAllPURTidy$facetsPARPhotonDose_day = factor(OLISAllPURTidy$WL, labels = c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"))
 ```
 
 # Create preliminary plot
@@ -534,16 +510,16 @@ OLISAllPURTidy$facetsPARPhotonDose = factor(OLISAllPURTidy$WL, labels = c("PAR~p
 
 ```{r Create 4 df for vertical lines (coloured as Strain) contained tMaxAG values}
 #PC-rich_056
-data_vline_056_Select <- data.frame(Par_ue= c(30, 30, 30, 300, 300, 300),Photoperiod= c(8,12,16,8,12,16),facetsPARPhotonDose= c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"),PigmentsName= c("Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a", 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids'), PARPhotonDoseTidy=c(4.32000, 6.48000, 8.64000, 43.20000, 64.80000, 86.40000), value = c(293.8333, 321.0833, 323.0833, 218.9167, 173.7500, 102.5833))
+data_vline_056_Select <- data.frame(Par_ue= c(30, 30, 30, 300, 300, 300),Photoperiod= c(8,12,16,8,12,16),facetsPARPhotonDose_day= c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"),PigmentsName= c("Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a", 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids'), PARPhotonDoseTidy=c(4.32000, 6.48000, 8.64000, 43.20000, 64.80000, 86.40000), value = c(293.8333, 321.0833, 323.0833, 218.9167, 173.7500, 102.5833))
 
 #PC-rich_077
-data_vline_077_Select <- data.frame(Par_ue= c(30, 30, 30, 300, 300, 300),Photoperiod= c(8,12,16,8,12,16),facetsPARPhotonDose= c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"),PigmentsName= c("Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a", 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids'), PARPhotonDoseTidy=c(4.32000, 6.48000, 8.64000, 43.20000, 64.80000, 86.40000), value = c(244.2500, 318.0833, 272.4167, 195.9167, 148.8333, 102.1667))
+data_vline_077_Select <- data.frame(Par_ue= c(30, 30, 30, 300, 300, 300),Photoperiod= c(8,12,16,8,12,16),facetsPARPhotonDose_day= c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"),PigmentsName= c("Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a", 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids'), PARPhotonDoseTidy=c(4.32000, 6.48000, 8.64000, 43.20000, 64.80000, 86.40000), value = c(244.2500, 318.0833, 272.4167, 195.9167, 148.8333, 102.1667))
 
 #PE-rich_048
-data_vline_048_Select <- data.frame(Par_ue= c(30, 30, 30, 300, 300, 300),Photoperiod= c(8,12,16,8,12,16),facetsPARPhotonDose= c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"),PigmentsName= c("Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a", 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids'), PARPhotonDoseTidy=c(4.32000, 6.48000, 8.64000, 43.20000, 64.80000, 86.40000), value = c(315.6667, 318.4167, 272.2500, 195.0000, 123.7500, 101.2500))
+data_vline_048_Select <- data.frame(Par_ue= c(30, 30, 30, 300, 300, 300),Photoperiod= c(8,12,16,8,12,16),facetsPARPhotonDose_day= c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"),PigmentsName= c("Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a", 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids'), PARPhotonDoseTidy=c(4.32000, 6.48000, 8.64000, 43.20000, 64.80000, 86.40000), value = c(315.6667, 318.4167, 272.2500, 195.0000, 123.7500, 101.2500))
 
 #PE-rich_127
-data_vline_127_Select <- data.frame(Par_ue= c(30, 30, 30, 300, 300, 300),Photoperiod= c(8,12,16,8,12,16),facetsPARPhotonDose= c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"),PigmentsName= c("Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a", 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids'), PARPhotonDoseTidy=c(4.32000, 6.48000, 8.64000, 43.20000, 64.80000, 86.40000), value = c(315.1667, 319.0000, 321.0833, 170.9167, 147.9167, 101.5000))
+data_vline_127_Select <- data.frame(Par_ue= c(30, 30, 30, 300, 300, 300),Photoperiod= c(8,12,16,8,12,16),facetsPARPhotonDose_day= c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})","PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"),PigmentsName= c("Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a","Chlorophyll~a", 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Total~phycobilins', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids', 'Carotenoids'), PARPhotonDoseTidy=c(4.32000, 6.48000, 8.64000, 43.20000, 64.80000, 86.40000), value = c(315.1667, 319.0000, 321.0833, 170.9167, 147.9167, 101.5000))
 ```
 
 # Create plot
@@ -570,7 +546,7 @@ OLISAllPURTidy %>%
   labs(y = "PUR/PAR ratio", x = "Elapsed time (h)") +
   scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
   coord_cartesian(ylim = c(0, 1.5)) +
-  ggh4x::facet_nested(cols = vars(facetsPARPhotonDose, PARPhotonDoseTidy), labeller = label_parsed) +
+  ggh4x::facet_nested(cols = vars(facetsPARPhotonDose_day, PARPhotonDoseTidy), labeller = label_parsed) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
         panel.grid.major = element_blank(),
@@ -589,9 +565,17 @@ OLISAllPURTidy %>%
         legend.text = element_text(size=10))
 ```
 
+# Cleaning df before saving as rds and removed unnecessary files from the environment
+
+```{r}
+rm(data_vline_048_Select, data_vline_127_Select, data_vline_056_Select, data_vline_077_Select, OLISSpectraMetaPURShort)
+```
+
 # Save rds for further analysis
 
 ```{r save rds}
+saveRDS(OLISSpectraMetaPUR, file.path(DataOut, paste(Project, "Processed_OlisSpectraAll.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
 saveRDS(OLISAllPURTidy, file.path(DataOut, paste(Project, "Processed_OlisSpectraTidy.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
