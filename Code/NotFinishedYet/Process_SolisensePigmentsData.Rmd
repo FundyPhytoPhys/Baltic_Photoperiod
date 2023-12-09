@@ -1,5 +1,5 @@
 ---
-title: "ProcessSolisensePigments"
+title: "Process_SolisensePigmentsData"
 author:
 - Sylwia Sliwinska-Wilczewska
 - Douglas A. Campbell

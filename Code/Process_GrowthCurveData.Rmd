@@ -1,5 +1,5 @@
 ---
-title: "Process_GrowthCurve"
+title: "Process_GrowthCurveData"
 author:
 - Sylwia Sliwinska-Wilczewska
 - Douglas A. Campbell
