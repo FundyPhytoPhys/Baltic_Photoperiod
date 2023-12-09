@@ -52,7 +52,7 @@ library(gcookbook)
 
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ProcessedData")
+DataOut <- file.path("..", "Data", "ProcessedData", "ProcessedOlisJazData")
 DataInOlis <- file.path("..", "Data", "ImportedData", "ImportedOlisData", fsep = .Platform$file.sep)
 DataInJaz <- file.path("..", "Data", "ImportedData", "ImportedJazEmData", fsep = .Platform$file.sep)
 

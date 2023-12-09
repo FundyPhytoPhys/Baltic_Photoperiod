@@ -445,7 +445,7 @@ rm(data_vline_056, data_vline_077, data_vline_048, data_vline_127)
 # Save rds for further analysis
 
 ```{r save rds}
-saveRDS(MultiCultiDataAll, file.path(DataOut, paste(Project, "Imported_GrowtCurve.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+saveRDS(MultiCultiDataAll, file.path(DataOut, paste(Project, "Processed_GrowthCurve.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 
