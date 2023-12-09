@@ -55,7 +55,7 @@ Delimiter <- ""
 HeaderRows <- 0
 ```
 
-# List and read pigments files
+# List and read files
 
 ```{r Exported Rmd only first time in session}
 list.files(path = DataIn, pattern = Project, full.names = TRUE)
