@@ -273,27 +273,15 @@ SolFitsTrimMetaCleanOS<-SolFitsTrimMetaCleanOS %>%
   select(-c(SourceDataFile))
 ```
 
-# Convert Sig_m2psii to Sig_nm2psii
+# Convert Sig_m2psii to Sig_nm2psii and Sigdark_m2psii to Sigdark_nm2psii and calculated number of days when measurements were made
 
-```{r convert Sig_m2psii to Sig_nm2psii}
+```{r convert Sigma}
 SolFitsTrimMetaCleanOS <- SolFitsTrimMetaCleanOS %>%
 mutate(Sig_nm2psii=Sig_m2psii*1000000000000000000) %>% 
 mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)   
 ```
 
-# Calculate Sigma mean from replica measured on the same day
-
-```{r calculate Sigma mean, warning = FALSE, echo=FALSE}
-
-SolFitsTrimMetaCleanOS <- SolFitsTrimMetaCleanOS %>%
-  group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
-  summarize(SolFitsTrimMetaCleanOS, 
-            meanSig_nm2psii = mean(Sig_nm2psii),
-            sdSig_nm2psii = sd(Sig_nm2psii),
-            meanSigdark_nm2psii = mean(Sigdark_nm2psii),
-            sdSigdark_nm2psii = sd(Sigdark_nm2psii)) %>%
-  ungroup()
-
+```{r calculate E_days and Time_h}
 SolFitsTrimMetaCleanOS<- SolFitsTrimMetaCleanOS %>%
 group_by(SampleID) %>%
   arrange(ObsDate) %>%
@@ -351,24 +339,14 @@ SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
   select(-c(Sig, Sig_m2psii))
 ```
 
-# Convert Sig1s_m2psii to Sig1s_nm2psii
+# Convert Sig1s_m2psii to Sig1s_nm2psii and calculated number of days when measurements were made
 
-```{r convert Sig1s_m2psii to Sig1s_nm2psii}
+```{r convert Sigma}
 SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
 mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)    
 ```
 
-# Calculate Sigma1s mean from replica measured on the same day
-
-```{r Calculate Sigma1s mean}
-SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
-  group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
-
-  summarize(SolFitsTrimMetaDarkafterLightOS,
-            meanSig1s_nm2psii = mean(Sig1s_nm2psii),
-            sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
-  ungroup()
-
+```{r Calculate E_days and Time_h}
 SolFitsTrimMetaDarkafterLightOS<- SolFitsTrimMetaDarkafterLightOS %>%
 group_by(SampleID) %>%
   arrange(ObsDate) %>%
@@ -572,29 +550,15 @@ SolFitsTrimMetaCleanNS<-SolFitsTrimMetaCleanNS %>%
   select(-c(SourceDataFile))
 ```
 
-# Convert Sig_m2psii to Sig_nm2psii
+# Convert Sig_m2psii to Sig_nm2psii and Sigdark_m2psii to Sigdark_nm2psii and calculated number of days when measurements were made
 
-```{r convert Sig_m2psii to Sig_nm2psii}
+```{r convert Sigma}
 SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
 mutate(Sig_nm2psii=Sig_m2psii*1000000000000000000) %>% 
 mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)   
 ```
 
-# Calculate Sigma mean from replica measured on the same day
-
-```{r calculate Sigma mean, warning = FALSE, echo=FALSE}
-
-SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
-  group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
-  
-  summarize(SolFitsTrimMetaCleanNS, 
-            
-            meanSig_nm2psii = mean(Sig_nm2psii),
-            sdSig_nm2psii = sd(Sig_nm2psii),
-            meanSigdark_nm2psii = mean(Sigdark_nm2psii),
-            sdSigdark_nm2psii = sd(Sigdark_nm2psii)) %>%
-  ungroup()
-
+```{r calculate E_days and Time_h}
 SolFitsTrimMetaCleanNS<- SolFitsTrimMetaCleanNS %>%
 group_by(SampleID) %>%
   arrange(ObsDate) %>%
@@ -652,25 +616,14 @@ SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
   select(-c(Sig, Sig_m2psii))
 ```
 
-# Convert Sig1s_m2psii to Sig1s_nm2psii
+# Convert Sig1s_m2psii to Sig1s_nm2psii and calculated number of days when measurements were made
 
-```{r convert Sig1s_m2psii to Sig1s_nm2psii}
+```{r convert Sigma}
 SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
 mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)    
 ```
 
-# Calculate Sigma1s mean from replica measured on the same day
-
-```{r calculate Sigma1s mean, warning = FALSE, echo=FALSE}
-SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
-  group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
-
-  summarize(SolFitsTrimMetaDarkafterLightNS,
-            
-            meanSig1s_nm2psii = mean(Sig1s_nm2psii),
-            sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
-  ungroup()
-
+```{r calculate E_days and Tme_h}
 SolFitsTrimMetaDarkafterLightNS<- SolFitsTrimMetaDarkafterLightNS %>%
 group_by(SampleID) %>%
   arrange(ObsDate) %>%
@@ -687,7 +640,7 @@ SolFitsTrimMetaDarkafterLightNS<- SolFitsTrimMetaDarkafterLightNS %>%
 rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFitsTrimOS_lightsteps, SolFitsNS, SolFitsTrimNS, SolFitsTrimMetaNS, SolFitsTrimMetaNS_param, SolFitsTrimNS_lightsteps, CultureCatalog, ActPARCrossCal)
 ```
 
-# Choose the same variables to merge two df
+# Choose the same variables to merge df taken from old and new Solisense software
 
 ```{r}
 SolFitsTrimMetaCleanOS<-SolFitsTrimMetaCleanOS %>% 
