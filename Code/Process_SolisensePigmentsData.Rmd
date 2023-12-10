@@ -86,8 +86,10 @@ SolFits1s <- readRDS(Solisense1sFile)  %>%
   ungroup()
 ```
 
+
 ```{r Preparing df for further analysis}
 SolFits <-SolFits %>% 
+  select(c(SampleID, Run, Strain, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, ExpEndDate, PARPhotonDose_day, Filename, ObsDate, ObsTime, Ex_WL, ActPAR, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr, Sig, Sig_nm2psii, Sigdark, Sigdark_nm2psii, ActPARCorr_photonsm2s, FoOxbo, qpOxbo,  JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, E_days, Time_h)) %>% 
   filter(Strain=="BA127R"| Strain=="BA48R"| Strain=="BA56G"| Strain=="BA77G") %>% 
   filter(WL=="WW") %>% 
   filter(O2==21) %>% 
@@ -95,13 +97,13 @@ SolFits <-SolFits %>%
          Strain=="BA48R"~"PE-rich_048",
         Strain=="BA56G"~"PC-rich_056",
          Strain=="BA77G"~"PC-rich_077")) 
-
-SolFits$facetsPhotonDose = factor(SolFits$WL, labels = c("PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})"))
+SolFits$facetsPhotonDose_day = factor(SolFits$WL, labels = c("PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})"))
 SolFits$facetsExcitation = factor(SolFits$WL, labels = c("Excitation~(nm)"))
 SolFits$facetsStrain = factor(SolFits$WL, labels = c("Strain"))
 
 
 SolFits1s <-SolFits1s %>% 
+  select(c(SampleID, Run, Strain, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, ExpEndDate, PARPhotonDose_day, Filename, ObsDate, ObsTime, Ex_WL, ActPAR, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr, Sig1s, Sig1s_nm2psii, ActPARCorr_photonsm2s, E_days, Time_h)) %>% 
   filter(Strain=="BA127R"| Strain=="BA48R"| Strain=="BA56G"| Strain=="BA77G") %>% 
   filter(WL=="WW") %>% 
   filter(O2==21) %>% 
@@ -109,73 +111,75 @@ SolFits1s <-SolFits1s %>%
          Strain=="BA48R"~"PE-rich_048",
         Strain=="BA56G"~"PC-rich_056",
          Strain=="BA77G"~"PC-rich_077")) 
+SolFits1s$facetsPhotonDose_day = factor(SolFits1s$WL, labels = c("PAR~photon~dose~(µmol~photons~m^{-2}~d^{-1})"))
+SolFits1s$facetsExcitation = factor(SolFits1s$WL, labels = c("Excitation~(nm)"))
+SolFits1s$facetsStrain = factor(SolFits1s$WL, labels = c("Strain"))
 ```
 
 # Filter unrevelant data and outliers
 
 ```{r filter outliers}
 # #Filter one unrevelant data point 445nm, 16h, 900uE
-# SolFitsAll445<-SolFits %>% 
-#   filter(Ex_WL == 445) %>% 
-#   filter(Sig_m2psii<250)  %>% 
-#   filter(meanSig_nm2psii<2.5) 
-# 
-# SolFitsAll590<-SolFits %>% 
-#   filter(Ex_WL == 590) 
-#   
-# SolFitsChoosen<-rbind(SolFitsAll445,SolFitsAll590)
-#   rm(SolFitsAll445,SolFitsAll590)
+SolFitsAll445<-SolFits %>%
+  filter(Ex_WL == 445) %>%
+  filter(Sig<250) 
+
+SolFitsAll590<-SolFits %>%
+  filter(Ex_WL == 590)
+
+SolFits<-rbind(SolFitsAll445,SolFitsAll590)
+  rm(SolFitsAll445,SolFitsAll590)
 ```
 
 # Choose only exp data for sigma and JVPSII in the corresponding light
 
 ```{r choose only exp data}
-O1 <- SolFitsChoosen %>%
+O1 <- SolFits %>%
   filter(Par_ue == 30 | Par_ue == 300 | Par_ue == 90 | Par_ue == 180 | Par_ue == 900) %>% 
   filter(Photoperiod == 24) %>% 
   filter(E_days <= 4)
 
-O2 <- SolFitsChoosen %>%
+O2 <- SolFits %>%
   filter(Par_ue == 90 | Par_ue == 180 | Par_ue == 300) %>% 
   filter(Photoperiod == 16) %>% 
   filter(E_days < 9)
 
-O3 <- SolFitsChoosen %>%
+O3 <- SolFits %>%
   filter(Par_ue == 900) %>% 
   filter(Photoperiod == 16) %>% 
   filter(E_days <= 4)
 
-O4 <- SolFitsChoosen %>%
+O4 <- SolFits %>%
   filter(Par_ue == 30) %>% 
   filter(Photoperiod == 16) %>% 
   filter(E_days <= 14)
 
-O5 <- SolFitsChoosen %>%
+O5 <- SolFits %>%
   filter(Par_ue == 30) %>% 
   filter(Photoperiod == 8 | Photoperiod == 12) %>% 
   filter(E_days <=14)
   
-O6 <- SolFitsChoosen %>%
+O6 <- SolFits %>%
   filter(Par_ue == 90) %>% 
   filter(Photoperiod == 8) %>% 
   filter(E_days <=14)
 
-O7 <- SolFitsChoosen %>%
+O7 <- SolFits %>%
   filter(Par_ue == 90) %>% 
   filter(Photoperiod == 12) %>% 
   filter(E_days <=10)
 
-O8 <- SolFitsChoosen %>%
+O8 <- SolFits %>%
   filter(Par_ue == 180 | Par_ue == 300) %>% 
   filter(Photoperiod == 8 | Photoperiod == 12) %>% 
   filter(E_days <=10)
 
-O9 <- SolFitsChoosen %>%
+O9 <- SolFits %>%
   filter(Par_ue == 900) %>% 
   filter(Photoperiod == 8 | Photoperiod == 12) %>% 
   filter(E_days <=7)
 
-SolFitsChoosenExp <-rbind(O1, O2, O3, O4, O5, O6, O7, O8, O9)
+SolFitsExp <-rbind(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 
 rm(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 ```
@@ -228,7 +232,7 @@ O9 <- SolFits1s %>%
   filter(Photoperiod == 8 | Photoperiod == 12) %>% 
   filter(E_days <=7)
 
-SolFitsChoosenExp1s <-rbind(O1, O2, O3, O4, O5, O6, O7, O8, O9)
+SolFitsExp1s <-rbind(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 
 rm(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 ```
@@ -236,20 +240,9 @@ rm(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 # Create preliminary plot
 
 ```{r preliminary plot}
-SolFitsChoosen %>%
+SolFits %>%
   ggplot() +
-  geom_point(aes(x = Time_h, y = JVPSII_ETRtauav_FoSig, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
-  # geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  # geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  # geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  # geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  ggh4x::facet_nested(cols = vars(Ex_WL, Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
-  theme_bw() 
-
-SolFitsChoosenExp %>%
-  ggplot() +
-  geom_point(aes(x = Time_h, y = Sig_m2psii, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_point(aes(x = Time_h, y = Sig, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
   # geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
   # geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
   # geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
@@ -258,17 +251,18 @@ SolFitsChoosenExp %>%
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
 
-SolFitsChoosenExp %>%
+SolFitsExp %>%
   ggplot() +
-  geom_point(aes(x = Time_h, y = meanSig_nm2psii, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_point(aes(x = Time_h, y = Sig, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
   # geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
   # geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
   # geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
   # geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
- # scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  #labs(y = "Total Phyco/Chl " ~italic(a)~ "ratio", x = "Elapsed time (h)") +
+  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
+
+ 
 ```
 
 Make "one big" mean to combine all days (only from exp) and all replica when samples were measured 
@@ -276,34 +270,19 @@ Make "one big" mean to combine all days (only from exp) and all replica when sam
 
 I select only data from exp phase here
 
-Step_s, Dark1s, ActPAR, ActPARCorr, ActPARCorr_photonsm2s, LR_s, ETRCtauav, ETRqpOxbo,
 ```{r}
-#colnames(SolFitsAllChoosenExp)
-#SolFitsAllChoosen<-SolFitsAllChoosen %>% -contained all solisense data 
-
-SolFitsAllChoosenExp<-SolFitsAllChoosenExp %>% 
-
+SolFitsExp<-SolFitsExp %>% 
   group_by(Strain, Ex_WL, Par_ue, Photoperiod) %>%
-
-  summarize(CultureID, Ex_WL, Par_ue, Photoperiod, WL, O2, Filename, Run, Strain, InnocDate, ExpDate, PARPhotonDose, DATE, MDcellsL, meanMDcellsL, sdMDcellsL, TurnerChl_ugL, meanTurnerChl_ugL, sdTurnerChl_ugL, ObsDate, ObsDateTime, FvFm, meanSig, sdSig, Sig_nm2psii, meanSig_nm2psii, sdSig_nm2psii, Sigdark, meanSigdark_nm2psii, sdSigdark_nm2psii, Sigmax, FoOxbo, Fm, Fo, Fodark, Fomin, 
-            
-JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
-
-E_days, Time_h, facetsPhotonDose, facetsExcitation, facetsStrain, 
-
+  summarize(c(SampleID, Run, Strain, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, ExpEndDate, PARPhotonDose_day, Filename, ObsDate, ObsTime, Ex_WL, Sig, Sig_nm2psii, Sigdark, Sigdark_nm2psii, ActPARCorr_photonsm2s, FoOxbo, qpOxbo,  JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, E_days, Time_h, facetsPhotonDose_day, facetsExcitation, facetsStrain,
              AllmeanJVPSII_aLHIIOxbomax= mean(JVPSII_aLHIIOxbomax),
              AllmeanJVPSII_ETRtauav_FoSig= mean(JVPSII_ETRtauav_FoSig),
              AllmeanJVPSII_ETRqpOxbo_FoSig= mean(JVPSII_ETRqpOxbo_FoSig),
             AllmeanJVPSII_ETRtauav_aLHII_Sig = mean(JVPSII_ETRtauav_aLHII_Sig),
              AllmeanJVPSII_ETRqpOxbo_aLHII_Sig= mean(JVPSII_ETRqpOxbo_aLHII_Sig),
-            AllmeanTurnerChl_ugL = mean(TurnerChl_ugL),
-            AllsdTurnerChl_ugL = sd(TurnerChl_ugL),
-            AllmeanMDcellsL= mean(MDcellsL),
-            AllsdMDcellsL= sd(MDcellsL),
             AllmeanSig_nm2psii = mean(Sig_nm2psii),
             AllsdSig_nm2psii = sd(Sig_nm2psii),
             AllmeanSigdark_nm2psii = mean(Sigdark_nm2psii),
-            AllsdSigdark_nm2psii = sd(Sigdark_nm2psii)) %>%
+            AllsdSigdark_nm2psii = sd(Sigdark_nm2psii))) %>%
   ungroup()
 ```
 
@@ -315,7 +294,7 @@ scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::sc
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
-SolFitsAllChoosenExp %>% 
+SolFitsExp %>% 
   ggplot() +
   geom_point(aes(x = Time_h, y = Sig_m2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
@@ -324,11 +303,11 @@ SolFitsAllChoosenExp %>%
   labs(y = "Sigma", x = "Elapsed time (h)") +
   scale_y_continuous(breaks=seq(0, 1000, by = 200)) +
   coord_cartesian(ylim = c(0, 1000)) +
-  ggh4x::facet_nested(cols = vars(facetsExcitation,Ex_WL), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
+  ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 
 
-SolFitsAllChoosenExp %>% 
+SolFitsExp %>% 
   filter(Ex_WL==590) %>% 
   ggplot() +
   geom_point(aes(x = Time_h, y = Sig, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
@@ -341,9 +320,9 @@ SolFitsAllChoosenExp %>%
   theme_bw() 
 
 
-SolFitsAllChoosenExp %>% 
+SolFitsExp %>% 
   ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_point(aes(x = PARPhotonDose_day, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   geom_errorbar(aes(x = PARPhotonDose, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
@@ -353,9 +332,9 @@ SolFitsAllChoosenExp %>%
   theme_bw() 
 
 
-SolFitsAllChoosenExp %>% 
+SolFitsExp %>% 
   ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = meanSigdark_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_point(aes(x = PARPhotonDose_day, y = meanSigdark_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   geom_errorbar(aes(x = PARPhotonDose, ymin = meanSigdark_nm2psii - sdSigdark_nm2psii, ymax = meanSigdark_nm2psii + sdSigdark_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
@@ -365,10 +344,10 @@ SolFitsAllChoosenExp %>%
   theme_bw() 
 
 
-SolFitsAllChoosenExp1s %>% # data from second df contained sig 1s
+SolFitsExp1s %>% # data from second df contained sig 1s
   filter(Par_ue !=600) %>% 
   ggplot() +
-  geom_point(aes(x = PARPhotonDose, y = meanSig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_point(aes(x = PARPhotonDose_day, y = meanSig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   # geom_errorbar(aes(x = PARPhotonDose, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
