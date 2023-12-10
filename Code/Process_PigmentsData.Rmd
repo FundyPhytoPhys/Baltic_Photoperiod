@@ -50,6 +50,9 @@ Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ProcessedData", "ProcessedPigmentsData")
 DataIn <- file.path("..", "Data", "ImportedData", "ImportedPigmentsData", fsep = .Platform$file.sep)
 
+PlotsPath <- file.path("..", "Output", "Plots")
+RDSPlotPath <- file.path("..", "Output", "PlotsRDS")
+
 FileEncode <- "UTF-8" 
 Delimiter <- ""
 HeaderRows <- 0
@@ -177,11 +180,11 @@ MCPigmentPlot %>%
   PARPhotonDoseTidy == 64.80000|
   PARPhotonDoseTidy == 86.40000) %>%
   ggplot() +
-  geom_point(aes(x = Time_h, y = Pigmentspgcell, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
-  geom_vline(data = data_vline_056_Select, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline_077_Select, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  geom_vline(data = data_vline_048_Select, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline_127_Select, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  geom_point(aes(x = Time_h, y = Pigmentspgcell, colour = as.factor(Strain)), alpha = 0.8, size = 3, show.legend = T) +
+  geom_vline(data = data_vline_056_Select, aes(xintercept = value), linetype="dotdash", colour = "seagreen4", size=0.4) +
+  geom_vline(data = data_vline_077_Select, aes(xintercept = value), linetype="dotdash", colour = "palegreen3", size=0.4) +
+  geom_vline(data = data_vline_048_Select, aes(xintercept = value), linetype="dotdash", colour = "brown4", size=0.4) +
+  geom_vline(data = data_vline_127_Select, aes(xintercept = value), linetype="dotdash", colour = "brown1", size=0.4) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   labs(y = "Pigments content ( pg  " ~ cell^-1~")", x = "Elapsed time (h)") +
   ggh4x::facet_nested(cols = vars(facetsPARPhotonDose_day, PARPhotonDoseTidy), rows = vars(factor(PigmentsName, levels=c('Chlorophyll~a', 'Total~phycobilins', 'Carotenoids'))), labeller = label_parsed) +
@@ -195,12 +198,18 @@ MCPigmentPlot %>%
         axis.title.y = element_text(margin=margin(r=10)),
         axis.title.x = element_text(margin=margin(t=10)),
         legend.background = element_rect(fill="white"),
-        legend.position = c(0.085,0.94),
+        legend.position = c(0.087,0.95),
         legend.key.height= unit(0.005, 'cm'),
         legend.spacing.y = unit(-0.005, "cm"),
         legend.spacing.x = unit(-0.005, "cm"),
         legend.title = element_blank(),
         legend.text = element_text(size=10))
+```
+
+# Save plot 
+
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("Pigments_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
 ```{r Combine phyco/Chla ratio and car/chla ratio in one column for final plot}
@@ -247,11 +256,11 @@ Plot1<-MCPigmentRatioPlot %>%
   PARPhotonDoseTidy == 64.80000|
   PARPhotonDoseTidy == 86.40000) %>%
   ggplot() +
-  geom_point(aes(x = Time_h, y = PigmentsRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
-  geom_vline(data = data_vline_056_Select, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline_077_Select, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  geom_vline(data = data_vline_048_Select, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline_127_Select, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  geom_point(aes(x = Time_h, y = PigmentsRatio, colour = as.factor(Strain)), alpha = 0.8, size = 3, show.legend = T) +
+  geom_vline(data = data_vline_056_Select, aes(xintercept = value), linetype="dotdash", colour = "seagreen4", size=0.4) +
+  geom_vline(data = data_vline_077_Select, aes(xintercept = value), linetype="dotdash", colour = "palegreen3", size=0.4) +
+  geom_vline(data = data_vline_048_Select, aes(xintercept = value), linetype="dotdash", colour = "brown4", size=0.4) +
+  geom_vline(data = data_vline_127_Select, aes(xintercept = value), linetype="dotdash", colour = "brown1", size=0.4) +
   geom_text(data=data_textA, aes(x=300, y=6.3, label=label), size=5) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   labs(y = "Total Phyco/Chl a ratio", x = "Elapsed time (h)") +
@@ -270,7 +279,7 @@ Plot1<-MCPigmentRatioPlot %>%
         strip.background = element_rect(fill="white"),
         strip.text = element_text(size=12),
         legend.background = element_rect(fill="white"),
-        legend.position = c(0.085,0.91),
+        legend.position = c(0.085,0.90),
         legend.key.height= unit(0.005, 'cm'),
         legend.spacing.y = unit(-0.005, "cm"),
         legend.spacing.x = unit(-0.005, "cm"),
@@ -320,11 +329,11 @@ Plot2<-OLISAllPURTidy %>%
   PARPhotonDoseTidy == 64.80000|
   PARPhotonDoseTidy == 86.40000) %>%
   ggplot() +
-  geom_point(aes(x = E_hours, y = PURPARRatio, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = F) +
-  geom_vline(data = data_vline_056_Select, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline_077_Select, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  geom_vline(data = data_vline_048_Select, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline_127_Select, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  geom_point(aes(x = E_hours, y = PURPARRatio, colour = as.factor(Strain)), alpha = 0.8, size = 3, show.legend = F) +
+  geom_vline(data = data_vline_056_Select, aes(xintercept = value), linetype="dotdash", colour = "seagreen4", size=0.4) +
+  geom_vline(data = data_vline_077_Select, aes(xintercept = value), linetype="dotdash", colour = "palegreen3", size=0.4) +
+  geom_vline(data = data_vline_048_Select, aes(xintercept = value), linetype="dotdash", colour = "brown4", size=0.4) +
+  geom_vline(data = data_vline_127_Select, aes(xintercept = value), linetype="dotdash", colour = "brown1", size=0.4) +
   geom_text(data=data_textB, aes(x=300, y=1.05, label=label), size=5) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   labs(y = "PUR/PAR ratio", x = "Elapsed time (h)") +
@@ -355,6 +364,12 @@ Plot2
 ```{r Final Plot arrange, fig.height = 10, fig.width = 8, warning = FALSE}
 ggarrange(Plot1,Plot2,
           ncol = 1, nrow = 2)
+```
+
+# Save plot 
+
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("PigRatioPUR_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
 # Cleaning df before saving as rds and removed unnecessary files from the environment
@@ -527,7 +542,7 @@ MCPigmenttMaxAGExpAll<-MCPigmenttMaxAGExp %>%
 
 # Create preliminary plots
 
-```{r preliminary plot, fig.height = 8, fig.width = 8}
+```{r preliminary plot}
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
 lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
@@ -569,5 +584,11 @@ rm(data_vline1, data_vline2, data_vline3, data_vline4, MCPigment, MCPigmenttMaxA
 saveRDS(MCPigmenttMaxAG, file.path(DataOut, paste(Project, "Processed_PigmentAll.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
 saveRDS(MCPigmenttMaxAGExpAll, file.path(DataOut, paste(Project, "Processed_PigmentsExp.Rds", sep = "_"), fsep = .Platform$file.sep))
+
+saveRDS(MCPigmentPlot, file.path(RDSPlotPath, paste(Project, "Plot_Pigment.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(MCPigmentRatioPlot, file.path(RDSPlotPath, paste(Project, "Plot_PigmentRatioA.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(OLISAllPURTidy, file.path(RDSPlotPath, paste(Project, "Plot_PigmentRatioB.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 

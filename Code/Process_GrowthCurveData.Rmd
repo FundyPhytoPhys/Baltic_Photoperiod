@@ -442,7 +442,7 @@ MultiCultiDataAll %>%
 # Save plot 
 
 ```{r save plot}
-ggsave(file = file.path(PlotsPath, paste("GrowthCurve_SupPlot",".png",sep = "")), height=8, width= 8,  dpi = 300, limitsize = TRUE)
+ggsave(file = file.path(PlotsPath, paste("GrowthCurve_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
 # Cleaning df before saving as rds and removed unnecessary files from the environment
