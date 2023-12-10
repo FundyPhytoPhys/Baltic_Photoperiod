@@ -50,7 +50,10 @@ library(stringi)
 
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ImportedData", "ImportedGrowthSymmetryData")
+DataOut <- file.path("..", "Data", "ProcessedData", "ProcessedGrowthSymmetryData")
+
+PlotsPath <- file.path("..", "Output", "Plots")
+RDSPlotPath <- file.path("..", "Output", "PlotsRDS")
 
 FileID <- "Smooth"
 FileEncode <- "UTF-8" 
@@ -206,16 +209,15 @@ rm(augmented, fitted, GSMetaSt)
 # Create GS and AccLen plots
 
 ```{r create GS plot, fig.height = 8, fig.width = 8, warning = FALSE}
-
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
   ggplot(GScatalogMetaFinalPlot, aes(x = PARPhotonDose_day, y = meanGS)) +
   geom_point(aes(x = PARPhotonDose_day, y = meanGS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T, GScatalogMetaFinalPlot) +
-  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanGS - sdGS, ymax = meanGS + sdGS, colour = as.factor(Par_ue)), show.legend = F, width=0, GScatalogMetaFinalPlot) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanGS - sdGS, ymax = meanGS + sdGS, colour = as.factor(Par_ue)), show.legend = F, width=0, size=0.3, GScatalogMetaFinalPlot) +
   geom_line(aes(PARPhotonDose_day, .fitted), show.legend = F, GSMetaExpPlot) +
-  geom_hline(yintercept = 1, linetype="dashed") +
+  geom_hline(yintercept = 1, linetype="dashed", size=0.4) +
    labs(y = "Diel growth symmetry (AccLen/DecLen)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
@@ -231,15 +233,20 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
         axis.title.y = element_text(margin=margin(r=10)),
         axis.title.x = element_text(margin=margin(t=10)),
         legend.background = element_rect(fill="white"),
-        legend.position = c(0.92,0.89),
+        legend.position = c(0.92,0.88),
         legend.key.height= unit(0.005, 'cm'),
         legend.spacing.y = unit(-0.1, "cm"),
         legend.title = element_blank(),
         legend.text = element_text(size=10))
 ```
 
-```{r AccLen Plot, fig.height = 8, fig.width = 8, warning = FALSE}
+# Save plot 
 
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("GS_Plot",".png",sep = "")), height=8, width= 8,  dpi = 300, limitsize = TRUE)
+```
+
+```{r AccLen Plot, fig.height = 8, fig.width = 8, warning = FALSE}
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
@@ -248,11 +255,11 @@ GScatalogMeta %>%
   filter(meanAccLen>0) %>% 
   ggplot() +
   geom_point(aes(x = PARPhotonDose_day, y = meanAccLen, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
-    geom_line(aes(x = PARPhotonDose_day, y = meanAccLen, colour = as.factor(Par_ue)), size = 0.7, show.legend = F) +
-  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanAccLen - sdAccLen, ymax = meanAccLen + sdAccLen, colour = as.factor(Par_ue)), show.legend = F, width=0) +
-  geom_hline(data = data_hlineGS8, aes(yintercept = value), linetype="dotted") +
-  geom_hline(data = data_hlineGS12, aes(yintercept = value), linetype="dotdash") +
-  geom_hline(data = data_hlineGS16, aes(yintercept = value), linetype="dashed") +
+    geom_line(aes(x = PARPhotonDose_day, y = meanAccLen, colour = as.factor(Par_ue)), size = 0.3, show.legend = F) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanAccLen - sdAccLen, ymax = meanAccLen + sdAccLen, colour = as.factor(Par_ue)), show.legend = F, width=0, size=0.3) +
+  geom_hline(data = data_hlineGS8, aes(yintercept = value), linetype="dotted", size=0.4) +
+  geom_hline(data = data_hlineGS12, aes(yintercept = value), linetype="dotdash", size=0.4) +
+  geom_hline(data = data_hlineGS16, aes(yintercept = value), linetype="dashed", size=0.4) +
   labs(y = "AccLen (h)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
@@ -270,12 +277,24 @@ GScatalogMeta %>%
         axis.title.y = element_text(margin=margin(r=10)),
         axis.title.x = element_text(margin=margin(t=10)),
         legend.background = element_rect(fill="white"),
-        legend.position = c(0.92,0.89),
+        legend.position = c(0.912,0.88),
         legend.key.height= unit(0.005, 'cm'),
         legend.spacing.y = unit(-0.1, "cm"),
         legend.title = element_blank(),
         legend.text = element_text(size=10))
+```
 
+# Save plot 
+
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("AccLen_Plot",".png",sep = "")), height=8, width= 8,  dpi = 300, limitsize = TRUE)
+```
+
+```{r AccLen Plot, fig.height = 8, fig.width = 8, warning = FALSE}
+
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
+lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
 GScatalogMeta %>%
   filter(meanAccLen>0) %>% 
@@ -329,11 +348,11 @@ data_vline_127 <- data.frame(Par_ue= c(30, 30, 30, 90, 90, 90, 180, 180, 180, 30
 GScatalogMeta %>%
   filter(Photoperiod != 24) %>% 
   ggplot() +
-  geom_point(aes(x = PhotoperiodTend_h, y = TDG, colour = as.factor(Strain)), size = 3.5, alpha = 0.8, show.legend = T) +
-  geom_vline(data = data_vline_056, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline_077, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  geom_vline(data = data_vline_048, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline_127, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
+  geom_point(aes(x = PhotoperiodTend_h, y = TDG, colour = as.factor(Strain)), size = 3, alpha = 0.8, show.legend = T) +
+  geom_vline(data = data_vline_056, aes(xintercept = value), linetype="dotdash", colour = "seagreen4", size=0.4) +
+  geom_vline(data = data_vline_077, aes(xintercept = value), linetype="dotdash", colour = "palegreen3", size=0.4) +
+  geom_vline(data = data_vline_048, aes(xintercept = value), linetype="dotdash", colour = "brown4", size=0.4) +
+  geom_vline(data = data_vline_127, aes(xintercept = value), linetype="dotdash", colour = "brown1", size=0.4) +
 labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   scale_x_continuous(breaks=seq(0, 300, by = 100)) +
@@ -350,12 +369,18 @@ labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
         axis.title.y = element_text(margin=margin(r=10)),
         axis.title.x = element_text(margin=margin(t=10)),
         #panel.spacing.x=unit(0.9, "lines"),
-        legend.position = c(0.08,0.94),
+        legend.position = c(0.095,0.93),
         legend.key.height= unit(0.005, 'cm'),
         legend.spacing.y = unit(-0.1, "cm"),
         legend.spacing.x = unit(-0.1, 'cm'),
         legend.title = element_blank(),
         legend.text = element_text(size=10))
+```
+
+# Save plot 
+
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("TDG_SupPlot",".png",sep = "")), height=8, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
 # Cleaning df before saving as rds and removed unnecessary files from the environment
@@ -368,6 +393,8 @@ rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  
 
 ```{r save rds}
 saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Processed_GrowthSymmetryData.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(GScatalogMeta, file.path(RDSPlotPath, paste(Project, "Plot_GrowthSymmetry.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 
