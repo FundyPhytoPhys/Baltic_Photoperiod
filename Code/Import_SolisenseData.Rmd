@@ -268,9 +268,6 @@ SolFitsTrimMetaClean900 <- SolFitsTrimMetaOS_param %>%
 SolFitsTrimMetaCleanOS<-rbind(SolFitsTrimMetaClean30, SolFitsTrimMetaClean90, SolFitsTrimMetaClean180, SolFitsTrimMetaClean300,SolFitsTrimMetaClean900)
 
 rm(SolFitsTrimMetaClean30, SolFitsTrimMetaClean90, SolFitsTrimMetaClean180, SolFitsTrimMetaClean300,SolFitsTrimMetaClean900)
-
-SolFitsTrimMetaCleanOS<-SolFitsTrimMetaCleanOS %>% 
-  select(-c(SourceDataFile))
 ```
 
 # Convert Sig_m2psii to Sig_nm2psii and Sigdark_m2psii to Sigdark_nm2psii and calculated number of days when measurements were made
@@ -343,6 +340,7 @@ SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
 
 ```{r convert Sigma}
 SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
+mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)  %>% 
 mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)    
 ```
 
@@ -486,7 +484,7 @@ SolFitsTrimMetaNS <- CultureCatalog %>%
 # Estimate parameters using Oxborough & Baker 1997 for Fo'
 
 ```{r estimate parameters, warning = FALSE, echo=FALSE}
-SolFitsTrimMetaNS_param <- SolFitsTrimMetaNS %>%
+SolFitsTrimMetaNS <- SolFitsTrimMetaNS %>%
   group_by(SourceDataFile, Filename, SampleID, ObsDate, Ex_WL, TempCont) %>%
   mutate(Sig_m2psii = Sig/A2_m2,
          Fodark = Fo[1],
@@ -517,27 +515,27 @@ SolFitsTrimMetaNS_param <- SolFitsTrimMetaNS %>%
 # Choosen Sigma from corresponding light
 
 ```{r data taken from corresponding light calibration}
-SolFitsTrimMetaClean30 <- SolFitsTrimMetaNS_param %>% 
+SolFitsTrimMetaClean30 <- SolFitsTrimMetaNS %>% 
   filter(Dark1s == 0) %>%
   filter(Par_ue == 30) %>% 
   filter(ActPAR == 20) # 39.5 for 445 and 48.7 for 590
   
-SolFitsTrimMetaClean90 <- SolFitsTrimMetaNS_param %>% 
+SolFitsTrimMetaClean90 <- SolFitsTrimMetaNS %>% 
   filter(Dark1s == 0) %>%
   filter(Par_ue == 90) %>% 
   filter(ActPAR == 40) # 79.0 for 445 and 97.5 for 590
 
-SolFitsTrimMetaClean180 <- SolFitsTrimMetaNS_param %>% 
+SolFitsTrimMetaClean180 <- SolFitsTrimMetaNS %>% 
   filter(Dark1s == 0) %>%
   filter(Par_ue == 180) %>% 
   filter(ActPAR == 80) # 158.1 for 445 and 195.0 for 590
 
-SolFitsTrimMetaClean300 <- SolFitsTrimMetaNS_param %>% 
+SolFitsTrimMetaClean300 <- SolFitsTrimMetaNS %>% 
   filter(Dark1s == 0) %>%
   filter(Par_ue == 300) %>% 
   filter(ActPAR == 160) # 316.2 for 445 and 390.0 for 590
 
-SolFitsTrimMetaClean900 <- SolFitsTrimMetaNS_param %>% 
+SolFitsTrimMetaClean900 <- SolFitsTrimMetaNS %>% 
   filter(Dark1s == 0) %>%
   filter(Par_ue == 900) %>% 
   filter(ActPAR == 320) # 632.5 for 445 and 780.1 for 590
@@ -545,9 +543,6 @@ SolFitsTrimMetaClean900 <- SolFitsTrimMetaNS_param %>%
 SolFitsTrimMetaCleanNS<-rbind(SolFitsTrimMetaClean30, SolFitsTrimMetaClean90, SolFitsTrimMetaClean180, SolFitsTrimMetaClean300,SolFitsTrimMetaClean900)
 
 rm(SolFitsTrimMetaClean30, SolFitsTrimMetaClean90, SolFitsTrimMetaClean180, SolFitsTrimMetaClean300,SolFitsTrimMetaClean900)
-
-SolFitsTrimMetaCleanNS<-SolFitsTrimMetaCleanNS %>% 
-  select(-c(SourceDataFile))
 ```
 
 # Convert Sig_m2psii to Sig_nm2psii and Sigdark_m2psii to Sigdark_nm2psii and calculated number of days when measurements were made
@@ -572,35 +567,35 @@ SolFitsTrimMetaCleanNS<- SolFitsTrimMetaCleanNS %>%
 # Choosen Sigma measured from 1s in dark after corresponding light
 
 ```{r data taken from 1s of dark after corresponding light calibration}
-SolFitsTrimMetaDarkafterLight30 <- SolFitsTrimMetaNS_param %>% 
+SolFitsTrimMetaDarkafterLight30 <- SolFitsTrimMetaNS %>% 
   filter(Dark1s == 1) %>%
   filter(ActPAR == 0) %>% 
   filter(Par_ue == 30) %>% 
   filter(LR_s==13|LR_s==14|LR_s==15|LR_s==16|
          LR_s==118|LR_s==119|LR_s==120|LR_s==112|LR_s==122)
 
-SolFitsTrimMetaDarkafterLight90 <- SolFitsTrimMetaNS_param %>% 
+SolFitsTrimMetaDarkafterLight90 <- SolFitsTrimMetaNS %>% 
   filter(Dark1s == 1) %>%
   filter(ActPAR == 0) %>% 
   filter(Par_ue == 90) %>% 
   filter(LR_s==26|LR_s==27|LR_s==28|LR_s==29|
          LR_s==105|LR_s==106|LR_s==107|LR_s==108)
 
-SolFitsTrimMetaDarkafterLight180 <- SolFitsTrimMetaNS_param %>% 
+SolFitsTrimMetaDarkafterLight180 <- SolFitsTrimMetaNS %>% 
   filter(Dark1s == 1) %>%
   filter(ActPAR == 0) %>% 
   filter(Par_ue == 180) %>% 
   filter(LR_s==40|LR_s==41|LR_s==42|LR_s==43|
          LR_s==92|LR_s==93|LR_s==94|LR_s==95)
 
-SolFitsTrimMetaDarkafterLight300 <- SolFitsTrimMetaNS_param %>% 
+SolFitsTrimMetaDarkafterLight300 <- SolFitsTrimMetaNS %>% 
   filter(Dark1s == 1) %>%
   filter(ActPAR == 0) %>% 
   filter(Par_ue == 300) %>% 
   filter(LR_s==53|LR_s==54|LR_s==55|LR_s==56|
          LR_s==79|LR_s==80|LR_s==81|LR_s==82)
 
-SolFitsTrimMetaDarkafterLight900 <- SolFitsTrimMetaNS_param %>% 
+SolFitsTrimMetaDarkafterLight900 <- SolFitsTrimMetaNS %>% 
   filter(Dark1s == 1) %>%
   filter(ActPAR == 0) %>% 
   filter(Par_ue == 900) %>% 
@@ -620,6 +615,7 @@ SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
 
 ```{r convert Sigma}
 SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
+mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)  %>% 
 mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)    
 ```
 
@@ -644,17 +640,18 @@ rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFits
 
 ```{r}
 SolFitsTrimMetaCleanOS<-SolFitsTrimMetaCleanOS %>% 
-  select(-c(ChiSq, "Fv/Fo", p, fmPQ, PQP_Size, carQ, carQt, p680Q, p680Qt, fQB))
-
-SolFitsTrimMetaDarkafterLightOS<-SolFitsTrimMetaDarkafterLightOS %>% 
-  select(-c(ChiSq, "Fv/Fo", p, fmPQ, PQP_Size, carQ, carQt, p680Q, p680Qt, fQB))
+  select(c(SampleID, Run, Strain, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, ExpEndDate, PARPhotonDose_day, Time__mSec, Fo, Fm, Fv, FvFm, Tau1QA, Tau2QA, Tau3QA, Alp1QA, Alp2QA, Alp3QA, Alpha, Ek, Pmax, Filename, ObsDate, ObsTime, ObsDateTime, Step_s, Dark1s, Ex_WL, ActPAR, LR_s, StartDateTimeSol, nm445, nm470, nm505, nm535, nm590, IR, TempCont, nm445Corr, nm470Corr, nm505Corr, nm535Corr, nm590Corr, IRCorr, ActPARCorr, Sig, Sig_m2psii, Sig_nm2psii, Sigdark, Sigdark_m2psii, Sigdark_nm2psii, ActPARCorr_photonsm2s, TauAv, Ctauav, aLHIIdark, Fodark, Fmdark, Fomin, Fmmax, Sigmax, Sigmax_m2psii, FoOxbo, qpOxbo, aLHIIOxbomax, JVPSII_aLHIIOxbomax, ETRCtauav, ETRqpOxbo, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, E_days, Time_h))
 
 SolFitsTrimMetaCleanNS<-SolFitsTrimMetaCleanNS %>% 
-  select(-c("Dur-Wat", ChiSq, QARredMax, p, Alp4QA, Tau4QA))
+  select(c(SampleID, Run, Strain, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, ExpEndDate, PARPhotonDose_day, Time__mSec, Fo, Fm, Fv, FvFm, Tau1QA, Tau2QA, Tau3QA, Alp1QA, Alp2QA, Alp3QA, Alpha, Ek, Pmax, Filename, ObsDate, ObsTime, ObsDateTime, Step_s, Dark1s, Ex_WL, ActPAR, LR_s, StartDateTimeSol, nm445, nm470, nm505, nm535, nm590, IR, TempCont, nm445Corr, nm470Corr, nm505Corr, nm535Corr, nm590Corr, IRCorr, ActPARCorr, Sig, Sig_m2psii, Sig_nm2psii, Sigdark, Sigdark_m2psii, Sigdark_nm2psii, ActPARCorr_photonsm2s, TauAv, Ctauav, aLHIIdark, Fodark, Fmdark, Fomin, Fmmax, Sigmax, Sigmax_m2psii, FoOxbo, qpOxbo, aLHIIOxbomax, JVPSII_aLHIIOxbomax, ETRCtauav, ETRqpOxbo, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, E_days, Time_h))
 
+SolFitsTrimMetaDarkafterLightOS<-SolFitsTrimMetaDarkafterLightOS %>% 
+  select(c(SampleID, Run, Strain, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, ExpEndDate, PARPhotonDose_day, Time__mSec, Fo, Fm, Fv, FvFm, Tau1QA, Tau2QA, Tau3QA, Alp1QA, Alp2QA, Alp3QA, Alpha, Ek, Pmax,  Filename, ObsDate, ObsTime, ObsDateTime, Step_s, Dark1s, Ex_WL, ActPAR, LR_s, StartDateTimeSol, nm445, nm445, nm470, nm505, nm535, nm590, IR, TempCont, nm445Corr, nm470Corr, nm505Corr, nm535Corr, nm590Corr, IRCorr, ActPARCorr, Sig1s, Sig1s_m2psii, Sig1s_nm2psii, Sigdark, Sigdark_m2psii, Sigdark_nm2psii, ActPARCorr_photonsm2s, TauAv, Ctauav, aLHIIdark, Fodark, Fmdark, Fomin, Fmmax, Sigmax, Sigmax_m2psii, FoOxbo, qpOxbo, aLHIIOxbomax, JVPSII_aLHIIOxbomax, ETRCtauav, ETRqpOxbo, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, E_days, Time_h))
+  
 SolFitsTrimMetaDarkafterLightNS<-SolFitsTrimMetaDarkafterLightNS %>% 
-  select(-c("Dur-Wat", ChiSq, QARredMax, p, Alp4QA, Tau4QA))
+  select(c(SampleID, Run, Strain, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, ExpEndDate, PARPhotonDose_day, Time__mSec, Fo, Fm, Fv, FvFm, Tau1QA, Tau2QA, Tau3QA, Alp1QA, Alp2QA, Alp3QA, Alpha, Ek, Pmax,  Filename, ObsDate, ObsTime, ObsDateTime, Step_s, Dark1s, Ex_WL, ActPAR, LR_s, StartDateTimeSol, nm445, nm445, nm470, nm505, nm535, nm590, IR, TempCont, nm445Corr, nm470Corr, nm505Corr, nm535Corr, nm590Corr, IRCorr, ActPARCorr, Sig1s, Sig1s_m2psii, Sig1s_nm2psii, Sigdark, Sigdark_m2psii, Sigdark_nm2psii, ActPARCorr_photonsm2s, TauAv, Ctauav, aLHIIdark, Fodark, Fmdark, Fomin, Fmmax, Sigmax, Sigmax_m2psii, FoOxbo, qpOxbo, aLHIIOxbomax, JVPSII_aLHIIOxbomax, ETRCtauav, ETRqpOxbo, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, E_days, Time_h))
 ```
+
 
 # Merge df from old and new Software for data taken from the corresponding light and at 1s of dark after corresponding light
 
@@ -667,17 +664,17 @@ SolFitsMetaDarkafterLight <-rbind(SolFitsTrimMetaDarkafterLightOS, SolFitsTrimMe
 # Create preliminary plots 
 
 ```{r preliminary plot}
-# SolFitsMeta %>% 
+# SolFitsTrimMetaCleanNS %>%
 #   ggplot() +
-#   geom_point(aes(x = Par_ue, y = meanSig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
+#   geom_point(aes(x = Par_ue, y = Sig, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
 #   facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
-#   theme_bw()   
+#   theme_bw()
 # 
-# SolFitsMetaDarkafterLight %>% 
+# SolFitsMetaDarkafterLight %>%
 #   ggplot() +
-#   geom_point(aes(x = Par_ue, y = meanSig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
+#   geom_point(aes(x = Par_ue, y = Sig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
 #   facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
-#   theme_bw()  
+#   theme_bw()
 ```
 
 # Save rds for further analysis

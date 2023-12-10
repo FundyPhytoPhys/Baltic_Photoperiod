@@ -19,17 +19,7 @@ editor_options:
     wrap: 72
 ---
 
-# Set Options
-
-## Set figure caption font size
-
-```{css, echo=FALSE}
-p.caption {
-  font-size: 18px;
-}
-```
-
-## Set Chunk Options
+# Set Chunk Options
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
@@ -50,31 +40,18 @@ library(broom)
 library(knitr)
 library(OneR)
 library(zoo)
-library(strucchange)
-library(ggspectra)
 library(ggpubr)
 library(caret)
-library(photobiologyWavebands)
 library(reshape2)
-library(photobiology)
 library(gcookbook)
-library(RColorBrewer)
-library(viridis)
 library(scales)
-library(googledrive)
-library(googlesheets4)
-library(readxl)
 library(Cairo) #for greek symbols
 ```
 
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ProcessedData")
-DataIn <- file.path("..", "Data", "ImportedData", fsep = .Platform$file.sep)
-
-FileEncode <- "UTF-8" 
-Delimiter <- ""
-HeaderRows <- 0
+DataOut <- file.path("..", "Data", "ProcessedData", "ProcessedSolisenseData")
+DataIn <- file.path("..", "Data", "ImportedData", "ImportedSolisenseData", fsep = .Platform$file.sep)
 ```
 
 # List and read Imported_Solisense RDS
@@ -87,7 +64,7 @@ list.files(path = DataIn, pattern = Project, full.names = TRUE)
 # Also, conteined mean sig - mean for replica measured on the same day
 
 ```{r read ProcessFile}
-SolisenseFile <- "../Data/ImportedData/Baltic_Photoperiod_Imported_SolisenseLight.Rds"  
+SolisenseFile <- "../Data/ImportedData/ImportedSolisenseData/Baltic_Photoperiod_Imported_SolisenseLight.Rds"  
 
 SolisenseFileName <- str_split(string = SolisenseFile, "/")[[1]][3] %>%
   str_remove(pattern = ".Rds")
@@ -100,7 +77,7 @@ SolFits <- readRDS(SolisenseFile)  %>%
 # Also, conteined mean for sig1s - mean for replica measured on the same day
 
 ```{r read ProcessFile}
-Solisense1sFile <- "../Data/ImportedData/Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds"
+Solisense1sFile <- "../Data/ImportedData/ImportedSolisenseData/Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds"
 
 Solisense1sFileName <- str_split(string = Solisense1sFile, "/")[[1]][3] %>%
   str_remove(pattern = ".Rds")
@@ -123,7 +100,7 @@ SolFits$facetsPhotonDose = factor(SolFits$WL, labels = c("PAR~photon~dose~(µmol
 SolFits$facetsExcitation = factor(SolFits$WL, labels = c("Excitation~(nm)"))
 SolFits$facetsStrain = factor(SolFits$WL, labels = c("Strain"))
 
-# the same for second df contained sigma 1s
+
 SolFits1s <-SolFits1s %>% 
   filter(Strain=="BA127R"| Strain=="BA48R"| Strain=="BA56G"| Strain=="BA77G") %>% 
   filter(WL=="WW") %>% 
@@ -137,17 +114,17 @@ SolFits1s <-SolFits1s %>%
 # Filter unrevelant data and outliers
 
 ```{r filter outliers}
-#Filter one weird data point 445nm, 16h, 900uE
-SolFitsAll445<-SolFits %>% 
-  filter(Ex_WL == 445) %>% 
-  filter(Sig_m2psii<250)  %>% 
-  filter(meanSig_nm2psii<2.5) 
-
-SolFitsAll590<-SolFits %>% 
-  filter(Ex_WL == 590) 
-  
-SolFitsChoosen<-rbind(SolFitsAll445,SolFitsAll590)
-  rm(SolFitsAll445,SolFitsAll590)
+# #Filter one unrevelant data point 445nm, 16h, 900uE
+# SolFitsAll445<-SolFits %>% 
+#   filter(Ex_WL == 445) %>% 
+#   filter(Sig_m2psii<250)  %>% 
+#   filter(meanSig_nm2psii<2.5) 
+# 
+# SolFitsAll590<-SolFits %>% 
+#   filter(Ex_WL == 590) 
+#   
+# SolFitsChoosen<-rbind(SolFitsAll445,SolFitsAll590)
+#   rm(SolFitsAll445,SolFitsAll590)
 ```
 
 # Choose only exp data for sigma and JVPSII in the corresponding light
@@ -261,13 +238,13 @@ rm(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 ```{r preliminary plot}
 SolFitsChoosen %>%
   ggplot() +
-  geom_point(aes(x = Time_h, y = Sig_m2psii, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
+  geom_point(aes(x = Time_h, y = JVPSII_ETRtauav_FoSig, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
   # geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
   # geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
   # geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
   # geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
   #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
-  ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
+  ggh4x::facet_nested(cols = vars(Ex_WL, Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
 
 SolFitsChoosenExp %>%
