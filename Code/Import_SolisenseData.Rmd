@@ -85,7 +85,7 @@ CultureCatalog<-CultureCatalog %>%
 
 ```{r set project variables, read zipped files, list available files, warning = FALSE, echo=FALSE}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ImportedData")
+DataOut <- file.path("..", "Data", "ImportedData", "ImportedSolisenseData")
 
 zip_file <- file.path("..", "Data", "RawData", "SolisenseOSData.zip")
 
@@ -379,25 +379,13 @@ SolFitsTrimMetaDarkafterLightOS<- SolFitsTrimMetaDarkafterLightOS %>%
   mutate(Time_h = E_days*24)
 ```
 
-# Cleaning df before saving as rds and removed unnecessary files from the environment
 
-```{r Cleaning the environment}
-rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFitsTrimOS_lightsteps)
-```
-
-# Save rds for further analysis
-
-```{r save rds}
-saveRDS(SolFitsTrimMetaCleanOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAll.Rds", sep = "_"), fsep = .Platform$file.sep))
-
-saveRDS(SolFitsTrimMetaDarkafterLightOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAllDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
-```
 
 # Set Project Variables from new software (NS)
 
 ```{r set project variables, read zipped files, list available files, warning = FALSE, echo=FALSE}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ImportedData")
+DataOut <- file.path("..", "Data", "ImportedData", "ImportedSolisenseData")
 
 zip_file <- file.path("..", "Data", "RawData", "SolisenseNSData.zip")
 
@@ -594,37 +582,6 @@ mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)
 
 # Calculate Sigma mean from replica measured on the same day
 
-
-SampleID"                   "Run"                        "Strain"                    
- [4] "ExpDate"                    "Par_ue"                     "Photoperiod"               
- [7] "MC"                         "Tube"                       "O2"                        
-[10] "WL"                         "LightShape"                 "ExpEndDate"                
-[13] "PARPhotonDose_day"          "Time__mSec"                 "Dur-Wat"                   
-[16] "ChiSq"                      "QARredMax"                  "Sig"                       
-[19] "Fo"                         "Fm"                         "p"                         
-[22] "Tau1QA"                     "Tau2QA"                     "Tau3QA"                    
-[25] "Tau4QA"                     "Alp1QA"                     "Alp2QA"                    
-[28] "Alp3QA"                     "Alp4QA"                     "Alpha"                     
-[31] "Ek"                         "Pmax"                       "Fv"                        
-[34] "Filename"                   "ObsDate"                    "ObsTime"                   
-[37] "ObsDateTime"                "Step_s"                     "Dark1s"                    
-[40] "Ex_WL"                      "ActPAR"                     "LR_s"                      
-[43] "StartDateTimeSol"           "nm445"                      "nm470"                     
-[46] "nm505"                      "nm535"                      "nm590"                     
-[49] "IR"                         "TempCont"                   "FvFm"                      
-[52] "nm445Corr"                  "nm470Corr"                  "nm505Corr"                 
-[55] "nm535Corr"                  "nm590Corr"                  "IRCorr"                    
-[58] "ActPARCorr"                 "Sig_m2psii"                 "Fodark"                    
-[61] "Fmdark"                     "Sigdark"                    "Sigdark_m2psii"            
-[64] "ActPARCorr_photonsm2s"      "TauAv"                      "Ctauav"                    
-[67] "aLHIIdark"                  "Fomin"                      "Fmmax"                     
-[70] "Sigmax"                     "Sigmax_m2psii"              "FoOxbo"                    
-[73] "qpOxbo"                     "aLHIIOxbomax"               "JVPSII_aLHIIOxbomax"       
-[76] "ETRCtauav"                  "ETRqpOxbo"                  "JVPSII_ETRtauav_FoSig"     
-[79] "JVPSII_ETRqpOxbo_FoSig"     "JVPSII_ETRtauav_aLHII_Sig"  "JVPSII_ETRqpOxbo_aLHII_Sig"
-[82] "Sig_nm2psii"                "Sigdark_nm2psii"           
-
-
 ```{r calculate Sigma mean, warning = FALSE, echo=FALSE}
 
 SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
@@ -727,15 +684,23 @@ SolFitsTrimMetaDarkafterLightNS<- SolFitsTrimMetaDarkafterLightNS %>%
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
 ```{r Cleaning the environment}
-rm(SolFitsNS, SolFitsTrimNS, SolFitsTrimMetaNS, SolFitsTrimMetaNS_param, SolFitsTrimNS_lightsteps)
+rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFitsTrimOS_lightsteps, SolFitsNS, SolFitsTrimNS, SolFitsTrimMetaNS, SolFitsTrimMetaNS_param, SolFitsTrimNS_lightsteps, CultureCatalog, ActPARCrossCal)
 ```
 
-# Save rds for further analysis
+# Choose the same variables to merge two df
 
-```{r save rds}
-# saveRDS(SolFitsTrimMetaCleanNS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAll.Rds", sep = "_"), fsep = .Platform$file.sep))
-# 
-# saveRDS(SolFitsTrimMetaDarkafterLightNS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAllDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
+```{r}
+SolFitsTrimMetaCleanOS<-SolFitsTrimMetaCleanOS %>% 
+  select(-c(ChiSq, "Fv/Fo", p, fmPQ, PQP_Size, carQ, carQt, p680Q, p680Qt, fQB))
+
+SolFitsTrimMetaDarkafterLightOS<-SolFitsTrimMetaDarkafterLightOS %>% 
+  select(-c(ChiSq, "Fv/Fo", p, fmPQ, PQP_Size, carQ, carQt, p680Q, p680Qt, fQB))
+
+SolFitsTrimMetaCleanNS<-SolFitsTrimMetaCleanNS %>% 
+  select(-c("Dur-Wat", ChiSq, QARredMax, p, Alp4QA, Tau4QA))
+
+SolFitsTrimMetaDarkafterLightNS<-SolFitsTrimMetaDarkafterLightNS %>% 
+  select(-c("Dur-Wat", ChiSq, QARredMax, p, Alp4QA, Tau4QA))
 ```
 
 # Merge df from old and new Software for data taken from the corresponding light and at 1s of dark after corresponding light
