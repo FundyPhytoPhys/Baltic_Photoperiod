@@ -121,7 +121,7 @@ SolFitsTrimOS <- SolFitsOS %>%
   mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseOS.zip/"),
          Filename = str_remove(string = Filename, pattern = "_fit.csv")
          ) %>%
-  separate(Filename, into = c("fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "SampleID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
+  separate(Filename, into = c("fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "SampleID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
   mutate(RunDateTime = ymd_hm(RunDateTime),
          TIME = as.character(TIME)) %>%  #time-column may be read in as factor, and as.character changes it to numeric; using lubdridate::hms would only change the format to 13H 4M 2S but does not work later to merge into one DateTime-column
   mutate(SourceDataFile = `Source DataFile`,
@@ -143,7 +143,7 @@ SolFitsTrimOS <- SolFitsOS %>%
   relocate(ObsDateTime, .after = ObsTime) %>%
   relocate(SampleID, .before = ObsDate) %>%
   #mutate(FvFm=as.numeric(FvFm)) %>%
-  select(-c(Light_1,Light_2,Light_3,Light_4,Light_5,Light_6,`Source DataFile`,DATE,TIME,RunDateTime, fp0, fp1, fp2, fp3, fp4, fp5, fp6, fp7, Project))
+  select(-c(Light_1,Light_2,Light_3,Light_4,Light_5,Light_6,`Source DataFile`,DATE,TIME,RunDateTime, fp1, fp2, fp3, fp4, fp5, fp6, fp7, Project))
 
 #for consistency add TempCont column
 SolFitsTrimOS <- SolFitsTrimOS %>%
@@ -284,11 +284,10 @@ mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)
 # Calculate Sigma mean from replica measured on the same day
 
 ```{r calculate Sigma mean, warning = FALSE, echo=FALSE}
+
 SolFitsTrimMetaCleanOS <- SolFitsTrimMetaCleanOS %>%
   group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
-  
-  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
-            
+  summarize(SolFitsTrimMetaCleanOS, 
             meanSig_nm2psii = mean(Sig_nm2psii),
             sdSig_nm2psii = sd(Sig_nm2psii),
             meanSigdark_nm2psii = mean(Sigdark_nm2psii),
@@ -365,8 +364,7 @@ mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)
 SolFitsTrimMetaDarkafterLightOS <- SolFitsTrimMetaDarkafterLightOS %>%
   group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
 
-  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
-            
+  summarize(SolFitsTrimMetaDarkafterLightOS,
             meanSig1s_nm2psii = mean(Sig1s_nm2psii),
             sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
   ungroup()
@@ -390,9 +388,9 @@ rm(SolFitsOS, SolFitsTrimOS, SolFitsTrimMetaOS, SolFitsTrimMetaOS_param, SolFits
 # Save rds for further analysis
 
 ```{r save rds}
-# saveRDS(SolFitsTrimMetaCleanOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAll.Rds", sep = "_"), fsep = .Platform$file.sep))
-# 
-# saveRDS(SolFitsTrimMetaDarkafterLightOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAllDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(SolFitsTrimMetaCleanOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAll.Rds", sep = "_"), fsep = .Platform$file.sep))
+
+saveRDS(SolFitsTrimMetaDarkafterLightOS, file.path(DataOut, paste(Project, "SySlWWPhotoperiodAllDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 # Set Project Variables from new software (NS)
@@ -432,10 +430,10 @@ SolFitsTrimNS <- SolFitsNS %>%
   filter(!grepl("----", DATE)) %>% 
   select(-c("RFID_User_Data", "Barcode_Data", "PIF",  "Lon", "Lat", "GPS_stat", "LEDSel")) %>% # remove superfluous columns for unfit data
 
-  mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseNS.zip/"),
+  mutate(Filename = str_remove(string = Filename, pattern = "/RawData/SolisenseNSData.zip/"),
          Filename = str_remove(string = Filename, pattern = "_fit.csv")
          ) %>%
-  separate(Filename, into = c("fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "SampleID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
+  separate(Filename, into = c("fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7", "Project", "RunDateTime", "SampleID", "Ex_WL"), sep = "([\\/\\_])", remove = FALSE) %>%
   mutate(RunDateTime = ymd_hm(RunDateTime),
          TIME = as.character(TIME)) %>%  #time-column may be read in as factor, and as.character changes it to numeric; using lubdridate::hms would only change the format to 13H 4M 2S but does not work later to merge into one DateTime-column
   mutate(SourceDataFile = `Source DataFile`,
@@ -457,7 +455,7 @@ SolFitsTrimNS <- SolFitsNS %>%
   relocate(ObsDateTime, .after = ObsTime) %>%
   relocate(SampleID, .before = ObsDate) %>%
   #mutate(FvFm=as.numeric(FvFm)) %>%
-  select(-c(Light_1,Light_2,Light_3,Light_4,Light_5,Light_6,`Source DataFile`,DATE,TIME,RunDateTime, fp0, fp1, fp2, fp3, fp4, fp5, fp6, fp7, Project))
+  select(-c(Light_1,Light_2,Light_3,Light_4,Light_5,Light_6,`Source DataFile`,DATE,TIME,RunDateTime, fp1, fp2, fp3, fp4, fp5, fp6, fp7, Project))
 
 #for consistency add TempCont column
 SolFitsTrimNS <- SolFitsTrimNS %>%
@@ -468,7 +466,7 @@ SolFitsTrimNS <- SolFitsTrimNS %>%
 
 # Filter unrelated values
 
-```{r filter unrelated values}
+```{r filter unrelated values if any}
 SolFitsTrimNS <- SolFitsTrimNS %>%
   filter(Sig>0)
 ```
@@ -596,11 +594,43 @@ mutate(Sigdark_nm2psii=Sigdark_m2psii*1000000000000000000)
 
 # Calculate Sigma mean from replica measured on the same day
 
+
+SampleID"                   "Run"                        "Strain"                    
+ [4] "ExpDate"                    "Par_ue"                     "Photoperiod"               
+ [7] "MC"                         "Tube"                       "O2"                        
+[10] "WL"                         "LightShape"                 "ExpEndDate"                
+[13] "PARPhotonDose_day"          "Time__mSec"                 "Dur-Wat"                   
+[16] "ChiSq"                      "QARredMax"                  "Sig"                       
+[19] "Fo"                         "Fm"                         "p"                         
+[22] "Tau1QA"                     "Tau2QA"                     "Tau3QA"                    
+[25] "Tau4QA"                     "Alp1QA"                     "Alp2QA"                    
+[28] "Alp3QA"                     "Alp4QA"                     "Alpha"                     
+[31] "Ek"                         "Pmax"                       "Fv"                        
+[34] "Filename"                   "ObsDate"                    "ObsTime"                   
+[37] "ObsDateTime"                "Step_s"                     "Dark1s"                    
+[40] "Ex_WL"                      "ActPAR"                     "LR_s"                      
+[43] "StartDateTimeSol"           "nm445"                      "nm470"                     
+[46] "nm505"                      "nm535"                      "nm590"                     
+[49] "IR"                         "TempCont"                   "FvFm"                      
+[52] "nm445Corr"                  "nm470Corr"                  "nm505Corr"                 
+[55] "nm535Corr"                  "nm590Corr"                  "IRCorr"                    
+[58] "ActPARCorr"                 "Sig_m2psii"                 "Fodark"                    
+[61] "Fmdark"                     "Sigdark"                    "Sigdark_m2psii"            
+[64] "ActPARCorr_photonsm2s"      "TauAv"                      "Ctauav"                    
+[67] "aLHIIdark"                  "Fomin"                      "Fmmax"                     
+[70] "Sigmax"                     "Sigmax_m2psii"              "FoOxbo"                    
+[73] "qpOxbo"                     "aLHIIOxbomax"               "JVPSII_aLHIIOxbomax"       
+[76] "ETRCtauav"                  "ETRqpOxbo"                  "JVPSII_ETRtauav_FoSig"     
+[79] "JVPSII_ETRqpOxbo_FoSig"     "JVPSII_ETRtauav_aLHII_Sig"  "JVPSII_ETRqpOxbo_aLHII_Sig"
+[82] "Sig_nm2psii"                "Sigdark_nm2psii"           
+
+
 ```{r calculate Sigma mean, warning = FALSE, echo=FALSE}
+
 SolFitsTrimMetaCleanNS <- SolFitsTrimMetaCleanNS %>%
   group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
   
-  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, Fo, FvFm, Sig_m2psii, Sig_nm2psii, ActPARCorr_photonsm2s, Fodark, Fomin,  Sigdark_m2psii, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig,
+  summarize(SolFitsTrimMetaCleanNS, 
             
             meanSig_nm2psii = mean(Sig_nm2psii),
             sdSig_nm2psii = sd(Sig_nm2psii),
@@ -678,7 +708,7 @@ mutate(Sig1s_nm2psii=Sig1s_m2psii*1000000000000000000)
 SolFitsTrimMetaDarkafterLightNS <- SolFitsTrimMetaDarkafterLightNS %>%
   group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
 
-  summarize(SampleID, Ex_WL, Filename, Run, Strain, InnocDate, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsDateTime, Step_s, Dark1s, ActPAR, ActPARCorr, LR_s, nm445, nm590, nm445Corr, nm590Corr, ActPARCorr_photonsm2s, Sig1s_m2psii, Sig1s_nm2psii, 
+  summarize(SolFitsTrimMetaDarkafterLightNS,
             
             meanSig1s_nm2psii = mean(Sig1s_nm2psii),
             sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
