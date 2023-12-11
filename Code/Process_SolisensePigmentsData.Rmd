@@ -284,6 +284,7 @@ SolFitsExp %>%
   theme_bw() 
 ```
 
+
 # Calculate Sigma mean from 3 replica measured on the same day
 
 ```{r calculate Sigma mean from 3 replica measured on the same day}
@@ -334,7 +335,6 @@ Make "one big" mean to combine all days (only from exp) and all replica when sam
 I select only data from exp phase here
 
 
-
 # Calculate Sigma mean from all data measured on exp phase 
 
 ```{r calculate Sigma mean from exp phase}
@@ -363,6 +363,12 @@ ungroup()
 
 SolFitsExpmeanAll<- SolFitsExpmeanAll %>%
   mutate(Time_h = E_days*24)
+```
+
+# Removed unnessesary df from the environment
+
+```{r}
+rm(SolFits, SolFits1s, SolFitsExp, SolFitsExp1s, SolFitsExpmeanDay)
 ```
 
 # Filter otliers to calculate exponential decay function
@@ -402,6 +408,9 @@ rm(Sol1, Sol2, Sol3, Sol4, Sol5, Sol6)
 # Create plot to check data before and after filtering outliers
 
 ```{r checking data before and after filtering outliers}
+lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
 SolFitsExpmeanAll %>% 
   ggplot() +
   geom_point(aes(x = PARPhotonDose_day, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
@@ -427,6 +436,7 @@ SolFitsExpFitAll %>%
 # Fit the data to exponential decays
 
 ```{r fit the data to exponential decays, echo=FALSE, warning = FALSE}
+
 SolFitsExpFit590Clean <-SolFitsExpFit590 %>% 
   drop_na(Sig_nm2psii) %>%
   select(c(Sig_nm2psii, PARPhotonDose_day, Strain)) 
@@ -446,8 +456,6 @@ fitted_Param<-fitted %>%
   select(Strain, term, estimate) %>% 
 pivot_wider(., names_from = c(term), values_from = c(estimate)) %>% 
   mutate(alpha = exp(log_alpha))
-
-rm(SolFitsExpFit590Clean)
 ```
 
 ```{r unnest, preparing df to preparing final plot, echo=FALSE, warning = FALSE}
@@ -463,7 +471,6 @@ SolFitsExpmeanAll445 <-SolFitsExpFitAll %>%
   mutate(.fitted=0)
 
 SolFitsExpmeanAllPlot<-rbind(SolFitsExpmeanAll590Plot, SolFitsExpmeanAll445)
-rm(SolFitsExpmeanAll590Plot, SolFitsExpmeanAll445)
 ```
 
 # Create Sigma plot
@@ -508,14 +515,30 @@ ggplot(SolFitsExpFitAll, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
         legend.text = element_text(size=9))
 ```
 
+# Save RDS that create plot
+
+```{r}
+saveRDS(SolFitsExpFitAll, file.path(RDSPlotPath, paste(Project, "Plot_Sigma_1.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(SolFitsExpmeanAllPlot, file.path(RDSPlotPath, paste(Project, "Plot_Sigma_2.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(fitted_Param, file.path(RDSPlotPath, paste(Project, "Plot_Sigma_3.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+```
+
 # Save plot 
 
 ```{r save plot}
 ggsave(file = file.path(PlotsPath, paste("Sigma_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
+# Removed unneccessary df from the environment
 
-#sig per phyco/chla ratio
+```{r}
+rm(SolFitsExpmeanAll590Plot, SolFitsExpmeanAll445, fitted, augmented, SolFitsExpFit590Clean, SolFitsExpFit590, SolFitsExpFitAll, SolFitsExpmeanAllPlot, fitted_Param)
+```
+
+# Sig per phyco/chla ratio
+
 Issue - not always pigment based on Olis correspond to Solisense data-> I combine these two df with only selected exp data
 
 Later - come back to OD680data from Multiculti and choose cell/ml (based on pamas corr) corresponding with the same day of sigma and JVPSII!!! Before calculations! Fix this Sylwia!!!!!
@@ -545,9 +568,13 @@ SolFitsPigmentExp <- SolFitsExpmeanAll %>%
 
 SolFitsPigmentExp1s <- SolFitsExpmeanDay1s %>% 
   left_join(., MCPigmentExp, by = c("Strain"="Strain","Par_ue"="Par_ue","Photoperiod"="Photoperiod")) 
+
+rm(SolFitsExpmeanAll, SolFitsExpmeanDay1s, MCPigmentExp)
 ```
 
-```{r Test plot}
+# Create preliminary plots
+
+```{r preliminary plots}
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
@@ -648,7 +675,7 @@ SolFitsAllPigmentPE<-SolFitsPigmentExp %>%
 SolFitsAllPigmentPE$StrainGroup = "PE-rich"
 
 SolFitsAllPigmentPCPE<-rbind(SolFitsAllPigmentPC, SolFitsAllPigmentPE)
-
+rm(SolFitsAllPigmentPC, SolFitsAllPigmentPE, SolFitsPigmentExp)
 
 SolFitsAllPigmentPC1s<-SolFitsPigmentExp1s %>% 
   filter(Strain == "PC-rich_056" | Strain == "PC-rich_077") 
@@ -658,72 +685,50 @@ SolFitsAllPigmentPE1s<-SolFitsPigmentExp1s %>%
 SolFitsAllPigmentPE1s$StrainGroup = "PE-rich"
   
 SolFitsAllPigmentPCPE1s<-rbind(SolFitsAllPigmentPC1s, SolFitsAllPigmentPE1s)
+rm(SolFitsAllPigmentPC1s, SolFitsAllPigmentPE1s, SolFitsPigmentExp1s)
 ```
 
 
 # Linear fit per par_ue
 
 ```{r linear fit}
-SolFitsAllPigmentfitPhycoChlalinear <- SolFitsAllPigmentPCPE |>  
-  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
-  #nest(data = -c("Strain", "Ex_WL")) |> 
-  nest(data = -c("Par_ue", "Ex_WL")) |>  
-  mutate(Linear_Model = map(data, ~lm(meanSig_nm2psii ~ PhycoChlaRatioExp,
-                                                    data = .x))
-
-         ) |>    
-  mutate(Linear_Model_Param = map(Linear_Model, tidy),          
-         Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
-         Linear_Model_Glance = map(Linear_Model, possibly(glance))
-         )
-
 # Linear_Model_PredictPhycoChla <- SolFitsAllPigmentfitPhycoChlalinear |>
 #   unnest(Linear_Model_Predict)
 
-
-SolFitsAllPigmentfitPhycoChlalineardark <- SolFitsAllPigmentPCPE |>  
-  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSigdark_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
-  #nest(data = -c("Strain", "Ex_WL")) |> 
-  nest(data = -c("Par_ue", "Ex_WL")) |>  
-  mutate(Linear_Model = map(data, ~lm(meanSigdark_nm2psii ~ PhycoChlaRatioExp,
-                                                    data = .x))
-
-         ) |>    
+SolFitsAllPigmentfitPhycoChlalinear <- SolFitsAllPigmentPCPE %>%   
+  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig_nm2psii, PhycoChlaRatioExp, O2, WL)) %>%  
+  nest(data = -c("Par_ue", "Ex_WL")) %>%   
+  mutate(Linear_Model = map(data, ~lm(meanSig_nm2psii ~ PhycoChlaRatioExp, data = .x))) %>%     
   mutate(Linear_Model_Param = map(Linear_Model, tidy),          
          Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
-         Linear_Model_Glance = map(Linear_Model, possibly(glance))
-         )
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))
 
 
-
-SolFitsAllPigmentfitPhycoChlalinear1s <- SolFitsAllPigmentPCPE1s |>  
-  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig1s_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
-  #nest(data = -c("Strain", "Ex_WL")) |> 
-  nest(data = -c("Par_ue", "Ex_WL")) |>  
-  mutate(Linear_Model = map(data, ~lm(meanSig1s_nm2psii ~ PhycoChlaRatioExp,
-                                                    data = .x))
-
-         ) |>    
+SolFitsAllPigmentfitPhycoChlalineardark <- SolFitsAllPigmentPCPE %>%   
+  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSigdark_nm2psii, PhycoChlaRatioExp, O2, WL)) %>%  
+  nest(data = -c("Par_ue", "Ex_WL")) %>%   
+  mutate(Linear_Model = map(data, ~lm(meanSigdark_nm2psii ~ PhycoChlaRatioExp, data = .x))) %>%     
   mutate(Linear_Model_Param = map(Linear_Model, tidy),          
          Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
-         Linear_Model_Glance = map(Linear_Model, possibly(glance))
-         )
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))
 
 
-
-
-SolFitsAllPigmentfitPhycoChlalinearPCPE1s <- SolFitsAllPigmentPCPE1s |>  
-  select(c(StrainGroup, Par_ue, Photoperiod, Ex_WL, meanSig1s_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
-  #nest(data = -c("Strain", "Ex_WL")) |> 
-  nest(data = -c("Par_ue", "Ex_WL", "StrainGroup")) |>  
-  mutate(Linear_Model = map(data, ~lm(meanSig1s_nm2psii ~ PhycoChlaRatioExp,
-                                                    data = .x))
-
-         ) |>    
+SolFitsAllPigmentfitPhycoChlalinear1s <- SolFitsAllPigmentPCPE1s %>%   
+  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig1s_nm2psii, PhycoChlaRatioExp, O2, WL)) %>% 
+  nest(data = -c("Par_ue", "Ex_WL")) %>%   
+  mutate(Linear_Model = map(data, ~lm(meanSig1s_nm2psii ~ PhycoChlaRatioExp, data = .x))) %>%     
   mutate(Linear_Model_Param = map(Linear_Model, tidy),          
          Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
-         Linear_Model_Glance = map(Linear_Model, possibly(glance))
-         )
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))
+
+
+SolFitsAllPigmentfitPhycoChlalinearPCPE1s <- SolFitsAllPigmentPCPE1s %>%   
+  select(c(StrainGroup, Par_ue, Photoperiod, Ex_WL, meanSig1s_nm2psii, PhycoChlaRatioExp, O2, WL)) %>%  
+  nest(data = -c("Par_ue", "Ex_WL", "StrainGroup")) %>%  
+  mutate(Linear_Model = map(data, ~lm(meanSig1s_nm2psii ~ PhycoChlaRatioExp, data = .x))) %>%    
+  mutate(Linear_Model_Param = map(Linear_Model, tidy),          
+         Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))
 ```
 
 # Create preliminary plot
