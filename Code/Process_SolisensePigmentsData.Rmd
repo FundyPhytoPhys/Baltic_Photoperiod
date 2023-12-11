@@ -123,12 +123,18 @@ SolFits1s$facetsStrain = factor(SolFits1s$WL, labels = c("Strain"))
 SolFitsAll445<-SolFits %>%
   filter(Ex_WL == 445) %>%
   filter(Sig<250) 
-
 SolFitsAll590<-SolFits %>%
   filter(Ex_WL == 590)
-
 SolFits<-rbind(SolFitsAll445,SolFitsAll590)
   rm(SolFitsAll445,SolFitsAll590)
+  
+SolFitsAll4451s<-SolFits1s %>%
+  filter(Ex_WL == 445) %>%
+  filter(Sig1s<250) 
+SolFitsAll5901s<-SolFits1s %>%
+  filter(Ex_WL == 590)
+SolFits1s<-rbind(SolFitsAll4451s,SolFitsAll5901s)
+  rm(SolFitsAll4451s,SolFitsAll5901s)  
 ```
 
 # Create preliminary plots 
@@ -275,25 +281,66 @@ SolFitsExp %>%
   theme_bw() 
 ```
 
+# Calculate Sigma mean from 3 replica measured on the same day
+
+```{r calculate Sigma mean from 3 replica measured on the same day}
+SolFitsExpmeanDay <- SolFitsExp %>%
+  group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
+  
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, Sig, Sig_nm2psii, ActPARCorr_photonsm2s, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, facetsPhotonDose_day, facetsExcitation, facetsStrain,
+            meanSig_nm2psii = mean(Sig_nm2psii),
+            sdSig_nm2psii = sd(Sig_nm2psii),
+            meanSigdark_nm2psii = mean(Sigdark_nm2psii),
+            sdSigdark_nm2psii = sd(Sigdark_nm2psii)) %>%
+  ungroup()
+
+SolFitsExpmeanDay<- SolFitsExpmeanDay %>%
+group_by(SampleID) %>%
+  arrange(ObsDate) %>%
+  mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
+ungroup()
+
+SolFitsExpmeanDay<- SolFitsExpmeanDay %>%
+  mutate(Time_h = E_days*24)
+```
+
+
+
 Make "one big" mean to combine all days (only from exp) and all replica when samples were measured 
 (This give me only one value of JVPSII for further growth vs JVPSII plot and nice sig plot as well)
 
 I select only data from exp phase here
 
-```{r}
-SolFitsExp<-SolFitsExp %>% 
-  group_by(Strain, Ex_WL, Par_ue, Photoperiod) %>%
-  summarize(c(SampleID, Run, Strain, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, ExpEndDate, PARPhotonDose_day, Filename, ObsDate, ObsTime, Ex_WL, Sig, Sig_nm2psii, Sigdark, Sigdark_nm2psii, ActPARCorr_photonsm2s, FoOxbo, qpOxbo,  JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, E_days, Time_h, facetsPhotonDose_day, facetsExcitation, facetsStrain,
-             AllmeanJVPSII_aLHIIOxbomax= mean(JVPSII_aLHIIOxbomax),
-             AllmeanJVPSII_ETRtauav_FoSig= mean(JVPSII_ETRtauav_FoSig),
-             AllmeanJVPSII_ETRqpOxbo_FoSig= mean(JVPSII_ETRqpOxbo_FoSig),
-            AllmeanJVPSII_ETRtauav_aLHII_Sig = mean(JVPSII_ETRtauav_aLHII_Sig),
-             AllmeanJVPSII_ETRqpOxbo_aLHII_Sig= mean(JVPSII_ETRqpOxbo_aLHII_Sig),
+
+
+# Calculate Sigma mean from all data measured on exp phase 
+
+```{r calculate Sigma mean from exp phase}
+
+SolFitsExpmeanAll<-SolFitsExpmeanDay %>% 
+  group_by(Strain, Ex_WL, Par_ue, Photoperiod, WL, O2) %>%
+  
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, Sig, Sig_nm2psii, meanSig_nm2psii, sdSig_nm2psii, ActPARCorr_photonsm2s, Sigdark_nm2psii, meanSigdark_nm2psii, sdSigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, facetsPhotonDose_day, facetsExcitation, facetsStrain,
+              
+            #  AllmeanJVPSII_aLHIIOxbomax= mean(JVPSII_aLHIIOxbomax),
+            #  AllmeanJVPSII_ETRtauav_FoSig= mean(JVPSII_ETRtauav_FoSig),
+            #  AllmeanJVPSII_ETRqpOxbo_FoSig= mean(JVPSII_ETRqpOxbo_FoSig),
+            # AllmeanJVPSII_ETRtauav_aLHII_Sig = mean(JVPSII_ETRtauav_aLHII_Sig),
+            #  AllmeanJVPSII_ETRqpOxbo_aLHII_Sig= mean(JVPSII_ETRqpOxbo_aLHII_Sig),
             AllmeanSig_nm2psii = mean(Sig_nm2psii),
             AllsdSig_nm2psii = sd(Sig_nm2psii),
             AllmeanSigdark_nm2psii = mean(Sigdark_nm2psii),
-            AllsdSigdark_nm2psii = sd(Sigdark_nm2psii))) %>%
+            AllsdSigdark_nm2psii = sd(Sigdark_nm2psii)) %>%
   ungroup()
+
+SolFitsExpmeanAll<- SolFitsExpmeanAll %>%
+group_by(SampleID) %>%
+  arrange(ObsDate) %>%
+  mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
+ungroup()
+
+SolFitsExpmeanAll<- SolFitsExpmeanAll %>%
+  mutate(Time_h = E_days*24)
 ```
 
 # Create preliminary plot
@@ -304,60 +351,42 @@ scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::sc
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
-SolFitsExp %>% 
+SolFitsExpmeanAll %>% 
   ggplot() +
-  geom_point(aes(x = Time_h, y = Sig_m2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_point(aes(x = Time_h, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  labs(y = "Sigma", x = "Elapsed time (h)") +
-  scale_y_continuous(breaks=seq(0, 1000, by = 200)) +
-  coord_cartesian(ylim = c(0, 1000)) +
   ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 
 
-SolFitsExp %>% 
-  filter(Ex_WL==590) %>% 
-  ggplot() +
-  geom_point(aes(x = Time_h, y = Sig, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  labs(y = "Sigma", x = "Elapsed time (h)") +
-  scale_y_continuous(breaks=seq(0, 1000, by = 200)) +
-  coord_cartesian(ylim = c(0, 1000)) +
-  ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
-  theme_bw() 
-
-
-SolFitsExp %>% 
+SolFitsExpmeanAll %>% 
   ggplot() +
   geom_point(aes(x = PARPhotonDose_day, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_errorbar(aes(x = PARPhotonDose, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  # labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_x_continuous(label=scientific_10) +
   ggh4x::facet_nested(cols = vars(facetsExcitation,Ex_WL), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw() 
 
 
-SolFitsExp %>% 
+SolFitsExpmeanAll %>% 
   ggplot() +
   geom_point(aes(x = PARPhotonDose_day, y = meanSigdark_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_errorbar(aes(x = PARPhotonDose, ymin = meanSigdark_nm2psii - sdSigdark_nm2psii, ymax = meanSigdark_nm2psii + sdSigdark_nm2psii, colour=as.factor(Par_ue))) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSigdark_nm2psii - sdSigdark_nm2psii, ymax = meanSigdark_nm2psii + sdSigdark_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  # labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_x_continuous(label=scientific_10) +
   ggh4x::facet_nested(cols = vars(facetsExcitation,Ex_WL), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw() 
 
 
 SolFitsExp1s %>% # data from second df contained sig 1s
-  filter(Par_ue !=600) %>% 
   ggplot() +
-  geom_point(aes(x = PARPhotonDose_day, y = meanSig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_point(aes(x = PARPhotonDose_day, y = Sig1s, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   # geom_errorbar(aes(x = PARPhotonDose, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
@@ -372,14 +401,14 @@ SolFitsExp1s %>% # data from second df contained sig 1s
 
 multiple curves PAR photon Dose 590 ->sin in the light
 ```{r}
-SolFitsAllfit590 <-SolFitsAllChoosen %>% 
+SolFitsAllfit590 <-SolFitsExpmeanAll %>% 
   filter(Ex_WL == 590) %>% 
   # filter(E_days<10) %>% 
   filter(E_days !=2) %>%
   #filter(E_days !=3) %>%
-  select(c(meanSig_nm2psii, PARPhotonDose, Photoperiod, Par_ue, Strain, Ex_WL)) %>% 
+  select(c(meanSig_nm2psii, PARPhotonDose_day, Photoperiod, Par_ue, Strain, Ex_WL)) %>% 
   mutate(y=meanSig_nm2psii) %>% 
-  mutate(t=PARPhotonDose) 
+  mutate(t=PARPhotonDose_day) 
   
 # Fit the data
 fitted <- SolFitsAllfit590 %>% 
@@ -407,14 +436,14 @@ augmented590 <- fitted %>%
 multiple curves PAR photon Dose 590 ->sig dark
 ```{r}
 
-SolFitsAllfit590dark <-SolFitsAllChoosen %>% 
+SolFitsAllfit590dark <-SolFitsExpmeanAll %>% 
   filter(Ex_WL == 590) %>% 
   # filter(E_days<10) %>% 
   filter(E_days !=2) %>%
   #filter(E_days !=3) %>%
-  select(c(meanSigdark_nm2psii, PARPhotonDose, Photoperiod, Par_ue, Strain, Ex_WL)) %>% 
+  select(c(meanSigdark_nm2psii, PARPhotonDose_day, Photoperiod, Par_ue, Strain, Ex_WL)) %>% 
   mutate(y=meanSigdark_nm2psii) %>% 
-  mutate(t=PARPhotonDose) 
+  mutate(t=PARPhotonDose_day) 
   
 # Fit the data
 fittedark <- SolFitsAllfit590dark %>% 
@@ -576,7 +605,7 @@ Later - come back to OD680data from Multiculti and choose cell/ml (based on pama
 
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
-DataIn <- file.path("..", "Data", "ProcessedData", fsep = .Platform$file.sep)
+DataIn <- file.path("..", "Data", "ProcessedData", "ProcessedPigmentsData", fsep = .Platform$file.sep)
 ```
 
 ```{r Exported Rmd}
@@ -586,7 +615,7 @@ list.files(path = DataIn, pattern = Project, full.names = TRUE)
 ```{r read pigments File}
 #df ontained mean OD per day from Multiculti and Abs from Olis spectra for selected nm. Based on this I calculated pigments per mL and per cell (pg/cell)
 
-MCPigmentExpFile <- "../Data/ProcessedData/Baltic_Photoperiod_Processed_PigmentsExp.Rds"
+MCPigmentExpFile <- "../Data/ProcessedData/ProcessedPigmentsData/Baltic_Photoperiod_Processed_PigmentsExp.Rds"
 MCPigmentExpFileName <- str_split(string = MCPigmentExpFile, "/")[[1]][3] %>%
   str_remove(pattern = ".Rds")
 MCPigmentExp <- readRDS(MCPigmentExpFile)  %>%
@@ -594,11 +623,11 @@ MCPigmentExp <- readRDS(MCPigmentExpFile)  %>%
 ```
 
 ```{r Joining Solisense and pig exp data}
-SolFitsPigmentExp <- SolFitsChoosenExp %>% 
-  left_join(., MCPigmentExp, by = c("Run"="Run","CultureID"="ID","Strain"="Strain","InnocDate"="InnocDate","ExpDate"="ExpDate","Par_ue"="Par_ue","Photoperiod"="Photoperiod","O2"="O2","WL"="WL","PARPhotonDose"="PARPhotonDose", "facetsStrain" = "facetsStrain")) 
+SolFitsPigmentExp <- SolFitsExpmeanAll %>% 
+  left_join(., MCPigmentExp, by = c("Strain"="Strain","Par_ue"="Par_ue","Photoperiod"="Photoperiod")) 
 
-SolFitsPigmentExp1s <- SolFitsChoosenExp1s %>% 
-  left_join(., MCPigmentExp, by = c("Run"="Run","CultureID"="ID","Strain"="Strain","InnocDate"="InnocDate","ExpDate"="ExpDate","Par_ue"="Par_ue","Photoperiod"="Photoperiod","O2"="O2","WL"="WL","PARPhotonDose"="PARPhotonDose")) 
+SolFitsPigmentExp1s <- SolFitsExp1s %>% 
+  left_join(., MCPigmentExp, by = c("Strain"="Strain","Par_ue"="Par_ue","Photoperiod"="Photoperiod")) 
 ```
 
 ```{r Test plot}
@@ -615,7 +644,7 @@ SolFitsPigmentExp %>%
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
+  # labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(facetsExcitation, Ex_WL), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw()
 
@@ -626,7 +655,7 @@ SolFitsPigmentExp %>%
     geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Strain))) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
+  # labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(facetsExcitation, Ex_WL), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
 
@@ -639,7 +668,7 @@ SolFitsPigmentExp %>%
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
+  # labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(facetsExcitation, Ex_WL), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw() 
 
@@ -650,31 +679,31 @@ SolFitsPigmentExp %>%
     geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = AllmeanSigdark_nm2psii - AllsdSigdark_nm2psii, ymax = AllmeanSigdark_nm2psii + AllsdSigdark_nm2psii, colour=as.factor(Strain))) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
+  # labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(facetsExcitation, Ex_WL), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
 
 
 SolFitsPigmentExp1s %>% 
   ggplot() +
-  geom_point(aes(x = PhycoChlaRatioExp, y = meanSig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Par_ue))) +
+  geom_point(aes(x = PhycoChlaRatioExp, y = Sig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  # geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
+  # labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 
 
 SolFitsPigmentExp1s %>% 
   ggplot() +
-  geom_point(aes(x = PhycoChlaRatioExp, y = meanSig1s_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
-    geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Strain))) +
+  geom_point(aes(x = PhycoChlaRatioExp, y = Sig1s_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
+    # geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Strain))) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
+  # labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw()
 ```
@@ -1137,9 +1166,27 @@ SolFitsAllPigment %>%
 ```
 
 
+# Save rds for further analysis
+
+```{r save rds}
+# saveRDS(SolFitsMeta, file.path(DataOut, paste(Project, "Imported_SolisenseLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+# 
+# saveRDS(SolFitsMetaDarkafterLight, file.path(DataOut, paste(Project, "Imported_SolisenseDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+```
+
+
+
+
+
+
+
 
 
 Growth rate vs JVPSII
+
+
+
+
 #meandeltaOD_Lmu_corr ->mean for real replica from MultiCulti
 ```{r fig.height = 8, fig.width = 8, warning = FALSE}
 # JVPSII_aLHIIOxbomax
