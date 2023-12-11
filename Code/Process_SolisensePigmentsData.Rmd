@@ -52,6 +52,9 @@ library(Cairo) #for greek symbols
 Project <- "Baltic_Photoperiod"
 DataOut <- file.path("..", "Data", "ProcessedData", "ProcessedSolisenseData")
 DataIn <- file.path("..", "Data", "ImportedData", "ImportedSolisenseData", fsep = .Platform$file.sep)
+
+PlotsPath <- file.path("..", "Output", "Plots")
+RDSPlotPath <- file.path("..", "Output", "PlotsRDS")
 ```
 
 # List and read Imported_Solisense RDS
@@ -287,7 +290,7 @@ SolFitsExp %>%
 SolFitsExpmeanDay <- SolFitsExp %>%
   group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
   
-  summarize(SampleID, Ex_WL, Filename, Run, Strain, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, Sig, Sig_nm2psii, ActPARCorr_photonsm2s, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, facetsPhotonDose_day, facetsExcitation, facetsStrain,
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsTime, Sig, Sig_nm2psii, ActPARCorr_photonsm2s, Sigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, facetsPhotonDose_day, facetsExcitation, facetsStrain,
             meanSig_nm2psii = mean(Sig_nm2psii),
             sdSig_nm2psii = sd(Sig_nm2psii),
             meanSigdark_nm2psii = mean(Sigdark_nm2psii),
@@ -304,7 +307,26 @@ SolFitsExpmeanDay<- SolFitsExpmeanDay %>%
   mutate(Time_h = E_days*24)
 ```
 
+# Calculate Sigma1s mean from 3 replica measured on the same day
 
+```{r calculate Sigma1s mean from 3 replica measured on the same day}
+SolFitsExpmeanDay1s <- SolFitsExp1s %>%
+  group_by(SampleID, Ex_WL, ObsDate, Par_ue, Photoperiod, WL, O2) %>%
+  
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsTime, Sig1s, Sig1s_nm2psii, ActPARCorr_photonsm2s, facetsPhotonDose_day, facetsExcitation, facetsStrain,
+            meanSig1s_nm2psii = mean(Sig1s_nm2psii),
+            sdSig1s_nm2psii = sd(Sig1s_nm2psii)) %>%
+  ungroup()
+
+SolFitsExpmeanDay1s<- SolFitsExpmeanDay1s %>%
+group_by(SampleID) %>%
+  arrange(ObsDate) %>%
+  mutate(E_days = as.numeric((ObsDate - ExpDate[1]))) %>%
+ungroup()
+
+SolFitsExpmeanDay1s<- SolFitsExpmeanDay1s %>%
+  mutate(Time_h = E_days*24)
+```
 
 Make "one big" mean to combine all days (only from exp) and all replica when samples were measured 
 (This give me only one value of JVPSII for further growth vs JVPSII plot and nice sig plot as well)
@@ -320,7 +342,7 @@ I select only data from exp phase here
 SolFitsExpmeanAll<-SolFitsExpmeanDay %>% 
   group_by(Strain, Ex_WL, Par_ue, Photoperiod, WL, O2) %>%
   
-  summarize(SampleID, Ex_WL, Filename, Run, Strain, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, Sig, Sig_nm2psii, meanSig_nm2psii, sdSig_nm2psii, ActPARCorr_photonsm2s, Sigdark_nm2psii, meanSigdark_nm2psii, sdSigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, facetsPhotonDose_day, facetsExcitation, facetsStrain,
+  summarize(SampleID, Ex_WL, Filename, Run, Strain, ExpDate, Par_ue, Photoperiod, O2, WL, PARPhotonDose_day, ObsDate, ObsTime, Sig, Sig_nm2psii, meanSig_nm2psii, sdSig_nm2psii, ActPARCorr_photonsm2s, Sigdark_nm2psii, meanSigdark_nm2psii, sdSigdark_nm2psii, FoOxbo, qpOxbo, JVPSII_aLHIIOxbomax, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, facetsPhotonDose_day, facetsExcitation, facetsStrain,
               
             #  AllmeanJVPSII_aLHIIOxbomax= mean(JVPSII_aLHIIOxbomax),
             #  AllmeanJVPSII_ETRtauav_FoSig= mean(JVPSII_ETRtauav_FoSig),
@@ -343,23 +365,43 @@ SolFitsExpmeanAll<- SolFitsExpmeanAll %>%
   mutate(Time_h = E_days*24)
 ```
 
-# Create preliminary plot
+# Filter otliers to calculate exponential decay function
 
-```{r preliminary plot}
+```{r filter outliers (4 data points)}
+Sol1<-SolFitsExpmeanAll %>% 
+  filter(Ex_WL==590) %>% 
+  filter(Par_ue !=900) %>% 
+  filter(Strain=="PE-rich_048") 
+Sol2<-SolFitsExpmeanAll %>% 
+  filter(Ex_WL==590) %>% 
+  filter(Par_ue !=900) %>% 
+  filter(Strain=="PC-rich_077") 
+Sol3<-SolFitsExpmeanAll %>% 
+  filter(Ex_WL==590) %>% 
+  filter(Par_ue !=900) %>% 
+  filter(Strain=="PC-rich_056") %>% 
+  filter(Sig>200)
+Sol4<-SolFitsExpmeanAll %>%
+  filter(Ex_WL==590) %>%
+  filter(Par_ue !=900) %>% 
+  filter(Strain=="PE-rich_127") %>%
+  filter(Sig>310) 
+Sol5<-SolFitsExpmeanAll %>% 
+  filter(Ex_WL==590) %>% 
+  filter(Par_ue ==900) %>% 
+  filter(Sig<600)
+Sol6<-SolFitsExpmeanAll %>% 
+  filter(Ex_WL==445) 
 
-scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
-lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+SolFitsExpFit590<-rbind(Sol1, Sol2, Sol3, Sol4, Sol5)
+SolFitsExpFitAll<-rbind(Sol1, Sol2, Sol3, Sol4, Sol5, Sol6)
 
-SolFitsExpmeanAll %>% 
-  ggplot() +
-  geom_point(aes(x = Time_h, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() 
+rm(Sol1, Sol2, Sol3, Sol4, Sol5, Sol6)
+```
 
+# Create plot to check data before and after filtering outliers
 
+```{r checking data before and after filtering outliers}
 SolFitsExpmeanAll %>% 
   ggplot() +
   geom_point(aes(x = PARPhotonDose_day, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
@@ -367,131 +409,66 @@ SolFitsExpmeanAll %>%
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   # labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
-  scale_x_continuous(label=scientific_10) +
   ggh4x::facet_nested(cols = vars(facetsExcitation,Ex_WL), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw() 
 
 
-SolFitsExpmeanAll %>% 
+SolFitsExpFitAll %>% 
   ggplot() +
-  geom_point(aes(x = PARPhotonDose_day, y = meanSigdark_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSigdark_nm2psii - sdSigdark_nm2psii, ymax = meanSigdark_nm2psii + sdSigdark_nm2psii, colour=as.factor(Par_ue))) +
+  geom_point(aes(x = PARPhotonDose_day, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  # labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
-  scale_x_continuous(label=scientific_10) +
+  # labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   ggh4x::facet_nested(cols = vars(facetsExcitation,Ex_WL), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw() 
-
-
-SolFitsExp1s %>% # data from second df contained sig 1s
-  ggplot() +
-  geom_point(aes(x = PARPhotonDose_day, y = Sig1s, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  # geom_errorbar(aes(x = PARPhotonDose, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Par_ue))) +
-  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  scale_x_continuous(label=scientific_10) +
-  ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() 
 ```
 
+# Fit the data to exponential decays
 
+```{r fit the data to exponential decays, echo=FALSE, warning = FALSE}
+SolFitsExpFit590Clean <-SolFitsExpFit590 %>% 
+  drop_na(Sig_nm2psii) %>%
+  select(c(Sig_nm2psii, PARPhotonDose_day, Strain)) 
 
-# Fit data to one phase decay
-
-multiple curves PAR photon Dose 590 ->sin in the light
-```{r}
-SolFitsAllfit590 <-SolFitsExpmeanAll %>% 
-  filter(Ex_WL == 590) %>% 
-  # filter(E_days<10) %>% 
-  filter(E_days !=2) %>%
-  #filter(E_days !=3) %>%
-  select(c(meanSig_nm2psii, PARPhotonDose_day, Photoperiod, Par_ue, Strain, Ex_WL)) %>% 
-  mutate(y=meanSig_nm2psii) %>% 
-  mutate(t=PARPhotonDose_day) 
-  
 # Fit the data
-fitted <- SolFitsAllfit590 %>% 
+fitted <- SolFitsExpFit590Clean %>% 
   nest(-Strain) %>%
   mutate(
-    fit = map(data, ~nls(y ~ SSasymp(t, yf, y0, log_alpha), data = .)),
+    fit = map(data, ~nls(Sig_nm2psii ~ SSasymp(PARPhotonDose_day, yf, y0, log_alpha), data = .)),
     tidied = map(fit, tidy),
-    augmented590 = map(fit, augment),
+    augmented = map(fit, augment),
   )  
 
-# Produce a table of fit parameters: y0, yf, alpha - doesnt work for now - fix this later!
-# fitted %>% 
-#   unnest(tidied) %>% 
-#   select(term, estimate) %>% 
-#   spread(term, estimate) %>% 
-#   mutate(alpha = exp(log_alpha))
+# Produce a table of fit parameters: y0, yf, alpha
+fitted_Param<-fitted %>% 
+  unnest(tidied) %>% 
+  select(Strain, term, estimate) %>% 
+pivot_wider(., names_from = c(term), values_from = c(estimate)) %>% 
+  mutate(alpha = exp(log_alpha))
 
-#Plotting with gglot2
-augmented590 <- fitted %>% 
-  unnest(augmented590)
-# qplot(t, y, data = augmented590, geom = 'point', colour = Strain) +
-#   geom_line(aes(y=.fitted))
+rm(SolFitsExpFit590Clean)
 ```
 
-multiple curves PAR photon Dose 590 ->sig dark
-```{r}
+```{r unnest, preparing df to preparing final plot, echo=FALSE, warning = FALSE}
+augmented<-fitted  %>%
+  unnest(augmented) %>%
+  select(c(Strain, PARPhotonDose_day,Sig_nm2psii, .fitted)) 
 
-SolFitsAllfit590dark <-SolFitsExpmeanAll %>% 
-  filter(Ex_WL == 590) %>% 
-  # filter(E_days<10) %>% 
-  filter(E_days !=2) %>%
-  #filter(E_days !=3) %>%
-  select(c(meanSigdark_nm2psii, PARPhotonDose_day, Photoperiod, Par_ue, Strain, Ex_WL)) %>% 
-  mutate(y=meanSigdark_nm2psii) %>% 
-  mutate(t=PARPhotonDose_day) 
-  
-# Fit the data
-fittedark <- SolFitsAllfit590dark %>% 
-  nest(-Strain) %>%
-  mutate(
-    fit = map(data, ~nls(y ~ SSasymp(t, yf, y0, log_alpha), data = .)),
-    tidied = map(fit, tidy),
-    augmented590dark = map(fit, augment),
-  )  
+SolFitsExpmeanAll590Plot <- SolFitsExpFit590 %>%
+  left_join(., augmented, by = c("Strain"="Strain", "PARPhotonDose_day"="PARPhotonDose_day", "Sig_nm2psii"="Sig_nm2psii"))
 
-augmented590dark <- fittedark %>% 
-  unnest(augmented590dark)
+SolFitsExpmeanAll445 <-SolFitsExpFitAll %>%
+  filter(Ex_WL == 445) %>%
+  mutate(.fitted=0)
+
+SolFitsExpmeanAllPlot<-rbind(SolFitsExpmeanAll590Plot, SolFitsExpmeanAll445)
+rm(SolFitsExpmeanAll590Plot, SolFitsExpmeanAll445)
 ```
 
+# Create Sigma plot
 
-mutate for nice plot PAR photon Dose 590 and 445
-```{r}
-augmented590 <- augmented590 %>% 
-  mutate(Ex_WL=Strain) %>% 
-      mutate(Ex_WL=case_when(Ex_WL=="PE-rich_127"~590,
-         Ex_WL=="PE-rich_048"~590,
-        Ex_WL=="PC-rich_056"~590,
-         Ex_WL=="PC-rich_077"~590)) %>% 
-  mutate(Ex_WL = as.factor(Ex_WL)) %>% 
-  mutate(O2=Ex_WL) %>% 
-  mutate(O2=case_when(O2==590~21)) %>% 
-  mutate(WL=Ex_WL) %>% 
-  mutate(WL=case_when(WL==590~"WW")) 
-
-augmented590dark <- augmented590dark %>% 
-  mutate(Ex_WL=Strain) %>% 
-      mutate(Ex_WL=case_when(Ex_WL=="PE-rich_127"~590,
-         Ex_WL=="PE-rich_048"~590,
-        Ex_WL=="PC-rich_056"~590,
-         Ex_WL=="PC-rich_077"~590)) %>% 
-  mutate(Ex_WL = as.factor(Ex_WL)) %>% 
-  mutate(O2=Ex_WL) %>% 
-  mutate(O2=case_when(O2==590~21)) %>% 
-  mutate(WL=Ex_WL) %>% 
-  mutate(WL=case_when(WL==590~"WW")) 
-```
-
-```{r Delete unused df from environment}
-rm(SolFitsAllfit445, SolFitsAllfit590)
-```
-
-```{r Final plot, fig.height = 8, fig.width = 8, warning = FALSE}
-#Plot sigma vs photondose - mean only replica (shows different days from exp phase)
+```{r create Sigma plot, fig.height = 8, fig.width = 8, warning = FALSE}
 WL.labs <- c("Excitation (nm)")
 names(WL.labs) <- c("WW")
 O2.labs <- c("Strain")
@@ -501,19 +478,16 @@ scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::sc
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
-ggplot(SolFitsAllChoosenExp, aes(x = PARPhotonDose, y = meanSig_nm2psii)) +
-  geom_point(aes(x = PARPhotonDose, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_errorbar(aes(x = PARPhotonDose, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
-  geom_line(aes(t, .fitted), show.legend = F, augmented590) +
-  #geom_line(aes(t, .fitted), show.legend = F, augmented445) +
+ggplot(SolFitsExpFitAll, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
+  geom_point(aes(x = PARPhotonDose_day, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue)), width=0, size=0.3, show.legend = F) +
+  geom_line(aes(PARPhotonDose_day, .fitted), show.legend = F, SolFitsExpmeanAllPlot) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  #labs(y = "Sigma", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
-  # scale_y_continuous(breaks=seq(0, 1000, by = 200)) +
-  # coord_cartesian(ylim = c(0, 1000)) +
-  scale_x_continuous(label=scientific_10) +
+  scale_x_continuous(breaks=seq(0, 60000000, by = 30000000), label=scientific_10) +
+  scale_y_continuous(breaks=seq(0, 8, by = 2)) +
+  coord_cartesian(xlim = c(0, 90000000)) +
   ggh4x::facet_nested(rows = vars(O2,Strain), cols = vars(WL,Ex_WL), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
@@ -526,76 +500,19 @@ ggplot(SolFitsAllChoosenExp, aes(x = PARPhotonDose, y = meanSig_nm2psii)) +
         axis.title.y = element_text(margin=margin(r=10)),
         axis.title.x = element_text(margin=margin(t=10)),
         legend.background = element_rect(fill="transparent"),
-        legend.position = c(0.44,0.89),
+        legend.position = c(0.42,0.89),
         legend.key.height= unit(0.003, 'cm'),
         legend.spacing.y = unit(-0.1, "cm"),
         legend.spacing.x = unit(-0.1, 'cm'),
-        # legend.direction = "vertical", legend.box = "vertical",
-        legend.title = element_blank(),
-        legend.text = element_text(size=9))
-  
-  
-ggplot(SolFitsAllChoosenExp, aes(x = PARPhotonDose, y = meanSigdark_nm2psii)) +
-  geom_point(aes(x = PARPhotonDose, y = meanSigdark_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_errorbar(aes(x = PARPhotonDose, ymin = meanSigdark_nm2psii - sdSigdark_nm2psii, ymax = meanSigdark_nm2psii + sdSigdark_nm2psii, colour=as.factor(Par_ue))) +
-  geom_line(aes(t, .fitted), show.legend = F, augmented590dark) +
-  #geom_line(aes(t, .fitted), show.legend = F, augmented445) +
-  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
-  scale_x_continuous(label=scientific_10) +
-  ggh4x::facet_nested(rows = vars(O2,Strain), cols = vars(WL,Ex_WL), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
-  theme_bw() +
-  theme(panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        axis.text = element_text(size=12),
-        axis.text.x = element_text(size=11),
-        axis.title = element_text(size=16),
-        strip.background = element_rect(fill="white"),
-        strip.text = element_text(size=12),
-        axis.title.y = element_text(margin=margin(r=10)),
-        axis.title.x = element_text(margin=margin(t=10)),
-        legend.background = element_rect(fill="transparent"),
-        legend.position = c(0.44,0.89),
-        legend.key.height= unit(0.003, 'cm'),
-        legend.spacing.y = unit(-0.1, "cm"),
-        legend.spacing.x = unit(-0.1, 'cm'),
-        # legend.direction = "vertical", legend.box = "vertical",
-        legend.title = element_blank(),
-        legend.text = element_text(size=9))
-  
-  
-ggplot(SolFitsAllChoosenExp1s, aes(x = PARPhotonDose, y = meanSig1s_nm2psii)) +
-  geom_point(aes(x = PARPhotonDose, y = meanSig1s_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_errorbar(aes(x = PARPhotonDose, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Par_ue))) +
-  # geom_line(aes(t, .fitted), show.legend = F, augmented590dark) +
-  #geom_line(aes(t, .fitted), show.legend = F, augmented445) +
-  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
-  scale_x_continuous(label=scientific_10) +
-  ggh4x::facet_nested(rows = vars(O2,Strain), cols = vars(WL,Ex_WL), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
-  theme_bw() +
-  theme(panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        axis.text = element_text(size=12),
-        axis.text.x = element_text(size=11),
-        axis.title = element_text(size=16),
-        strip.background = element_rect(fill="white"),
-        strip.text = element_text(size=12),
-        axis.title.y = element_text(margin=margin(r=10)),
-        axis.title.x = element_text(margin=margin(t=10)),
-        legend.background = element_rect(fill="transparent"),
-        legend.position = c(0.44,0.89),
-        legend.key.height= unit(0.003, 'cm'),
-        legend.spacing.y = unit(-0.1, "cm"),
-        legend.spacing.x = unit(-0.1, 'cm'),
-        # legend.direction = "vertical", legend.box = "vertical",
         legend.title = element_blank(),
         legend.text = element_text(size=9))
 ```
 
+# Save plot 
 
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("Sigma_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
+```
 
 
 #sig per phyco/chla ratio
@@ -626,7 +543,7 @@ MCPigmentExp <- readRDS(MCPigmentExpFile)  %>%
 SolFitsPigmentExp <- SolFitsExpmeanAll %>% 
   left_join(., MCPigmentExp, by = c("Strain"="Strain","Par_ue"="Par_ue","Photoperiod"="Photoperiod")) 
 
-SolFitsPigmentExp1s <- SolFitsExp1s %>% 
+SolFitsPigmentExp1s <- SolFitsExpmeanDay1s %>% 
   left_join(., MCPigmentExp, by = c("Strain"="Strain","Par_ue"="Par_ue","Photoperiod"="Photoperiod")) 
 ```
 
@@ -708,34 +625,35 @@ SolFitsPigmentExp1s %>%
   theme_bw()
 ```
 
-# Combine PC and PE-rich strains together and filter day 2 and 3 b/c they caused problems
+# Filtering data measured from log and very early exponential phase of growth
 
-```{r}
-SolFitsAllPigmentPC<-SolFitsPigmentExp %>% 
+```{r filtering data from log phase}
+SolFitsPigmentExp<-SolFitsPigmentExp %>% 
   filter(E_days!=2) %>% 
-  filter(E_days!=3) %>% 
+  filter(E_days!=3) 
+  
+SolFitsPigmentExp1s<-SolFitsPigmentExp1s %>% 
+  filter(E_days!=2) %>% 
+  filter(E_days!=3) 
+```
+
+# Combine PC and PE-rich strains together
+
+```{r combine PC and PE-rich strains}
+SolFitsAllPigmentPC<-SolFitsPigmentExp %>% 
   filter(Strain == "PC-rich_056" | Strain == "PC-rich_077") 
 SolFitsAllPigmentPC$StrainGroup = "PC-rich"
-
 SolFitsAllPigmentPE<-SolFitsPigmentExp %>% 
-  filter(E_days!=2) %>% 
-  filter(E_days!=3) %>% 
   filter(Strain == "PE-rich_048" | Strain == "PE-rich_127")  
 SolFitsAllPigmentPE$StrainGroup = "PE-rich"
-  
+
 SolFitsAllPigmentPCPE<-rbind(SolFitsAllPigmentPC, SolFitsAllPigmentPE)
 
 
-
 SolFitsAllPigmentPC1s<-SolFitsPigmentExp1s %>% 
-  filter(E_days!=2) %>% 
-  filter(E_days!=3) %>% 
   filter(Strain == "PC-rich_056" | Strain == "PC-rich_077") 
 SolFitsAllPigmentPC1s$StrainGroup = "PC-rich"
-
 SolFitsAllPigmentPE1s<-SolFitsPigmentExp1s %>% 
-  filter(E_days!=2) %>% 
-  filter(E_days!=3) %>% 
   filter(Strain == "PE-rich_048" | Strain == "PE-rich_127")  
 SolFitsAllPigmentPE1s$StrainGroup = "PE-rich"
   
@@ -863,96 +781,62 @@ SolFitsAllPigmentfitPhycoChlalinear1s %>%
 # Linear fit Strain
 
 ```{r linear fit}
-SolFitsAllPigmentfitPhycoChlalinearStrain <- SolFitsAllPigmentPCPE |>  
-  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
-  nest(data = -c("Strain", "Ex_WL")) |> 
-  #nest(data = -c("Par_ue", "Ex_WL")) |>  
-  # nest(data = -c("Ex_WL")) |> 
-  mutate(Linear_Model = map(data, ~lm(meanSig_nm2psii ~ PhycoChlaRatioExp,
-                                                    data = .x))
-
-         ) |>    
+SolFitsAllPigmentfitPhycoChlalinearStrain <- SolFitsAllPigmentPCPE %>%  
+  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig_nm2psii, PhycoChlaRatioExp, O2, WL)) %>%  
+  nest(data = -c("Strain", "Ex_WL")) %>%  
+  mutate(Linear_Model = map(data, ~lm(meanSig_nm2psii ~ PhycoChlaRatioExp, data = .x))) %>%    
   mutate(Linear_Model_Param = map(Linear_Model, tidy),          
          Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
-         Linear_Model_Glance = map(Linear_Model, possibly(glance))
-         )
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))
 
 
 
-
-SolFitsAllPigmentfitPhycoChlalineardarkStrain <- SolFitsAllPigmentPCPE |>  
-  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSigdark_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
-  nest(data = -c("Strain", "Ex_WL")) |> 
-  #nest(data = -c("Par_ue", "Ex_WL")) |> 
-  # nest(data = -c("Ex_WL")) |> 
-  mutate(Linear_Model = map(data, ~lm(meanSigdark_nm2psii ~ PhycoChlaRatioExp,
-                                                    data = .x))
-
-         ) |>    
+SolFitsAllPigmentfitPhycoChlalineardarkStrain <- SolFitsAllPigmentPCPE %>%   
+  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSigdark_nm2psii, PhycoChlaRatioExp, O2, WL)) %>%  
+  nest(data = -c("Strain", "Ex_WL")) %>% 
+  mutate(Linear_Model = map(data, ~lm(meanSigdark_nm2psii ~ PhycoChlaRatioExp, data = .x))) %>%     
   mutate(Linear_Model_Param = map(Linear_Model, tidy),          
          Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
-         Linear_Model_Glance = map(Linear_Model, possibly(glance))
-         )
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))
 
 
 
-SolFitsAllPigmentfitPhycoChlalinearStrain1s <- SolFitsAllPigmentPCPE1s |>  
-  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig1s_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
-  nest(data = -c("Strain", "Ex_WL")) |> 
-  #nest(data = -c("Par_ue", "Ex_WL")) |>  
-  # nest(data = -c("Ex_WL")) |> 
-  mutate(Linear_Model = map(data, ~lm(meanSig1s_nm2psii ~ PhycoChlaRatioExp,
-                                                    data = .x))
-
-         ) |>    
+SolFitsAllPigmentfitPhycoChlalinearStrain1s <- SolFitsAllPigmentPCPE1s %>%  
+  select(c(Strain, Par_ue, Photoperiod, Ex_WL, meanSig1s_nm2psii, PhycoChlaRatioExp, O2, WL)) %>%  
+  nest(data = -c("Strain", "Ex_WL")) %>% 
+  mutate(Linear_Model = map(data, ~lm(meanSig1s_nm2psii ~ PhycoChlaRatioExp, data = .x))) %>%    
   mutate(Linear_Model_Param = map(Linear_Model, tidy),          
          Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
-         Linear_Model_Glance = map(Linear_Model, possibly(glance))
-         )
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))
 
 #xxxxxx
 
 
-SolFitsAllPigmentfitPhycoChlalinearStrainGroup <- SolFitsAllPigmentPCPE |>  
-  select(c(StrainGroup, Par_ue, Photoperiod, Ex_WL, meanSig_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
-  nest(data = -c("StrainGroup", "Ex_WL")) |> 
-  #nest(data = -c("Par_ue", "Ex_WL")) |>  
-  # nest(data = -c("Ex_WL")) |> 
-  mutate(Linear_Model = map(data, ~lm(meanSig_nm2psii ~ PhycoChlaRatioExp,
-                                                    data = .x))
-         ) |>    
+SolFitsAllPigmentfitPhycoChlalinearStrainGroup <- SolFitsAllPigmentPCPE %>%   
+  select(c(StrainGroup, Par_ue, Photoperiod, Ex_WL, meanSig_nm2psii, PhycoChlaRatioExp, O2, WL)) %>%  
+  nest(data = -c("StrainGroup", "Ex_WL")) %>% 
+  mutate(Linear_Model = map(data, ~lm(meanSig_nm2psii ~ PhycoChlaRatioExp, data = .x))) %>%     
   mutate(Linear_Model_Param = map(Linear_Model, tidy),          
          Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
-         Linear_Model_Glance = map(Linear_Model, possibly(glance))
-         )
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))
 
 
-SolFitsAllPigmentfitPhycoChlalineardarkStrainGroup <- SolFitsAllPigmentPCPE |>  
-  select(c(StrainGroup, Par_ue, Photoperiod, Ex_WL, meanSigdark_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
-  nest(data = -c("StrainGroup", "Ex_WL")) |> 
-  #nest(data = -c("Par_ue", "Ex_WL")) |> 
-  # nest(data = -c("Ex_WL")) |> 
-  mutate(Linear_Model = map(data, ~lm(meanSigdark_nm2psii ~ PhycoChlaRatioExp,
-                                                    data = .x))
-         ) |>    
+SolFitsAllPigmentfitPhycoChlalineardarkStrainGroup <- SolFitsAllPigmentPCPE %>%   
+  select(c(StrainGroup, Par_ue, Photoperiod, Ex_WL, meanSigdark_nm2psii, PhycoChlaRatioExp, O2, WL)) %>%  
+  nest(data = -c("StrainGroup", "Ex_WL")) %>% 
+  mutate(Linear_Model = map(data, ~lm(meanSigdark_nm2psii ~ PhycoChlaRatioExp, data = .x))) %>%     
   mutate(Linear_Model_Param = map(Linear_Model, tidy),          
          Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
-         Linear_Model_Glance = map(Linear_Model, possibly(glance))
-         )
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))
 
 
-SolFitsAllPigmentfitPhycoChlalinearStrainGroup1s <- SolFitsAllPigmentPCPE1s |>  
-  select(c(StrainGroup, Par_ue, Photoperiod, Ex_WL, meanSig1s_nm2psii, PhycoChlaRatioExp, O2, WL)) |> 
-  nest(data = -c("StrainGroup", "Ex_WL")) |> 
-  #nest(data = -c("Par_ue", "Ex_WL")) |>  
-  # nest(data = -c("Ex_WL")) |> 
-  mutate(Linear_Model = map(data, ~lm(meanSig1s_nm2psii ~ PhycoChlaRatioExp,
-                                                    data = .x))
-         ) |>    
+SolFitsAllPigmentfitPhycoChlalinearStrainGroup1s <- SolFitsAllPigmentPCPE1s %>%   
+  select(c(StrainGroup, Par_ue, Photoperiod, Ex_WL, meanSig1s_nm2psii, PhycoChlaRatioExp, O2, WL)) %>%  
+  nest(data = -c("StrainGroup", "Ex_WL")) %>%  
+  mutate(Linear_Model = map(data, ~lm(meanSig1s_nm2psii ~ PhycoChlaRatioExp, data = .x))) %>%     
   mutate(Linear_Model_Param = map(Linear_Model, tidy),          
          Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
-         Linear_Model_Glance = map(Linear_Model, possibly(glance))
-         )
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))
 ```
 
 # Creat preliminary plot
@@ -1019,6 +903,77 @@ SolFitsAllPigmentfitPhycoChlalineardarkStrainGroup %>%
   theme_bw() 
 ```
 
+# Unnesting 
+
+```{r unnest, preparing df to preparing final plot, echo=FALSE, warning = FALSE}
+augmented<-fitted  %>%
+  unnest(augmented) %>%
+  select(c(Strain, PARPhotonDose_day,Sig_nm2psii, .fitted)) 
+
+SolFitsExpmeanAll590Plot <- SolFitsExpFit590 %>%
+  left_join(., augmented, by = c("Strain"="Strain", "PARPhotonDose_day"="PARPhotonDose_day", "Sig_nm2psii"="Sig_nm2psii"))
+
+SolFitsExpmeanAll445 <-SolFitsExpFitAll %>%
+  filter(Ex_WL == 445) %>%
+  mutate(.fitted=0)
+
+SolFitsExpmeanAllPlot<-rbind(SolFitsExpmeanAll590Plot, SolFitsExpmeanAll445)
+rm(SolFitsExpmeanAll590Plot, SolFitsExpmeanAll445)
+```
+
+
+# Creating Sigma vs pigments ratio plot
+
+```{r fig.height = 8, fig.width = 8, warning = FALSE}
+# WL.labs <- c("Excitation (nm)")
+# names(WL.labs) <- c("WW")
+# O2.labs <- c("Strain")
+# names(O2.labs) <- c(21)
+
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
+
+SolFitsAllPigmentfitPhycoChlalinearStrain %>% 
+  #unnest(Linear_Model_Predict) %>% 
+  ggplot() +
+  geom_point(aes(x = PhycoChlaRatioExp, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T, SolFitsAllPigmentPCPE) + 
+  geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour = as.factor(Par_ue)), show.legend = F, width=0, size=0.3, SolFitsAllPigmentPCPE) +
+  geom_line(aes(x = PhycoChlaRatioExp, y = `.fitted`), show.legend = F) +   
+  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
+  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
+  scale_y_continuous(breaks=seq(0, 8, by = 2)) +
+  coord_cartesian(ylim = c(0, 9)) +
+  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
+  labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "Total phyco/Chl" ~italic(a)~ "ratio") +
+  
+  # ggh4x::facet_nested(cols = vars(WL,Ex_WL), rows = vars(O2, Strain), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
+  
+  ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="white"),
+        legend.position = c(0.92,0.9),
+        legend.key.height= unit(0.005, 'cm'),
+        legend.spacing.y = unit(-0.1, "cm"),
+        legend.title = element_blank(),
+        legend.text = element_text(size=10))
+```
+
+# Save plot 
+
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("SigmavsPigments_Plot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
+```
+
 # Linear fit Ex_WL
 
 ```{r linear fit}
@@ -1072,7 +1027,7 @@ SolFitsAllPigmentfitPhycoChlalinearExWL1s <- SolFitsAllPigmentPCPE1s |>
 
 # Creat preliminary plot
 
-```{r preliminary plot, fig.height = 8, fig.width = 8, warning = FALSE}
+```{r preliminary plot, warning = FALSE}
 #Plot sig vs phyco/Chla ratio -> linear fit
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
@@ -1116,6 +1071,9 @@ SolFitsAllPigmentfitPhycoChlalinearExWL1s %>%
   theme_bw() 
 ```
 
+
+
+!!!! need to merrge turner data here!!!!!
 
 
 JVPSII
