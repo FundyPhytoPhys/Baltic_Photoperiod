@@ -119,7 +119,7 @@ SolFits1s$facetsStrain = factor(SolFits1s$WL, labels = c("Strain"))
 # Filter unrevelant data and outliers
 
 ```{r filter outliers}
-# #Filter one unrevelant data point 445nm, 16h, 900uE
+# #Filter one unrevelant data point at 445nm, 16h, 900uE
 SolFitsAll445<-SolFits %>%
   filter(Ex_WL == 445) %>%
   filter(Sig<250) 
@@ -130,6 +130,18 @@ SolFitsAll590<-SolFits %>%
 SolFits<-rbind(SolFitsAll445,SolFitsAll590)
   rm(SolFitsAll445,SolFitsAll590)
 ```
+
+# Create preliminary plots 
+
+```{r preliminary plot}
+SolFits %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = Sig, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
+  facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
+  theme_bw()
+```
+
+!!!!dodac, skad wzielam te wartosci!!! based on tmaxAG
 
 # Choose only exp data for sigma and JVPSII in the corresponding light
 
@@ -184,7 +196,7 @@ SolFitsExp <-rbind(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 rm(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 ```
 
-# Choose only exp data for sigma and JVPSII at 1s after corresponding light
+# Choose only exp data for sigma at 1s after corresponding light
 
 ```{r choose only exp data for Sig 1s}
 O1 <- SolFits1s %>%
@@ -261,8 +273,6 @@ SolFitsExp %>%
   #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
-
- 
 ```
 
 Make "one big" mean to combine all days (only from exp) and all replica when samples were measured 

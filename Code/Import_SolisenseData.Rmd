@@ -664,11 +664,11 @@ SolFitsMetaDarkafterLight <-rbind(SolFitsTrimMetaDarkafterLightOS, SolFitsTrimMe
 # Create preliminary plots 
 
 ```{r preliminary plot}
-# SolFitsTrimMetaCleanNS %>%
-#   ggplot() +
-#   geom_point(aes(x = Par_ue, y = Sig, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
-#   facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
-#   theme_bw()
+SolFitsMeta %>%
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = Sig, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
+  facet_grid(rows = vars(Ex_WL), cols = vars(Photoperiod)) +
+  theme_bw()
 # 
 # SolFitsMetaDarkafterLight %>%
 #   ggplot() +
