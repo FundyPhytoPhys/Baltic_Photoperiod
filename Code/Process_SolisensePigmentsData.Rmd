@@ -489,8 +489,8 @@ lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
 ggplot(SolFitsExpFitAll, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
-  geom_point(aes(x = PARPhotonDose_day, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue)), width=0, size=0.3, show.legend = F) +
+  geom_point(aes(x = PARPhotonDose_day, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Par_ue)), width=0, size=0.3, show.legend = F) +
   geom_line(aes(PARPhotonDose_day, .fitted), show.legend = F, SolFitsExpmeanAllPlot) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
@@ -967,8 +967,8 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 SolFitsAllPigmentfitPhycoChlalinearStrain %>% 
   unnest(Linear_Model_Predict, data) %>% 
   ggplot() +
-  geom_point(aes(x = PhycoChlaRatioExp, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T, SolFitsAllPigmentPCPE) + 
-  geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour = as.factor(Par_ue)), show.legend = F, width=0, size=0.3, SolFitsAllPigmentPCPE) +
+  geom_point(aes(x = PhycoChlaRatioExp, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T, SolFitsAllPigmentPCPE) + 
+  geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour = as.factor(Par_ue)), show.legend = F, width=0, size=0.3, SolFitsAllPigmentPCPE) +
   geom_line(aes(x = PhycoChlaRatioExp, y = `.fitted`), show.legend = F) +   
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
