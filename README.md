@@ -69,6 +69,10 @@ Clean data in formats for long-term storage. Modified data with the appropriate 
 
 Processed data in formats for long-term storage.
 
+### Data/ImportedData
+
+Imported data in formats for long-term storage.
+
 ### Code
 
 Scripts for processing raw data into cleaned data, outside derived code, and user derived code.
@@ -77,7 +81,7 @@ Typically organize .Rmd in modules; Import; Tidy; Process saving .Rds out of eac
 
 ### Docs
 
-Project notes, other documentation, etc.
+NA
 
 ### Output
 
