@@ -209,6 +209,14 @@ rm(augmented, fitted, GSMetaSt)
 # Create GS and AccLen plots
 
 ```{r create GS plot, fig.height = 8, fig.width = 8, warning = FALSE}
+data_text_y0<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"), Phase = c("Exponential"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('y0 = 2.6', 'y0 = 1.6', 'y0 = 1.2', 'y0 = 1.4'))
+
+data_text_yf<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"), Phase = c("Exponential"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('yf = 0.8', 'yf = 0.5', 'yf = 0.3', 'yf = 0.5'))
+
+data_text_alpha<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"), Phase = c("Exponential"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('\u03B1 = 3.4', '\u03B1 = 1.7', '\u03B1 = 1.2', '\u03B1 = 2.1'))
+
+data_segment<- data.frame(x=1000000,y=0,xend=26000000,yend=0, facetsPhase = c("Phase~of~growth"), Phase = c("Pre-stationary", "Pre-stationary", "Pre-stationary", "Pre-stationary"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"))
+
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
@@ -218,11 +226,15 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
   geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanGS - sdGS, ymax = meanGS + sdGS, colour = as.factor(Par_ue)), show.legend = F, width=0, size=0.3, GScatalogMetaFinalPlot) +
   geom_line(aes(PARPhotonDose_day, .fitted), show.legend = F, GSMetaExpPlot) +
   geom_hline(yintercept = 1, linetype="dashed", size=0.4) +
-   labs(y = "Diel growth symmetry (AccLen/DecLen)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  geom_text(data=data_text_y0, aes(x=24000000, y=3, label=label), size=3.5) +
+  geom_text(data=data_text_yf, aes(x=24000000, y=2.7, label=label), size=3.5) +
+  geom_text(data=data_text_alpha, aes(x=24000000, y=2.4, label=label), size=3.5) +
+  geom_segment(data=data_segment, aes(x=x,y=y,yend=yend,xend=xend),inherit.aes=FALSE)+
+  labs(y = "Diel growth symmetry (AccLen/DecLen)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   scale_x_continuous(label=scientific_10) +
-  ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(Strain), labeller = label_parsed) +
+  ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
         panel.grid.major = element_blank(),
@@ -233,7 +245,7 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
         axis.title.y = element_text(margin=margin(r=10)),
         axis.title.x = element_text(margin=margin(t=10)),
         legend.background = element_rect(fill="white"),
-        legend.position = c(0.92,0.9),
+        legend.position = c(0.92,0.91),
         legend.key.height= unit(0.005, 'cm'),
         legend.spacing.y = unit(-0.1, "cm"),
         legend.title = element_blank(),
