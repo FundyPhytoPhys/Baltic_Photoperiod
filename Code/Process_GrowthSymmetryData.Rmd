@@ -340,18 +340,23 @@ labs(y = "AccLen (h)", x = "Photoperiod (h)") +
 
 # Create 4 df for vertical lines (coloured as Strain) contained tMaxAG values
 
-```{r create df for vertical lines}
-#PC-rich_056
-data_vline_056 <- data.frame(Par_ue= c(30, 30, 30, 90, 90, 90, 180, 180, 180, 300, 300, 300, 900, 900, 900),Photoperiod= c(8,12,16,8,12,16,8,12,16,8,12,16,8,12,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(293.8333, 321.0833, 323.0833, 317.2500, 269.5833, 174.1667, 242.6667, 198.0833, 104.5833, 218.9167, 173.7500, 102.5833, 147.5000, 148.41667, 148.66667))
-
-#PC-rich_077
-data_vline_077 <- data.frame(Par_ue= c(30, 30, 30, 90, 90, 90, 180, 180, 180, 300, 300, 300, 900, 900, 900),Photoperiod= c(8,12,16,8,12,16,8,12,16,8,12,16,8,12,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(244.2500, 318.0833, 272.4167, 316.6667, 222.2500, 153.5833, 242.7500, 173.1667, 125.0833, 195.9167, 148.8333, 102.1667, 146.0833, 161.08333, 147.33333))
-
-#PE-rich_048
-data_vline_048 <- data.frame(Par_ue= c(30, 30, 30, 90, 90, 90, 180, 180, 180, 300, 300, 300, 900, 900, 900),Photoperiod= c(8,12,16,8,12,16,8,12,16,8,12,16,8,12,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(315.6667, 318.4167, 272.2500, 290.9167, 196.7500, 151.2500, 219.0000, 148.6667, 124.9167, 195.0000, 123.7500, 101.2500, 146.0000, 123.16667, 99.58333))
-
-#PE-rich_127
-data_vline_127 <- data.frame(Par_ue= c(30, 30, 30, 90, 90, 90, 180, 180, 180, 300, 300, 300, 900, 900, 900),Photoperiod= c(8,12,16,8,12,16,8,12,16,8,12,16,8,12,16),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)"), value = c(315.1667, 319.0000, 321.0833, 291.9167, 223.1667, 153.1667, 219.0833, 172.3333, 103.5000, 170.9167, 147.9167, 101.5000, 145.83333, 147.08333, 123.50000))
+```{r}
+tMaxAGLines_056<-GScatalogMeta %>% 
+  filter(Strain == "PC-rich_056") %>% 
+  select(c(Par_ue, Photoperiod, facetsPar_ue, facetsPhotoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_077<-GScatalogMeta %>% 
+  filter(Strain == "PC-rich_077") %>% 
+  select(c(Par_ue, Photoperiod, facetsPar_ue, facetsPhotoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_048<-GScatalogMeta %>% 
+  filter(Strain == "PE-rich_048") %>% 
+  select(c(Par_ue, Photoperiod, facetsPar_ue, facetsPhotoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_127<-GScatalogMeta %>% 
+  filter(Strain == "PE-rich_127") %>% 
+  select(c(Par_ue, Photoperiod, facetsPar_ue, facetsPhotoperiod, tMaxAG)) %>% 
+  unique()
 ```
 
 # Create TDG plot
@@ -361,10 +366,10 @@ GScatalogMeta %>%
   filter(Photoperiod != 24) %>% 
   ggplot() +
   geom_point(aes(x = PhotoperiodTend_h, y = TDG, colour = as.factor(Strain)), size = 3, alpha = 0.8, show.legend = T) +
-  geom_vline(data = data_vline_056, aes(xintercept = value), linetype="dotdash", colour = "seagreen4", size=0.4) +
-  geom_vline(data = data_vline_077, aes(xintercept = value), linetype="dotdash", colour = "palegreen3", size=0.4) +
-  geom_vline(data = data_vline_048, aes(xintercept = value), linetype="dotdash", colour = "brown4", size=0.4) +
-  geom_vline(data = data_vline_127, aes(xintercept = value), linetype="dotdash", colour = "brown1", size=0.4) +
+  geom_vline(data = tMaxAGLines_056, aes(xintercept = tMaxAG), linetype="dotdash", colour = "seagreen4", size=0.4) +
+  geom_vline(data = tMaxAGLines_077, aes(xintercept = tMaxAG), linetype="dotdash", colour = "palegreen3", size=0.4) +
+  geom_vline(data = tMaxAGLines_048, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown4", size=0.4) +
+  geom_vline(data = tMaxAGLines_127, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown1", size=0.4) +
 labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   scale_x_continuous(breaks=seq(0, 300, by = 100)) +
@@ -398,7 +403,7 @@ ggsave(file = file.path(PlotsPath, paste("TDG_SupPlot",".png",sep = "")), height
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
 ```{r cleaning the environment}
-rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  CultureCatalog, data_vline_048, data_vline_127, data_vline_056, data_vline_077, GScatalogMetaFinalPlot, GSMetaExp, GSMetaExpPlot)
+rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  CultureCatalog, tMaxAGLines_056, tMaxAGLines_077, tMaxAGLines_048, tMaxAGLines_127, GScatalogMetaFinalPlot, GSMetaExp, GSMetaExpPlot)
 ```
 
 # Save rds for further analysis

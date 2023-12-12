@@ -384,18 +384,6 @@ MultiCultiDataAll<-rbind(MultiCultiData39, MultiCultiData40, MultiCultiData43, M
 rm(MultiCultiData39, MultiCultiData40, MultiCultiData43, MultiCultiData44, MultiCultiData45, MultiCultiData46, MultiCultiData60, MultiCultiData62, MultiCultiData65, MultiCultiData71, MultiCultiData74, MultiCultiData121, MultiCultiData)
 ```
 
-# Create 4 df for vertical lines (coloured as Strain) contained tMaxAG values
-
-```{r create df for vertical lines}
-data_vline_056 <- data.frame(Par_ue= c(30, 30, 30, 30, 90, 90, 90, 90, 180, 180, 180, 180, 300, 300, 300, 300, 900, 900, 900, 900),Photoperiod= c(8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16, 24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)"), value = c(315.6667, 318.4167, 272.2500, 157.85, 290.9167, 196.7500, 151.2500, 120.27, 219.0000, 148.6667, 124.9167, 110.28, 195.0000, 123.7500, 101.2500, 95.79, 146.0000, 123.16667, 99.58333, 79.66))
-
-data_vline_077 <- data.frame(Par_ue= c(30, 30, 30, 30, 90, 90, 90, 90, 180, 180, 180, 180, 300, 300, 300, 300, 900, 900, 900, 900),Photoperiod= c(8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16, 24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)"), value = c(315.1667, 319.0000, 321.0833, 138.78, 291.9167, 223.1667, 153.1667, 120.18, 219.0833, 172.3333, 103.5000, 108.08, 170.9167, 147.9167, 101.5000, 98.36, 145.83333, 147.08333, 123.50000, 107))
-
-data_vline_048 <- data.frame(Par_ue= c(30, 30, 30, 30, 90, 90, 90, 90, 180, 180, 180, 180, 300, 300, 300, 300, 900, 900, 900, 900),Photoperiod= c(8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16, 24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)"), value = c(244.2500, 318.0833, 272.4167, 119.35, 316.6667, 222.2500, 153.5833, 103.77, 242.7500, 173.1667, 125.0833, 100.38, 195.9167, 148.8333, 102.1667, 79.20, 146.0833, 161.08333, 147.33333, 94.23))
-
-data_vline_127 <- data.frame(Par_ue= c(30, 30, 30, 30, 90, 90, 90, 90, 180, 180, 180, 180, 300, 300, 300, 300, 900, 900, 900, 900),Photoperiod= c(8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16, 24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)"), value = c(293.8333, 321.0833, 323.0833, 154.64, 317.2500, 269.5833, 174.1667, 114.68, 242.6667, 198.0833, 104.5833, 93.32, 218.9167, 173.7500, 102.5833, 93.78, 147.5000, 148.41667, 148.66667, 110))
-```
-
 # Add facets labels and change strain name to create plot
 
 ```{r add facets labels and change strain names}
@@ -409,6 +397,47 @@ MultiCultiDataAll <- MultiCultiDataAll %>%
          Strain=="BA77G"~"PC-rich_077")) 
 ```
 
+# Create 4 df for vertical lines (coloured as Strain) contained tMaxAG values
+
+```{r}
+gs4_deauth()
+tmaxAG<- read_sheet("https://docs.google.com/spreadsheets/d/1ksY7xlg9wOsICOBRmZkHPKdd9KOislNwPDzyuJ3UIUI/edit#gid=0")
+as.data.frame(tmaxAG)
+tmaxAG <- tmaxAG
+
+tmaxAG<-tmaxAG %>% 
+  mutate(Par_ue = as.numeric(Par_ue)) %>%
+  mutate(Photoperiod = as.numeric(Photoperiod)) %>%
+  mutate(tMaxAG = as.numeric(tMaxAG)) %>%
+  mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
+         Strain=="BA48R"~"PE-rich_048",
+        Strain=="BA56G"~"PC-rich_056",
+         Strain=="BA77G"~"PC-rich_077"))
+
+tmaxAG$facetsPar_ue = factor(tmaxAG$O2, labels = c("PAR~(µmol~photons~m^{-2}~s^{-1})"))
+tmaxAG$facetsPhotoperiod = factor(tmaxAG$WL, labels = c("Photoperiod~(h)"))
+tmaxAG$facetsStrain = factor(tmaxAG$O2, labels = c("Strain"))
+```
+
+```{r}
+tMaxAGLines_056<-tmaxAG %>% 
+  filter(Strain == "PC-rich_056") %>% 
+  select(c(Par_ue, Photoperiod, facetsPar_ue, facetsPhotoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_077<-tmaxAG %>% 
+  filter(Strain == "PC-rich_077") %>% 
+  select(c(Par_ue, Photoperiod, facetsPar_ue, facetsPhotoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_048<-tmaxAG %>% 
+  filter(Strain == "PE-rich_048") %>% 
+  select(c(Par_ue, Photoperiod, facetsPar_ue, facetsPhotoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_127<-tmaxAG %>% 
+  filter(Strain == "PE-rich_127") %>% 
+  select(c(Par_ue, Photoperiod, facetsPar_ue, facetsPhotoperiod, tMaxAG)) %>% 
+  unique()
+```
+
 # Create GrowthCurve plot
 
 ```{r create GrowthCurve plot, fig.height = 8, fig.width = 8, warning = FALSE}
@@ -416,10 +445,10 @@ MultiCultiDataAll %>%
   ggplot() +
   geom_area(aes(x = time_h, y = meanActinic_par_h), size = 0.1, fill = "tan1", alpha = 0.6) +
   geom_line(aes(x = time_h, y = meanOD680_h, colour = as.factor(Strain)), size = 0.5, show.legend = T) +
-  geom_vline(data = data_vline_056, aes(xintercept = value), linetype="dotdash", colour = "brown4", size = 0.4) +
-  geom_vline(data = data_vline_077, aes(xintercept = value), linetype="dotdash", colour = "brown1", size = 0.4) +
-  geom_vline(data = data_vline_048, aes(xintercept = value), linetype="dotdash", colour = "seagreen4", size = 0.4) +
-  geom_vline(data = data_vline_127, aes(xintercept = value), linetype="dotdash", colour = "palegreen3", size = 0.4) +
+  geom_vline(data = tMaxAGLines_056, aes(xintercept = tMaxAG), linetype="dotdash", colour = "seagreen4", size=0.4) +
+  geom_vline(data = tMaxAGLines_077, aes(xintercept = tMaxAG), linetype="dotdash", colour = "palegreen3", size=0.4) +
+  geom_vline(data = tMaxAGLines_048, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown4", size=0.4) +
+  geom_vline(data = tMaxAGLines_127, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown1", size=0.4) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="") +
   labs(y = "Optical density ("~OD[680]~")", x = "Elapsed time (h)") +
   ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
