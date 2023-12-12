@@ -445,6 +445,34 @@ MultiCultiDataAll %>%
 ggsave(file = file.path(PlotsPath, paste("GrowthCurve_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
+# Create GrowthCurve plot - loop
+
+```{r create GrowthCurve plot, fig.height = 8, fig.width = 8, warning = FALSE}
+MultiCultiDataAll %>%
+  ggplot() +
+  #geom_area(aes(x = time_h, y = meanActinic_par_h), size = 0.1, fill = "tan1", alpha = 0.6) +
+  geom_line(aes(x = meanOD720_h, y = meanOD680_h, colour = as.factor(Strain)), size = 0.7, show.legend = T) +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="") +
+  #labs(y = "Optical density ("~OD[680]~")", x = "Elapsed time (h)") +
+  ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="transparent"),
+        legend.position = c(0.1,0.95),
+        legend.key.height= unit(0.005, 'cm'),
+        legend.spacing.x = unit(0.01, 'cm'),
+        legend.text = element_text(size=10))
+```
+
+
+
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
 ```{r cleanifng d}
