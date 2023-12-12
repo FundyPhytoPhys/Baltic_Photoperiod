@@ -148,7 +148,7 @@ MCPigmentPlot <- MCPigmentPlot %>%
 MCPigmentPlot$facetsPARPhotonDose_day = factor(MCPigmentPlot$WL, labels = c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"))
 ```
 
-# Load tmaxAG catalog and create 4 df for vertical lines (coloured as Strain) contained tMaxAG values
+# Load tmaxAG catalog 
 
 ```{r}
 gs4_deauth()
@@ -160,10 +160,17 @@ tmaxAG<-tmaxAG %>%
   mutate(Par_ue = as.numeric(Par_ue)) %>%
   mutate(Photoperiod = as.numeric(Photoperiod)) %>%
   mutate(tMaxAG = as.numeric(tMaxAG)) %>%
+  mutate(dayRound_tmaxAG=tMaxAG/24) %>% 
+  mutate(dayRound_tmaxAG = round(dayRound_tmaxAG, digits = 0)) %>% 
   mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
          Strain=="BA48R"~"PE-rich_048",
         Strain=="BA56G"~"PC-rich_056",
          Strain=="BA77G"~"PC-rich_077"))
+
+tmaxAG$facetsPar_ue = factor(tmaxAG$O2, labels = c("PAR~(µmol~photons~m^{-2}~s^{-1})"))
+tmaxAG$facetsPhotoperiod = factor(tmaxAG$WL, labels = c("Photoperiod~(h)"))
+tmaxAG$facetsStrain = factor(tmaxAG$O2, labels = c("Strain"))
+tmaxAG$facetsPARPhotonDose_day = factor(tmaxAG$WL, labels = c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"))
 
 tmaxAGno24<-tmaxAG %>% 
   filter(Photoperiod != "24") %>% 
@@ -172,9 +179,13 @@ tmaxAG24<-tmaxAG %>%
   filter(Photoperiod == "24") %>% 
   mutate(PARPhotonDose_day = Par_ue*Photoperiod*3600) 
 tmaxAG <-rbind(tmaxAGno24, tmaxAG24)
-rm(tmaxAGno24, tmaxAG24)
-  
-tmaxAG<-tmaxAG %>% 
+  rm(tmaxAGno24, tmaxAG24)
+```
+
+# Select variable for choosen PARPhotonDose to create a plot
+
+```{r select variable for choosen PARPhotonDose to create a plot}
+tmaxAGSelect<-tmaxAG %>% 
   mutate(PARPhotonDoseTidy=PARPhotonDose_day/100000) %>% 
   filter(PARPhotonDoseTidy == 4.32000|
   PARPhotonDoseTidy == 6.48000|
@@ -183,46 +194,41 @@ tmaxAG<-tmaxAG %>%
   PARPhotonDoseTidy == 64.80000|
   PARPhotonDoseTidy == 86.40000) 
 
-tmaxAG$facetsPar_ue = factor(tmaxAG$O2, labels = c("PAR~(µmol~photons~m^{-2}~s^{-1})"))
-tmaxAG$facetsPhotoperiod = factor(tmaxAG$WL, labels = c("Photoperiod~(h)"))
-tmaxAG$facetsStrain = factor(tmaxAG$O2, labels = c("Strain"))
-tmaxAG$facetsPARPhotonDose_day = factor(tmaxAG$WL, labels = c("PAR~photon~dose~(10^{5}~µmol~photons~m^{-2}~d^{-1})"))
-
-tmaxAGcar<-tmaxAG  
+tmaxAGcar<-tmaxAGSelect  
 tmaxAGcar$PigmentsName = "Carotenoids"
-tmaxAGChla<-tmaxAG  
+tmaxAGChla<-tmaxAGSelect  
 tmaxAGChla$PigmentsName = "Chlorophyll~a"
-tmaxAGPhyco<-tmaxAG 
+tmaxAGPhyco<-tmaxAGSelect 
 tmaxAGPhyco$PigmentsName = "Total~phycobilins"
 
-tmaxAG<-rbind(tmaxAGcar, tmaxAGChla, tmaxAGPhyco)
+tmaxAGSelect<-rbind(tmaxAGcar, tmaxAGChla, tmaxAGPhyco)
 rm(tmaxAGcar, tmaxAGChla, tmaxAGPhyco)
 
-tmaxAGcarRatio<-tmaxAG
+tmaxAGcarRatio<-tmaxAGSelect
 tmaxAGcarRatio$PigmentsRatioName = "Car/Chl~a~ratio"
-tmaxAGPhycoRatio<-tmaxAG
+tmaxAGPhycoRatio<-tmaxAGSelect
 tmaxAGPhycoRatio$PigmentsRatioName = "Total~Phyco/Chl~a~ratio"
 
-tmaxAG<-rbind(tmaxAGcarRatio, tmaxAGPhycoRatio)
+tmaxAGSelect<-rbind(tmaxAGcarRatio, tmaxAGPhycoRatio)
 rm(tmaxAGcarRatio, tmaxAGPhycoRatio)
 ```
 
 # Create 4 df for vertical lines (coloured as Strain) contained tMaxAG value
 
 ```{r select revelant columns}
-tMaxAGLines_056Select<-tmaxAG %>% 
+tMaxAGLines_056Select<-tmaxAGSelect %>% 
   filter(Strain == "PC-rich_056") %>% 
   select(c(Par_ue, Photoperiod, facetsPARPhotonDose_day, PigmentsName, PARPhotonDoseTidy, tMaxAG)) %>% 
   unique()
-tMaxAGLines_077Select<-tmaxAG %>% 
+tMaxAGLines_077Select<-tmaxAGSelect %>% 
   filter(Strain == "PC-rich_077") %>% 
   select(c(Par_ue, Photoperiod, facetsPARPhotonDose_day, PigmentsName, PARPhotonDoseTidy, tMaxAG)) %>% 
   unique()
-tMaxAGLines_048Select<-tmaxAG %>% 
+tMaxAGLines_048Select<-tmaxAGSelect %>% 
   filter(Strain == "PE-rich_048") %>% 
   select(c(Par_ue, Photoperiod, facetsPARPhotonDose_day, PigmentsName, PARPhotonDoseTidy, tMaxAG)) %>% 
   unique()
-tMaxAGLines_127Select<-tmaxAG %>% 
+tMaxAGLines_127Select<-tmaxAGSelect %>% 
   filter(Strain == "PE-rich_127") %>% 
   select(c(Par_ue, Photoperiod, facetsPARPhotonDose_day, PigmentsName, PARPhotonDoseTidy, tMaxAG)) %>% 
   unique()
@@ -299,19 +305,19 @@ rm(MCPigmentRatio1, MCPigmentRatio2)
 # Create 4 df for vertical lines (coloured as Strain) contained tMaxAG value
 
 ```{r select revelant columns}
-tMaxAGLines_056Select<-tmaxAG %>% 
+tMaxAGLines_056Select<-tmaxAGSelect %>% 
   filter(Strain == "PC-rich_056") %>% 
   select(c(Par_ue, Photoperiod, facetsPARPhotonDose_day, PigmentsRatioName, PARPhotonDoseTidy, tMaxAG)) %>% 
   unique()
-tMaxAGLines_077Select<-tmaxAG %>% 
+tMaxAGLines_077Select<-tmaxAGSelect %>% 
   filter(Strain == "PC-rich_077") %>% 
   select(c(Par_ue, Photoperiod, facetsPARPhotonDose_day, PigmentsRatioName, PARPhotonDoseTidy, tMaxAG)) %>% 
   unique()
-tMaxAGLines_048Select<-tmaxAG %>% 
+tMaxAGLines_048Select<-tmaxAGSelect %>% 
   filter(Strain == "PE-rich_048") %>% 
   select(c(Par_ue, Photoperiod, facetsPARPhotonDose_day, PigmentsRatioName, PARPhotonDoseTidy, tMaxAG)) %>% 
   unique()
-tMaxAGLines_127Select<-tmaxAG %>% 
+tMaxAGLines_127Select<-tmaxAGSelect %>% 
   filter(Strain == "PE-rich_127") %>% 
   select(c(Par_ue, Photoperiod, facetsPARPhotonDose_day, PigmentsRatioName, PARPhotonDoseTidy, tMaxAG)) %>% 
   unique()
@@ -459,68 +465,41 @@ ggarrange(Plot1,Plot2,
 ggsave(file = file.path(PlotsPath, paste("PigRatioPUR_Plot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
+# Save Plot RDS
+
+```{r}
+saveRDS(MCPigmentPlot, file.path(RDSPlotPath, paste(Project, "Plot_Pigment.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(MCPigmentRatioPlot, file.path(RDSPlotPath, paste(Project, "Plot_PigmentRatioA.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(OLISAllPURTidy, file.path(RDSPlotPath, paste(Project, "Plot_PigmentRatioB.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+```
+
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
 ```{r Cleaning the environment}
 rm(data_textA, data_textB, Plot1, Plot2, tMaxAGLines_056Select, tMaxAGLines_077Select, tMaxAGLines_048Select, tMaxAGLines_127Select, OLISAllPURTidy, MCPigmentPlot, MCPigmentRatioPlot)
 ```
 
-
-
-
-# Create 4 df for vertical lines (coloured as Strain) contained tMaxAG values
-
-```{r create df for vertical lines}
-data_vline_056 <- data.frame(Par_ue= c(30, 30, 30, 30, 90, 90, 90, 90, 180, 180, 180, 180, 300, 300, 300, 300, 900, 900, 900, 900),Photoperiod= c(8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16, 24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)"), value = c(315.6667, 318.4167, 272.2500, 157.85, 290.9167, 196.7500, 151.2500, 120.27, 219.0000, 148.6667, 124.9167, 110.28, 195.0000, 123.7500, 101.2500, 95.79, 146.0000, 123.16667, 99.58333, 79.66))
-
-data_vline_077 <- data.frame(Par_ue= c(30, 30, 30, 30, 90, 90, 90, 90, 180, 180, 180, 180, 300, 300, 300, 300, 900, 900, 900, 900),Photoperiod= c(8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16, 24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)"), value = c(315.1667, 319.0000, 321.0833, 138.78, 291.9167, 223.1667, 153.1667, 120.18, 219.0833, 172.3333, 103.5000, 108.08, 170.9167, 147.9167, 101.5000, 98.36, 145.83333, 147.08333, 123.50000, 107))
-
-data_vline_048 <- data.frame(Par_ue= c(30, 30, 30, 30, 90, 90, 90, 90, 180, 180, 180, 180, 300, 300, 300, 300, 900, 900, 900, 900),Photoperiod= c(8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16, 24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)"), value = c(244.2500, 318.0833, 272.4167, 119.35, 316.6667, 222.2500, 153.5833, 103.77, 242.7500, 173.1667, 125.0833, 100.38, 195.9167, 148.8333, 102.1667, 79.20, 146.0833, 161.08333, 147.33333, 94.23))
-
-data_vline_127 <- data.frame(Par_ue= c(30, 30, 30, 30, 90, 90, 90, 90, 180, 180, 180, 180, 300, 300, 300, 300, 900, 900, 900, 900),Photoperiod= c(8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16,24, 8,12,16, 24),facetsPar_ue= c("PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})","PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})", "PAR~(µmol~photons~m^{-2}~s^{-1})"),facetsPhotoperiod= c("Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)","Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)", "Photoperiod~(h)"), value = c(293.8333, 321.0833, 323.0833, 154.64, 317.2500, 269.5833, 174.1667, 114.68, 242.6667, 198.0833, 104.5833, 93.32, 218.9167, 173.7500, 102.5833, 93.78, 147.5000, 148.41667, 148.66667, 110))
-```
-
-SHOULD BE DIFFERENT DATA!!!! FIX THIS SYLWIA LATER!!!!!
-Load tmaxAG
-```{r}
-gs4_deauth()
-
-tmaxAG<- read_sheet("https://docs.google.com/spreadsheets/d/1WyB4jonJGW9uFzKHp1Z6DnkMv-CP1PerwQ6sSLK7O8I/edit#gid=0")
-
-as.data.frame(tmaxAG)
-tmaxAG <- tmaxAG
-
-tmaxAG<-tmaxAG %>% 
-
-  mutate(Par_ue = as.numeric(Par_ue)) %>%
-  mutate(Photoperiod = as.numeric(Photoperiod)) %>%
-  mutate(dayRound_tmaxAG = as.numeric(dayRound_tmaxAG)) %>%
-  mutate(hRound_tmaxAG = as.numeric(hRound_tmaxAG)) %>% 
-  mutate(day_tmaxAG = as.numeric(day_tmaxAG)) %>% 
-  mutate(h_tmaxAG = as.numeric(h_tmaxAG)) %>%
-
-  mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
-         Strain=="BA48R"~"PE-rich_048",
-        Strain=="BA56G"~"PC-rich_056",
-         Strain=="BA77G"~"PC-rich_077"))
-
-```
+# Merge Pigment data and tMaxAG to choose only pigments measured at exponential growth
 
 ```{r Combine pigment and tMaxAG df}
 MCPigmenttMaxAG <- MCPigment %>%
-  mutate(E_days=Time_h/24) %>% 
-  left_join(., tmaxAG, by = c("Strain"="Strain","Par_ue"="Par_ue","Photoperiod"="Photoperiod"))
+  left_join(., tmaxAG, by = c("Strain"="Strain","Par_ue"="Par_ue","Photoperiod"="Photoperiod", "WL"="WL", "O2"="O2", "PARPhotonDose_day"="PARPhotonDose_day"))
 ```
 
-#Consider adding PUR and PUR/PAR ratio as well!!!!!!!!
-```{r Divided pigments data to Exponential and Pre-stationary phase according to tmaxAG}
+# Divided pigments data to Exponential and Pre-stationary phase according to tmaxAG
+
+```{r divided pigments data to Exponential and Pre-stationary}
 MCPigmenttMaxAG <- MCPigmenttMaxAG %>%
   mutate(Phase = O2) %>%
   mutate(Phase=case_when(E_days<=dayRound_tmaxAG~"Exponential",
          E_days>dayRound_tmaxAG~"Pre-stationary"))
 ```
 
-```{r Create df with only one exp pigment data for specific condition}
+# Create df with only one exp pigment data for specific condition
+
+```{r create df with only one exp pigment data for specific condition}
 O1 <- MCPigmenttMaxAG %>%
   filter(Par_ue == 30 | Par_ue == 300 | Par_ue == 90 | Par_ue == 180) %>% 
   filter(Photoperiod == 24) %>% 
@@ -616,18 +595,38 @@ MCPigmenttMaxAGExp <-rbind(O1, O2, O3, O4, O5, O6, O7, O8, O9, O10, O11, O12, O1
 rm(O1, O2, O3, O4, O5, O6, O7, O8, O9, O10, O11, O12, O13, O14, O15, O16, O17)
 ```
 
-
 ```{r}
-MCPigmenttMaxAGExpAll<-MCPigmenttMaxAGExp %>%
+MCPigmenttMaxAGExp<-MCPigmenttMaxAGExp %>%
   mutate(cellLExp = cellL) %>%
   mutate(ChlapgcellExp = Chlapgcell) %>%
   mutate(PhycopgcellExp = Phycopgcell) %>%
   mutate(ChlaugLExp = ChlaugL) %>%
   mutate(PhycougLExp = PhycougL) %>%
-    mutate(E_daysExp = E_days) %>%
-    mutate(Time_hExp = Time_h) %>%
+  mutate(E_daysExp = E_days) %>%
+  mutate(Time_hExp = Time_h) %>%
   mutate(PhycoChlaRatioExp = PhycopgcellExp/ChlapgcellExp) %>%
   select(c(Strain, Par_ue, Photoperiod, ChlapgcellExp, PhycopgcellExp, ChlaugLExp, PhycougLExp, PhycoChlaRatioExp, cellLExp, E_daysExp, Time_hExp))
+```
+
+# Create 4 df for vertical lines (coloured as Strain) contained tMaxAG value
+
+```{r select revelant columns}
+tMaxAGLines_056<-tmaxAG %>% 
+  filter(Strain == "PC-rich_056") %>% 
+  select(c(Par_ue, Photoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_077<-tmaxAG %>% 
+  filter(Strain == "PC-rich_077") %>% 
+  select(c(Par_ue, Photoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_048<-tmaxAG %>% 
+  filter(Strain == "PE-rich_048") %>% 
+  select(c(Par_ue, Photoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_127<-tmaxAG %>% 
+  filter(Strain == "PE-rich_127") %>% 
+  select(c(Par_ue, Photoperiod, tMaxAG)) %>% 
+  unique()
 ```
 
 # Create preliminary plots
@@ -641,22 +640,22 @@ lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 MCPigment %>%
   ggplot() +
   geom_point(aes(x = Time_h, y = Chlapgcell, colour = as.factor(Strain)), alpha = 0.9, size = 3, show.legend = T) +
-  geom_vline(data = data_vline_056, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline_077, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline_048, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline_127, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  geom_vline(data = tMaxAGLines_056, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown4") +
+  geom_vline(data = tMaxAGLines_077, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown1") +
+  geom_vline(data = tMaxAGLines_048, aes(xintercept = tMaxAG), linetype="dotdash", colour = "seagreen4") +
+  geom_vline(data = tMaxAGLines_127, aes(xintercept = tMaxAG), linetype="dotdash", colour = "palegreen3") +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw()
 
 
-MCPigmenttMaxAGExpAll %>%
+MCPigmenttMaxAGExp %>%
   ggplot() +
   geom_point(aes(x = Time_hExp, y = ChlapgcellExp, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
-  geom_vline(data = data_vline_056, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  geom_vline(data = data_vline_077, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  geom_vline(data = data_vline_048, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  geom_vline(data = data_vline_127, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
+  geom_vline(data = tMaxAGLines_056, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown4") +
+  geom_vline(data = tMaxAGLines_077, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown1") +
+  geom_vline(data = tMaxAGLines_048, aes(xintercept = tMaxAG), linetype="dotdash", colour = "seagreen4") +
+  geom_vline(data = tMaxAGLines_127, aes(xintercept = tMaxAG), linetype="dotdash", colour = "palegreen3") +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw()
@@ -665,7 +664,7 @@ MCPigmenttMaxAGExpAll %>%
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
 ```{r}
-rm(data_vline1, data_vline2, data_vline3, data_vline4, MCPigment, MCPigmenttMaxAGExp, GScatalog, tmaxAG, data_vline_048, data_vline_127, data_vline_056, data_vline_077)
+rm(tMaxAGLines_056, tMaxAGLines_077, tMaxAGLines_048, tMaxAGLines_127, MCPigment, tmaxAG, tmaxAGSelect)
 ```
 
 # Save rds for further analysis
@@ -673,12 +672,6 @@ rm(data_vline1, data_vline2, data_vline3, data_vline4, MCPigment, MCPigmenttMaxA
 ```{r save rds}
 saveRDS(MCPigmenttMaxAG, file.path(DataOut, paste(Project, "Processed_PigmentAll.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-saveRDS(MCPigmenttMaxAGExpAll, file.path(DataOut, paste(Project, "Processed_PigmentsExp.Rds", sep = "_"), fsep = .Platform$file.sep))
-
-saveRDS(MCPigmentPlot, file.path(RDSPlotPath, paste(Project, "Plot_Pigment.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
-
-saveRDS(MCPigmentRatioPlot, file.path(RDSPlotPath, paste(Project, "Plot_PigmentRatioA.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
-
-saveRDS(OLISAllPURTidy, file.path(RDSPlotPath, paste(Project, "Plot_PigmentRatioB.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+saveRDS(MCPigmenttMaxAGExp, file.path(DataOut, paste(Project, "Processed_PigmentsExp.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 

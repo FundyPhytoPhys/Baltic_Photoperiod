@@ -397,7 +397,7 @@ MultiCultiDataAll <- MultiCultiDataAll %>%
          Strain=="BA77G"~"PC-rich_077")) 
 ```
 
-# Create 4 df for vertical lines (coloured as Strain) contained tMaxAG values
+# Load tmaxAG catalog and create 4 df for vertical lines (coloured as Strain) contained tMaxAG values
 
 ```{r}
 gs4_deauth()
@@ -419,7 +419,7 @@ tmaxAG$facetsPhotoperiod = factor(tmaxAG$WL, labels = c("Photoperiod~(h)"))
 tmaxAG$facetsStrain = factor(tmaxAG$O2, labels = c("Strain"))
 ```
 
-```{r}
+```{r select revelant columns}
 tMaxAGLines_056<-tmaxAG %>% 
   filter(Strain == "PC-rich_056") %>% 
   select(c(Par_ue, Photoperiod, facetsPar_ue, facetsPhotoperiod, tMaxAG)) %>% 
@@ -480,7 +480,7 @@ ggsave(file = file.path(PlotsPath, paste("GrowthCurve_SupPlot",".png",sep = ""))
 MultiCultiDataAll %>%
   ggplot() +
   #geom_area(aes(x = time_h, y = meanActinic_par_h), size = 0.1, fill = "tan1", alpha = 0.6) +
-  geom_line(aes(x = meanOD720_h, y = meanOD680_h, colour = as.factor(Strain)), size = 0.7, show.legend = T) +
+  geom_line(aes(x = meanOD720_h, y = meanDeltaOD_h, colour = as.factor(Strain)), size = 0.7, show.legend = T) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="") +
   #labs(y = "Optical density ("~OD[680]~")", x = "Elapsed time (h)") +
   ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
@@ -499,8 +499,6 @@ MultiCultiDataAll %>%
         legend.spacing.x = unit(0.01, 'cm'),
         legend.text = element_text(size=10))
 ```
-
-
 
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
