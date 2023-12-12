@@ -503,7 +503,7 @@ OLISAllPURTidy$facetsPARPhotonDose_day = factor(OLISAllPURTidy$WL, labels = c("P
 #   scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
 #   coord_cartesian(ylim = c(0, 1.7)) +
 #   ggh4x::facet_nested(cols = vars(facetsPhotoperiod, Photoperiod), rows = vars(facetsPar_ue, Par_ue), labeller = label_parsed) +
-#   theme_bw() 
+#   theme_bw()
 ```
 
 # Load tmaxAG catalog 
@@ -620,7 +620,7 @@ OLISAllPURTidy %>%
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
 ```{r}
-rm(tMaxAGLines_056Select, tMaxAGLines_077Select, tMaxAGLines_048Select, tMaxAGLines_127Select, OLISSpectraMetaPURShort)
+rm(tMaxAGLines_056Select, tMaxAGLines_077Select, tMaxAGLines_048Select, tMaxAGLines_127Select, OLISSpectraMetaPURShort, tmaxAG, tmaxAGSelect)
 ```
 
 # Save rds for further analysis
