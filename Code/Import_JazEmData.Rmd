@@ -28,7 +28,7 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 # Introduction
 
-This RMD imports Jaz radiospectrometer fies.
+This RMD imports and tidies spectroradiometer (Ocean Optics Jaz) files and stores the results in.xxx
 
 # Load Libraries and set Project Variables
 

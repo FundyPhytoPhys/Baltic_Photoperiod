@@ -47,6 +47,9 @@ library(reshape2)
 library(gcookbook)
 library(scales)
 library(minpack.lm) #Standard 'nls' framework that uses 'nls.lm' for fitting
+library(data.table)
+library(googledrive)
+library(googlesheets4)
 ```
 
 ```{r set project variables}
