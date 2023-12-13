@@ -380,31 +380,40 @@ scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::sc
 SolFitsAllPigmentTurnerDay %>% 
   filter(Ex_WL==445) %>% 
 ggplot() +
-  geom_point(aes(JVPSII_aLHIIOxbomax_Corrcell_day, deltaOD_Lmu_corr_day, colour=as.factor(Strain)), alpha = 0.9, size = 3.5, show.legend = T) +
+  geom_point(aes(JVPSII_aLHIIOxbomax_Corrcell_day, deltaOD_Lmu_corr_day, colour=as.factor(Par_ue)), alpha = 0.9, size = 3.5, show.legend = T) +
   scale_x_continuous(label=scientific_10) +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-    ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
-  theme_bw()
-
-
-SolFitsAllPigmentTurnerDay %>% 
-  filter(Ex_WL==445) %>% 
-ggplot() +
-  geom_point(aes(JVPSII_ETRtauav_FoSig_Corrcell_day, deltaOD_Lmu_corr_day, colour=as.factor(Strain)), alpha = 0.9, size = 3.5, show.legend = T) +
-  scale_x_continuous(label=scientific_10) +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-    ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
+  scale_linetype_manual(values=c("equal900" = "dotted", "less900" = "solid"), breaks=c('8', '12', '16', "24", "", "")) +
+  scale_colour_manual(values = c("", "", "darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2, breaks=c('', '', '30', "90", "180", "300", "900")) +
+  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
+  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab1) +
+  ggh4x::facet_nested(rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 
 
 SolFitsAllPigmentTurnerDay %>% 
   filter(Ex_WL==445) %>% 
 ggplot() +
-  geom_point(aes(JVPSII_ETRqpOxbo_FoSig_Corrcell_day, deltaOD_Lmu_corr_day, colour=as.factor(Strain)), alpha = 0.9, size = 3.5, show.legend = T) +
+  geom_point(aes(JVPSII_ETRtauav_FoSig_Corrcell_day, deltaOD_Lmu_corr_day, colour=as.factor(Par_ue)), alpha = 0.9, size = 3.5, show.legend = T) +
   scale_x_continuous(label=scientific_10) +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-    ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
+  scale_linetype_manual(values=c("equal900" = "dotted", "less900" = "solid"), breaks=c('8', '12', '16', "24", "", "")) +
+  scale_colour_manual(values = c("", "", "darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2, breaks=c('', '', '30', "90", "180", "300", "900")) +
+  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
+  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab1) +
+  ggh4x::facet_nested(rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
+
+
+SolFitsAllPigmentTurnerDay %>% 
+  filter(Ex_WL==445) %>% 
+ggplot() +
+  geom_point(aes(JVPSII_ETRqpOxbo_FoSig_Corrcell_day, deltaOD_Lmu_corr_day, colour=as.factor(Par_ue)), alpha = 0.9, size = 3.5, show.legend = T) +
+  scale_x_continuous(label=scientific_10) +
+  scale_linetype_manual(values=c("equal900" = "dotted", "less900" = "solid"), breaks=c('8', '12', '16', "24", "", "")) +
+  scale_colour_manual(values = c("", "", "darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2, breaks=c('', '', '30', "90", "180", "300", "900")) +
+  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
+  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab1) +
+  ggh4x::facet_nested(rows = vars(Strain), labeller = label_parsed) +
+  theme_bw()  
 
 
 
@@ -412,21 +421,13 @@ ggplot() +
 SolFitsAllPigmentTurnerDay %>% 
   filter(Ex_WL==445) %>% 
 ggplot() +
-  geom_point(aes(JVPSII_ETRtauav_aLHII_Sig_Corrcell_day, deltaOD_Lmu_corr_day, colour=as.factor(Strain)), alpha = 0.9, size = 3.5, show.legend = T) +
+  geom_point(aes(JVPSII_ETRtauav_aLHII_Sig_Corrcell_day, deltaOD_Lmu_corr_day, colour=as.factor(Par_ue)), alpha = 0.9, size = 3.5, show.legend = T) +
   scale_x_continuous(label=scientific_10) +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-    ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
-  theme_bw() 
-
-
-
-SolFitsAllPigmentTurnerDay %>% 
-  filter(Ex_WL==445) %>% 
-ggplot() +
-  geom_point(aes(JVPSII_ETRqpOxbo_aLHII_Sig_Corrcell_day, deltaOD_Lmu_corr_day, colour=as.factor(Strain)), alpha = 0.9, size = 3.5, show.legend = T) +
-  scale_x_continuous(label=scientific_10) +
-  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-    ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
+  scale_linetype_manual(values=c("equal900" = "dotted", "less900" = "solid"), breaks=c('8', '12', '16', "24", "", "")) +
+  scale_colour_manual(values = c("", "", "darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2, breaks=c('', '', '30', "90", "180", "300", "900")) +
+  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
+  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab1) +
+  ggh4x::facet_nested(rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 
 
@@ -440,7 +441,7 @@ ggplot() +
   scale_colour_manual(values = c("", "", "darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2, breaks=c('', '', '30', "90", "180", "300", "900")) +
   #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
   scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab1) +
-    ggh4x::facet_nested(labeller = label_parsed) +
+  ggh4x::facet_nested(rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 
 
