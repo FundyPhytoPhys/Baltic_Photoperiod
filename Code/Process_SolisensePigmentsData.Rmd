@@ -555,7 +555,7 @@ ggsave(file = file.path(PlotsPath, paste("Sigma_SupPlot",".png",sep = "")), heig
 # Removed unneccessary df from the environment
 
 ```{r}
-rm(SolFitsExpmeanAll590Plot, SolFitsExpmeanAll445, fitted, augmented, SolFitsExpFit590Clean, SolFitsExpFit590, SolFitsExpFitAll, SolFitsExpmeanAllPlot, fitted_Param)
+rm(SolFitsExpmeanAll590Plot, SolFitsExpmeanAll445, fitted, augmented, SolFitsExpFit590Clean, SolFitsExpFit590, SolFitsExpFitAll, SolFitsExpmeanAllPlot, fitted_Param, data_text_alpha, data_text_y0, data_text_yf)
 ```
 
 # Sig per phyco/chla ratio
@@ -603,13 +603,9 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 SolFitsPigmentExp %>% 
   ggplot() +
   geom_point(aes(x = PhycoChlaRatioExp, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-    geom_smooth(aes(x = PhycoChlaRatioExp, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, alpha =0, show.legend = F, method="lm") +
   geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  # labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(facetsExcitation, Ex_WL), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw()
 
@@ -617,10 +613,8 @@ SolFitsPigmentExp %>%
 SolFitsPigmentExp %>% 
   ggplot() +
   geom_point(aes(x = PhycoChlaRatioExp, y = AllmeanSig_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
-    geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Strain))) +
+  geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Strain))) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  # labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(facetsExcitation, Ex_WL), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
 
@@ -631,9 +625,6 @@ SolFitsPigmentExp %>%
   geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = AllmeanSigdark_nm2psii - AllsdSigdark_nm2psii, ymax = AllmeanSigdark_nm2psii + AllsdSigdark_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  # labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(facetsExcitation, Ex_WL), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
   theme_bw() 
 
@@ -641,10 +632,8 @@ SolFitsPigmentExp %>%
 SolFitsPigmentExp %>% 
   ggplot() +
   geom_point(aes(x = PhycoChlaRatioExp, y = AllmeanSigdark_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
-    geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = AllmeanSigdark_nm2psii - AllsdSigdark_nm2psii, ymax = AllmeanSigdark_nm2psii + AllsdSigdark_nm2psii, colour=as.factor(Strain))) +
+  geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = AllmeanSigdark_nm2psii - AllsdSigdark_nm2psii, ymax = AllmeanSigdark_nm2psii + AllsdSigdark_nm2psii, colour=as.factor(Strain))) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  # labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(facetsExcitation, Ex_WL), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
 
@@ -655,9 +644,6 @@ SolFitsPigmentExp1s %>%
   # geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  # labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 
@@ -667,22 +653,8 @@ SolFitsPigmentExp1s %>%
   geom_point(aes(x = PhycoChlaRatioExp, y = Sig1s_nm2psii, colour = as.factor(Strain)), size = 3.5, show.legend = T) +
     # geom_errorbar(aes(x = PhycoChlaRatioExp, ymin = meanSig1s_nm2psii - sdSig1s_nm2psii, ymax = meanSig1s_nm2psii + sdSig1s_nm2psii, colour=as.factor(Strain))) +
   scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4")) +
-  #labs(y = "Sigma", x = "Chl" ~italic(a)~ "content ( pg  " ~ cell^-1~")") +
-  # labs(y=expression(paste(sigma,""["PSII"]*" (nm"^"2"*")")), x = "Total phycobilins/Chl" ~italic(a)~ "ratio") +
   ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw()
-```
-
-# Filtering data measured from log and very early exponential phase of growth
-
-```{r filtering data from log phase}
-SolFitsPigmentExp<-SolFitsPigmentExp %>% 
-  filter(E_days!=2) %>% 
-  filter(E_days!=3) 
-  
-SolFitsPigmentExp1s<-SolFitsPigmentExp1s %>% 
-  filter(E_days!=2) %>% 
-  filter(E_days!=3) 
 ```
 
 # Combine PC and PE-rich strains together
@@ -696,7 +668,8 @@ SolFitsAllPigmentPE<-SolFitsPigmentExp %>%
 SolFitsAllPigmentPE$StrainGroup = "PE-rich"
 
 SolFitsAllPigmentPCPE<-rbind(SolFitsAllPigmentPC, SolFitsAllPigmentPE)
-rm(SolFitsAllPigmentPC, SolFitsAllPigmentPE, SolFitsPigmentExp)
+rm(SolFitsAllPigmentPC, SolFitsAllPigmentPE)
+
 
 SolFitsAllPigmentPC1s<-SolFitsPigmentExp1s %>% 
   filter(Strain == "PC-rich_056" | Strain == "PC-rich_077") 
@@ -709,6 +682,17 @@ SolFitsAllPigmentPCPE1s<-rbind(SolFitsAllPigmentPC1s, SolFitsAllPigmentPE1s)
 rm(SolFitsAllPigmentPC1s, SolFitsAllPigmentPE1s, SolFitsPigmentExp1s)
 ```
 
+# Filtering data measured from log and very early exponential phase of growth
+
+```{r filtering data from log phase}
+SolFitsAllPigmentPCPE<-SolFitsAllPigmentPCPE %>%
+  filter(E_days!=2) %>%
+  filter(E_days!=3)
+
+SolFitsAllPigmentPCPE1s<-SolFitsAllPigmentPCPE1s %>%
+  filter(E_days!=2) %>%
+  filter(E_days!=3)
+```
 
 # Linear fit per Ex_WL
 
@@ -1064,7 +1048,7 @@ ChlData <- ChlData %>%
 
 ```{r}
 SolFitsAllPigmentPCPETurner <- ChlData %>%
-  left_join(., SolFitsAllPigmentPCPE, by = c("SampleID"="SampleID", "ObsDate"="ObsDate"))
+  left_join(., SolFitsPigmentExp, by = c("SampleID"="SampleID", "ObsDate"="ObsDate"))
 
 SolFitsAllPigmentPCPETurner<-SolFitsAllPigmentPCPETurner %>% 
   filter(Strain=="PC-rich_056" | Strain == "PC-rich_077" | Strain == "PE-rich_048" | Strain == "PE-rich_127")
