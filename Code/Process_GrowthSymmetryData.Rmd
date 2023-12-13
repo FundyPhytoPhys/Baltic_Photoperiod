@@ -229,8 +229,8 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
   geom_text(data=data_text_y0, aes(x=24000000, y=3, label=label), size=3.5) +
   geom_text(data=data_text_yf, aes(x=24000000, y=2.7, label=label), size=3.5) +
   geom_text(data=data_text_alpha, aes(x=24000000, y=2.4, label=label), size=3.5) +
-  geom_segment(data=data_segment, aes(x=x,y=y,yend=yend,xend=xend),inherit.aes=FALSE)+
-  labs(y = "Diel growth symmetry (AccLen/DecLen)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  #geom_segment(data=data_segment, aes(x=x,y=y,yend=yend,xend=xend),inherit.aes=FALSE)+
+  labs(y = "Diel growth symmetry (AccLen/DecLen ratio)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   scale_x_continuous(label=scientific_10) +
@@ -299,7 +299,7 @@ GScatalogMeta %>%
 # Save plot 
 
 ```{r save plot}
-ggsave(file = file.path(PlotsPath, paste("AccLen_Plot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
+ggsave(file = file.path(PlotsPath, paste("AccLen_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
 ```{r AccLen Plot, fig.height = 8, fig.width = 8, warning = FALSE}
@@ -336,6 +336,12 @@ labs(y = "AccLen (h)", x = "Photoperiod (h)") +
         legend.spacing.y = unit(-0.2, "cm"),
         legend.title = element_blank(),
         legend.text = element_text(size=9))
+```
+
+# Save plot 
+
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("AccLen_Plot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
 # Create 4 df for vertical lines (coloured as Strain) contained tMaxAG values
