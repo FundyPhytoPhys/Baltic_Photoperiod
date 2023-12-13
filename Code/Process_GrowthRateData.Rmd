@@ -421,11 +421,25 @@ MultiCultiGrowthRatePURExpFit %>%
   theme_bw()
 ```
 
+# Add dummies points at 900 uE to df
+
+```{r}
+CleanGrowthPARPURfit900clean<-MultiCultiGrowthRatePURExpFit %>% 
+  filter(Par_ue !=30 & Par_ue !=90 & Par_ue !=180 & Par_ue !=300) %>% 
+  select(c(Strain, deltaOD_Lmu_corr, PhotonDose, PhotonDose_value))
+  
+gs4_deauth()
+# this is the URL or ID of a Sheet readable by anyone (with a link)
+Dummy <- read_sheet("https://docs.google.com/spreadsheets/d/1Ns_u26HagT-kDCy5WgjGA_U8R6qv4LqRPubtlWB8Cxc/edit#gid=0")   
+
+CleanGrowthPARPURfit900<-rbind(CleanGrowthPARPURfit900clean, Dummy)
+```
 # Estimated Harrison & Platt, 1986 fit - for 900uE and the rest uE
 
 ```{r Added function}
 grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
 ```
+
 
 ```{r Estimated Harrison & Platt, 1986 fit}
 
@@ -445,13 +459,14 @@ GRCplatt_PredictGrowth <- CleanGrowthPARPURfit %>%
 
 
 
-CleanGrowthPARPURfit900 <- MultiCultiGrowthRatePURExpFit %>%   
-  filter(Par_ue !=30 & Par_ue !=90 & Par_ue !=180 & Par_ue !=300) %>%  
+
+CleanGrowthPARPURfit900 <- CleanGrowthPARPURfit900 %>%   
+  #filter(Par_ue !=30 & Par_ue !=90 & Par_ue !=180 & Par_ue !=300) %>%  
   nest(data = -c("Strain", "PhotonDose")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
                                                     data = .x,
                                                     start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
-                                                    lower = c(0, 0, 0)))) %>%    
+                                                    lower = c(0, 0, 0)))) %>%   
   mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
          GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
          GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
@@ -460,13 +475,6 @@ GRCplatt_PredictGrowth900 <- CleanGrowthPARPURfit900 %>%
   unnest(GRCplatt_Predict)
 
   rm(CleanGrowthPARPURfit, CleanGrowthPARPURfit900)
-```
-
-# Added facets labels
-
-```{r}
-GRCplatt_PredictGrowth$facetsStrain = factor(GRCplatt_PredictGrowth$PhotonDose, labels = c("Strain", "Strain"))
-GRCplatt_PredictGrowth900$facetsStrain = factor(GRCplatt_PredictGrowth900$PhotonDose, labels = c("Strain", "Strain"))
 ```
 
 # Create preliminary plot
@@ -486,7 +494,55 @@ ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
   scale_colour_manual(values = c("", "", "darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2, breaks=c('', '', '30', "90", "180", "300", "900")) +
   scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab1) +
   labs(y = "Logistic growth rate " ~ "("~h^-1~")", x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
-  ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
+  ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(Strain), labeller = label_parsed) +
+  theme_bw() 
+```
+
+```{r}
+
+```
+
+
+# Estimated Harrison & Platt, 1986 fit - for 900uE and the rest uE
+
+```{r Added function}
+grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
+```
+
+```{r Estimated Harrison & Platt, 1986 fit}
+
+CleanGrowthPARPURfitAll <- MultiCultiGrowthRatePURExpFit %>%    
+  nest(data = -c("Strain", "PhotonDose")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
+                                                    data = .x,
+                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
+                                                    lower = c(0, 0, 0)))) %>%    
+  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
+         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
+         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
+
+GRCplatt_PredictGrowth <- CleanGrowthPARPURfitAll %>% 
+  unnest(GRCplatt_Predict)
+
+```
+
+# Create preliminary plot
+
+```{r preliminary plot, warning = FALSE}
+lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab2=c(expression("1 µE"), expression("2 µE"), expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+
+ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
+  geom_point(aes(PhotonDose_value, deltaOD_Lmu_corr, colour=as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3.5, show.legend = T) +
+  geom_errorbar(aes(x = PhotonDose_value, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se, colour = as.factor(Par_ue)), width=4000000, data = . %>% filter(deltaOD_Lmu_se<8.057558e-03), show.legend = F) +
+  geom_line(aes(PhotonDose_value, .fitted), show.legend = F, GRCplatt_PredictGrowth) +
+  scale_x_continuous(label=scientific_10) +
+  scale_linetype_manual(values=c("equal900" = "dotted", "less900" = "solid"), breaks=c('8', '12', '16', "24", "", "")) +
+  scale_colour_manual(values = c("", "", "darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2, breaks=c('', '', '30', "90", "180", "300", "900")) +
+  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab1) +
+  labs(y = "Logistic growth rate " ~ "("~h^-1~")", x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 ```
 
@@ -496,8 +552,6 @@ ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
 
 #Harrison & Platt, 1986
 grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
-
-
 
 
 MultiCultiGrowthRatePURExpFit30 <- MultiCultiGrowthRatePURExpFit %>%   
@@ -628,6 +682,47 @@ ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
         legend.text = element_text(size=9))
 ```
 
+# Statistics
+
+The likelihood-ratio test in statistics compares the goodness of fit of two nested regression models based on the ratio of their likelihoods, specifically one obtained by maximization over the entire parameter space and another obtained after imposing some constraint.
+To see if these two models differ significantly, we can use a likelihood ratio test with the following null and alternative hypotheses.
+
+H0: Both the full and nested models fit the data equally well. As a result, you should employ the nested model. #jezeli nie ma roznic, to nie trzeba dodawac ekstra czynnika
+H1: The full model significantly outperforms the nested model in terms of data fit. As a result, you should use the entire model.
+
+
+```{r}
+fullmodel <- glm(mpg ~ cyl + disp + hp + wt, data = mtcars)
+reducedmodel <- glm(mpg ~ cyl + disp, data = mtcars)
+
+library(lmtest) #Likelihood Ratio Test
+lrtest(fullmodel, reducedmodel)
+```
+
+ANOVA testing whether the more complex model is significantly better at capturing the data than the simpler model. 
+
+```{r}
+library(agricolae)
+data("PlantGrowth")
+plant.lm <- lm(weight ~ group, data = PlantGrowth)
+plant.av <- aov(plant.lm)
+#plant.av <- aov(weight ~ group, data = PlantGrowth) #gives the same result
+summary(plant.av)
+
+tukey.test <- TukeyHSD(plant.av)
+tukey.test
+
+summary(lm(weight ~ group, data = PlantGrowth))
+```
+
+```{r}
+library(agricolae)
+data(sweetpotato)
+model<-aov(yield~virus, data=sweetpotato)
+out <- HSD.test(model,"virus", group=TRUE,console=TRUE)
+plot(out)
+```
+
 # Save RDS that create plot
 
 ```{r}
@@ -662,10 +757,53 @@ rm(MultiCultiGrowthRatePURExpFit30, MultiCultiGrowthRatePURExpFit90, MultiCultiG
 
 
 
+```{r}
+MultiCultiGrowthRatePURExpFitNested <- MultiCultiGrowthRatePURExpFit %>%    
+  # filter(Par_ue ==900) %>% 
+  nest(data = -c("Strain", "PhotonDose", "Par_ue")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
+                                                    data = .x,
+                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
+                                                    lower = c(0, 0, 0)))) %>%    
+  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
+         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
+         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
+```
 
+```{r}
+MultiCultiGrowthRatePURExpFitNested %>% 
+  unnest(GRCplatt_Predict, .sep = "_") %>% 
+  unnest(data) %>% 
+  ggplot() +
+  geom_line(aes(x = GRCplatt_Predict_PhotonDose_value, y = GRCplatt_Predict_.fitted, color = as.factor(Par_ue))) +
+  geom_point(aes(x = GRCplatt_Predict_PhotonDose_value, y = GRCplatt_Predict_deltaOD_Lmu_corr, color = as.factor(Par_ue))) +
+  ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(Strain), labeller = label_parsed) +
+  theme_bw()
+```
 
+```{r}
+MultiCultiGrowthRatePURExpFitNested %>% 
+  unnest(GRCplatt_Param) %>% 
+  filter(PhotonDose %in% c("PAR")) %>% 
+  # filter(term == "a") %>% 
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = estimate, color = Strain)) +
+  geom_line(aes(x = Par_ue, y = estimate, linetype = Strain)) +
+  ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(term), labeller = label_parsed, scales = "free") +
+  theme_bw()
+```
 
-
+```{r}
+MultiCultiGrowthRatePURExpFitNested %>% 
+  unnest(GRCplatt_Param) %>% 
+  filter(PhotonDose %in% c("PAR")) %>% 
+  # filter(term == "a") %>% 
+  ggplot() +
+  geom_point(aes(x = Strain, y = estimate, color = as.factor(Par_ue))) +
+  # geom_line(aes(x = Par_ue, y = estimate, linetype = Strain)) +
+  ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(term), labeller = label_parsed, scales = "free") +
+  theme_bw()
+```
 
 
 
