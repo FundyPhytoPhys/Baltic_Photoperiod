@@ -153,7 +153,42 @@ SolFits %>%
   theme_bw()
 ```
 
-!!!!dodac, skad wzielam te wartosci!!! based on tmaxAG
+# Load tmaxAG catalog and create 4 df for vertical lines (coloured as Strain) contained tMaxAG values
+
+```{r}
+gs4_deauth()
+tmaxAG<- read_sheet("https://docs.google.com/spreadsheets/d/1ksY7xlg9wOsICOBRmZkHPKdd9KOislNwPDzyuJ3UIUI/edit#gid=0")
+as.data.frame(tmaxAG)
+tmaxAG <- tmaxAG
+
+tmaxAG<-tmaxAG %>% 
+  mutate(Par_ue = as.numeric(Par_ue)) %>%
+  mutate(Photoperiod = as.numeric(Photoperiod)) %>%
+  mutate(tMaxAG = as.numeric(tMaxAG)) %>%
+  mutate(Strain=case_when(Strain=="BA127R"~"PE-rich_127",
+         Strain=="BA48R"~"PE-rich_048",
+        Strain=="BA56G"~"PC-rich_056",
+         Strain=="BA77G"~"PC-rich_077"))
+```
+
+```{r select revelant columns}
+tMaxAGLines_056<-tmaxAG %>% 
+  filter(Strain == "PC-rich_056") %>% 
+  select(c(Par_ue, Photoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_077<-tmaxAG %>% 
+  filter(Strain == "PC-rich_077") %>% 
+  select(c(Par_ue, Photoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_048<-tmaxAG %>% 
+  filter(Strain == "PE-rich_048") %>% 
+  select(c(Par_ue, Photoperiod, tMaxAG)) %>% 
+  unique()
+tMaxAGLines_127<-tmaxAG %>% 
+  filter(Strain == "PE-rich_127") %>% 
+  select(c(Par_ue, Photoperiod, tMaxAG)) %>% 
+  unique()
+```
 
 # Choose only exp data for sigma and JVPSII in the corresponding light
 
@@ -264,25 +299,29 @@ rm(O1, O2, O3, O4, O5, O6, O7, O8, O9)
 # Create preliminary plot
 
 ```{r preliminary plot}
+lab1=c(expression("PC-rich_056"), expression("PC-rich_077"), expression("PE-rich_048"), expression("PE-rich_127"))
+lab2=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab3=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
 SolFits %>%
   ggplot() +
   geom_point(aes(x = Time_h, y = Sig, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
-  # geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  # geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  # geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  # geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+  geom_vline(data = tMaxAGLines_056, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown4") +
+  geom_vline(data = tMaxAGLines_077, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown1") +
+  geom_vline(data = tMaxAGLines_048, aes(xintercept = tMaxAG), linetype="dotdash", colour = "seagreen4") +
+  geom_vline(data = tMaxAGLines_127, aes(xintercept = tMaxAG), linetype="dotdash", colour = "palegreen3") +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab3) +
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
 
 SolFitsExp %>%
   ggplot() +
   geom_point(aes(x = Time_h, y = Sig, colour = as.factor(Strain)),  alpha = 0.8, size = 3, show.legend = T) +
-  # geom_vline(data = data_vline1, aes(xintercept = value), linetype="dotdash", colour = "brown4") +
-  # geom_vline(data = data_vline2, aes(xintercept = value), linetype="dotdash", colour = "brown1") +
-  # geom_vline(data = data_vline3, aes(xintercept = value), linetype="dotdash", colour = "seagreen4") +
-  # geom_vline(data = data_vline4, aes(xintercept = value), linetype="dotdash", colour = "palegreen3") +
-  #scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
+  geom_vline(data = tMaxAGLines_056, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown4") +
+  geom_vline(data = tMaxAGLines_077, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown1") +
+  geom_vline(data = tMaxAGLines_048, aes(xintercept = tMaxAG), linetype="dotdash", colour = "seagreen4") +
+  geom_vline(data = tMaxAGLines_127, aes(xintercept = tMaxAG), linetype="dotdash", colour = "palegreen3") +
+  scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="", labels = lab1) +
   ggh4x::facet_nested(cols = vars(Photoperiod), rows = vars(Par_ue), labeller = label_parsed) +
   theme_bw() 
 ```
@@ -416,8 +455,8 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 
 SolFitsExpmeanAll %>% 
   ggplot() +
-  geom_point(aes(x = PARPhotonDose_day, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
+  geom_point(aes(x = PARPhotonDose_day, y = Sig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  # geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   # labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
@@ -427,8 +466,8 @@ SolFitsExpmeanAll %>%
 
 SolFitsExpFitAll %>% 
   ggplot() +
-  geom_point(aes(x = PARPhotonDose_day, y = meanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
+  geom_point(aes(x = PARPhotonDose_day, y = Sig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  # geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   # labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
@@ -471,7 +510,7 @@ SolFitsExpmeanAll590Plot <- SolFitsExpFit590 %>%
 
 SolFitsExpmeanAll445 <-SolFitsExpFitAll %>%
   filter(Ex_WL == 445) %>%
-  mutate(.fitted=0)
+  mutate(.fitted=NA)
 
 SolFitsExpmeanAllPlot<-rbind(SolFitsExpmeanAll590Plot, SolFitsExpmeanAll445)
 ```
@@ -503,13 +542,12 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 
 ggplot(SolFitsExpFitAll, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
   geom_point(aes(x = PARPhotonDose_day, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_point(aes(x = PARPhotonDose_day, y = Sig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, show.legend = F) +
   geom_errorbar(aes(x = PARPhotonDose_day, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Par_ue)), width=0, size=0.3, show.legend = F) +
   geom_line(aes(PARPhotonDose_day, .fitted), show.legend = F, SolFitsExpmeanAllPlot) +
-  
   geom_text(data=data_text_y0, aes(x=80000000, y=8, label=label), size=3.5) +
   geom_text(data=data_text_yf, aes(x=80000000, y=7.1, label=label), size=3.5) +
   geom_text(data=data_text_alpha, aes(x=80000000, y=6.2, label=label), size=3.5) +
-  
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*" quanta"^"-1"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
