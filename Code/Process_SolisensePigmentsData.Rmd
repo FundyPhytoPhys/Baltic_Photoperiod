@@ -1078,9 +1078,9 @@ SolFitsAllPigmentfitPhycoChlalinearMerge445 %>%
 # Save RDS that create plot
 
 ```{r}
-saveRDS(SolFitsAllPigmentfitPhycoChlalinearMerge445, file.path(RDSPlotPath, paste(Project, "Plot_SigmavsPigments_1.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+saveRDS(SolFitsAllPigmentfitPhycoChlalinearMerge445, file.path(RDSPlotPath, paste(Project, "SupPlot_SigmavsPigments_1.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-saveRDS(SolFitsAllPigmentPCPEMerge445, file.path(RDSPlotPath, paste(Project, "Plot_SigmavsPigments_2.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+saveRDS(SolFitsAllPigmentPCPEMerge445, file.path(RDSPlotPath, paste(Project, "SupPlot_SigmavsPigments_2.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 # Save plot 

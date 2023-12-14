@@ -61,7 +61,7 @@ CultureCatalog <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto
   mutate(ExpDate = ymd(ExpDate),
           ExpEndDate = ymd_hms(`ExpEndDate`)) %>% 
   filter(str_detect(SampleID,  ProjectRows)) %>% 
-  select(ProjectCols)          
+  select(all_of(ProjectCols))          
 ```
 
 # Filter MetaData for specific project

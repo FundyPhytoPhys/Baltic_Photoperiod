@@ -460,7 +460,7 @@ GRCplatt_PredictGrowth <- CleanGrowthPARPURfit %>%
 
 
 
-CleanGrowthPARPURfit900 <- CleanGrowthPARPURfit900 %>%   
+CleanGrowthPARPURfit900_two <- CleanGrowthPARPURfit900 %>%   
   #filter(Par_ue !=30 & Par_ue !=90 & Par_ue !=180 & Par_ue !=300) %>%  
   nest(data = -c("Strain", "PhotonDose")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
@@ -471,10 +471,10 @@ CleanGrowthPARPURfit900 <- CleanGrowthPARPURfit900 %>%
          GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
          GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
 
-GRCplatt_PredictGrowth900 <- CleanGrowthPARPURfit900 %>% 
+GRCplatt_PredictGrowth900 <- CleanGrowthPARPURfit900_two %>% 
   unnest(GRCplatt_Predict)
 
-  rm(CleanGrowthPARPURfit, CleanGrowthPARPURfit900)
+  rm(CleanGrowthPARPURfit, CleanGrowthPARPURfit900_two)
 ```
 
 # Create preliminary plot
@@ -497,11 +497,6 @@ ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
   ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 ```
-
-```{r}
-
-```
-
 
 # Estimated Harrison & Platt, 1986 fit - for 900uE and the rest uE
 
@@ -616,8 +611,8 @@ GRCplatt_PredictGrowth300 <- MultiCultiGrowthRatePURExpFit300 %>%
   unnest(GRCplatt_Predict)
 
 
-MultiCultiGrowthRatePURExpFit900 <- MultiCultiGrowthRatePURExpFit %>%    
-  filter(Par_ue ==900) %>% 
+MultiCultiGrowthRatePURExpFit900 <- CleanGrowthPARPURfit900 %>%    
+  # filter(Par_ue ==900) %>% 
   nest(data = -c("Strain", "PhotonDose")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
                                                     data = .x,
@@ -682,6 +677,34 @@ ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
         legend.text = element_text(size=9))
 ```
 
+# Save RDS that create plot
+
+```{r}
+saveRDS(MultiCultiGrowthRatePURExpFit, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_1.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(GRCplatt_PredictGrowth30, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_2.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(GRCplatt_PredictGrowth90, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_3.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(GRCplatt_PredictGrowth180, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_4.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(GRCplatt_PredictGrowth300, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_5", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+```
+
+# Save plot 
+
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("GrowthRate_Plot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
+```
+
+# Save rds for further analysis
+
+```{r save rds}
+saveRDS(MultiCultiGrowthRatePURExp, file.path(DataOut, paste(Project, "Procesed_GrowthRate.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+```
+
+
+
 # Statistics
 
 The likelihood-ratio test in statistics compares the goodness of fit of two nested regression models based on the ratio of their likelihoods, specifically one obtained by maximization over the entire parameter space and another obtained after imposing some constraint.
@@ -723,31 +746,11 @@ out <- HSD.test(model,"virus", group=TRUE,console=TRUE)
 plot(out)
 ```
 
-# Save RDS that create plot
 
-```{r}
-saveRDS(MultiCultiGrowthRatePURExpFit, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_1.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-saveRDS(GRCplatt_PredictGrowth30, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_2.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-saveRDS(GRCplatt_PredictGrowth90, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_3.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-saveRDS(GRCplatt_PredictGrowth180, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_4.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-saveRDS(GRCplatt_PredictGrowth300, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_5", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
-```
-
-# Save plot 
-
-```{r save plot}
-ggsave(file = file.path(PlotsPath, paste("GrowthRate_Plot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
-```
-
-# Save rds for further analysis
-
-```{r save rds}
-saveRDS(MultiCultiGrowthRatePURExp, file.path(DataOut, paste(Project, "Procesed_GrowthRate.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
-```
 
 # Removed unneccessary df from the environment
 
