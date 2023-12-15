@@ -28,7 +28,7 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 # Introduction
 
-Process_GrowthSymmetryData.Rmd process Growth Symmetry (GS) catalog from a google sheet. This .Rmd generate Baltic_Photoperiod_Processed_GrowthSymmetryData.Rds (stored in Data/ProcessedData/ProcessedGrowthSymmetryData folder) and four plots: AccLen_Plot_Plot.png, AccLen_SupPlot_Plot.png, GS_Plot.png, and TDG_SupPlot.png (stored in Output/Plots folder).
+Process_GrowthSymmetryData.Rmd processes Growth Symmetry (GS) catalog from a google sheet. This .Rmd generates Baltic_Photoperiod_Processed_GrowthSymmetryData.Rds (stored in Data/ProcessedData/ProcessedGrowthSymmetryData folder) and four plots: AccLen_Plot_Plot.png, AccLen_SupPlot_Plot.png, GS_Plot.png, and TDG_SupPlot.png (stored in Output/Plots folder).
 
 # Load Libraries and set Project Variables
 
