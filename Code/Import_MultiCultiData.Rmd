@@ -1,5 +1,5 @@
 ---
-title: "MultiDataImportPico"
+title: "Import_MultiCultiData"
 author:
 - Laurel Genge
 - Carlie Barnhill
@@ -33,6 +33,23 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 
 # Introduction
+
+- Import_MultiCultiData.Rmd imports MultiCultivator files from Data/RawData/MultiCultiData.zip folder and stored in Data/ImportedData/ImportedMCData folder as: 
+20211214_PICO_MC247_RUN39_TargetDataMetaFilter.Rds
+20211223_PICO_MC257_RUN40_TargetDataMetaFilter.Rds
+20211229_PICO_MC247_RUN43_TargetDataMetaFilter.Rds
+20220107_PICO_MC257_RUN44_TargetDataMetaFilter.Rds
+20220113_PICO_MC247_RUN45_TargetDataMetaFilter.Rds
+20220122_PICO_MC257_RUN46_TargetDataMetaFilter.Rds
+20220405_PICO_MC247_RUN60_TargetDataMetaFilter.Rds
+20220410_PICO_MC257_RUN62_TargetDataMetaFilter.Rds
+20220420_PICO_MC257_RUN65_TargetDataMetaFilter.Rds
+20220507_PICO_MC257_RUN71_TargetDataMetaFilter.Rds
+20220607_PICO_MC257_RUN74_TargetDataMetaFilter.Rds
+20220615_PICO_MC257_RUN77_TargetDataMetaFilter.Rds
+20230816_PICO_MC257_RUN121_TargetDataMetaFilter.Rds
+
+
 
 The PSI Multicultivator is used to grow 8 x 80 ml of phytoplankton
 culture under a common temperature regime, with individual control of

@@ -28,7 +28,7 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 # Introduction
 
-This RMD process MC data and generate growth rate plot.
+Process_GrowthRateData.Rmd process and merge PICO_NestedFitsData.Rds from Data/CleanData/CleanedMCData folder and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds from Data/ProcessedData/ProcessedOlisJazData. This .Rmd generate Baltic_Photoperiod_Processed_GrowthRate.Rds (stored in Data/ProcessedData/ProcessesGrowthRateData folder) and GrowthRate_Plot.png (stored in Output/Plots folder).
 
 # Load Libraries and set Project Variables
 
@@ -700,7 +700,7 @@ ggsave(file = file.path(PlotsPath, paste("GrowthRate_Plot",".png",sep = "")), he
 # Save rds for further analysis
 
 ```{r save rds}
-saveRDS(MultiCultiGrowthRatePURExp, file.path(DataOut, paste(Project, "Procesed_GrowthRate.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+saveRDS(MultiCultiGrowthRatePURExp, file.path(DataOut, paste(Project, "Processed_GrowthRate.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 

@@ -28,7 +28,7 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 # Introduction
 
-This RMD imports culture meta data from a google sheet.
+Import_MetaData.Rmd imports culture Meta Data catalog from a google sheet and stored in Data folder as:  CultureCatalog.Rds
 
 # Load Libraries and set Project Variables
 

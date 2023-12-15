@@ -28,7 +28,7 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 # Introduction
 
-This RMD process growth rate and Solisense rds.
+Process_GrowthRateSolisenseData.Rmd process and merge Baltic_Photoperiod_Processed_GrowthRate.Rds from  Data/ProcessedData/ProcessedGrowthRateData folder and Baltic_Photoperiod_Processed_SolisensePigmentsExp.Rds from Data/ProcessedData/ProcessedSolisenseData folder. This .Rmd generate xxx.Rds (stored in xxxa folder) and xxx_Plot.png (stored in Output/Plots folder).
 
 # Load Libraries and set Project Variables
 
@@ -51,8 +51,8 @@ library(minpack.lm) #Standard 'nls' framework that uses 'nls.lm' for fitting
 
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ProcessedData", "ProcessesGrowthRateData")
-DataInGrowthRate <- file.path("..", "Data", "ProcessedData", "ProcessesGrowthRateData", fsep = .Platform$file.sep)
+DataOut <- file.path("..", "Data", "ProcessedData", "ProcessedGrowthRateData")
+DataInGrowthRate <- file.path("..", "Data", "ProcessedData", "ProcessedGrowthRateData", fsep = .Platform$file.sep)
 
 DataInSolisense <- file.path("..", "Data", "ProcessedData", "ProcessedSolisenseData", fsep = .Platform$file.sep)
 

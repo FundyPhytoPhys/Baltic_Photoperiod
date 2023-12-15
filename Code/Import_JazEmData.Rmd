@@ -28,7 +28,8 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 # Introduction
 
-This RMD imports and tidies spectroradiometer (Ocean Optics Jaz) files and stores the results in.xxx
+Import_JazEmData.Rmd imports Jaz radiospectrometer files from Data/RawData/JazEmData.zip folder and stored in Data/ImportedData/ImportedJazEmData folder as: 
+Baltic_Photoperiod_Imported_JazEmData.Rds
 
 # Load Libraries and set Project Variables
 
