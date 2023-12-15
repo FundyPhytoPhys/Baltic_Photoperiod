@@ -9,7 +9,7 @@ This .Rmd generates PICO_NestedFitsData.Rds and PICO_LongerFitsData.Rds (both st
 
 - Import_MetaData.Rmd imports culture Meta Data catalog from a google sheet and stored in Data folder as: CultureCatalog.Rds
 
-- Import_MultiCultiData.Rmd imports MultiCultivator files from Data/RawData/MultiCultiData.zip folder and stored in Data/ImportedData/ImportedMCData folder as: 
+- Import_MultiCultiData.Rmd imports Multi-Cultivator MC247 and MC257 files from Data/RawData/MultiCultiData.zip folder and stored in Data/ImportedData/ImportedMCData folder as: 
 20211214_PICO_MC247_RUN39_TargetDataMetaFilter.Rds, 
 20211223_PICO_MC257_RUN40_TargetDataMetaFilter.Rds, 
 20211229_PICO_MC247_RUN43_TargetDataMetaFilter.Rds, 
@@ -21,7 +21,7 @@ This .Rmd generates PICO_NestedFitsData.Rds and PICO_LongerFitsData.Rds (both st
 20220420_PICO_MC257_RUN65_TargetDataMetaFilter.Rds, 
 20220507_PICO_MC257_RUN71_TargetDataMetaFilter.Rds, 
 20220607_PICO_MC257_RUN74_TargetDataMetaFilter.Rds, 
-20220615_PICO_MC257_RUN77_TargetDataMetaFilter.Rds and
+20220615_PICO_MC257_RUN77_TargetDataMetaFilter.Rds, and
 20230816_PICO_MC257_RUN121_TargetDataMetaFilter.Rds
 
 - Import_OlisData.Rmd imports OLIS CLARiTY spectrophotometer files from Data/RawData/OlisData.zip folder and stored in Data/ImportedData/ImportedOlisData folder as: Baltic_Photoperiod_Imported_OlisData.Rds

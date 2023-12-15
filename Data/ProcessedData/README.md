@@ -1,3 +1,35 @@
 # Processed Data
 
-Information about documents added to this folder.
+
+- The ProcessedData folder contains 7 folders: ProcessedGrowthCurveData, ProcessedGrowthRateData, ProcessedGrowthSymmetryData, ProcessedMCData, ProcessedOlisJazData, ProcessedPigmentsData, ProcessedSolisenseData.
+
+Folder ProcessedGrowthCurveData contains Baltic_Photoperiod_Processed_GrowthCurve.Rds generated from Process_GrowthCurveData.Rmd (stored in Code folder).
+
+Folder ProcessedGrowthRateData contains Baltic_Photoperiod_Processed_GrowthRate.Rds generated from Process_GrowthRateData.Rmd (stored in Code folder).
+
+Folder ProcessedGrowthSymmetryData contains Baltic_Photoperiod_Processed_GrowthSymmetryData.Rds generated from Process_GrowthSymmetryData.Rmd (stored in Code folder).
+
+Folder ProcessedMCData contains 20211214_PICO_MC247_RUN39_ProcessDataNestGrowth.Rds, 
+20211223_PICO_MC257_RUN40_ProcessDataNestGrowth.Rds, 
+20211229_PICO_MC247_RUN43_ProcessDataNestGrowth.Rds, 
+20220107_PICO_MC257_RUN44_ProcessDataNestGrowth.Rds, 
+20220113_PICO_MC247_RUN45_ProcessDataNestGrowth.Rds, 
+20220122_PICO_MC257_RUN46_ProcessDataNestGrowth.Rds, 
+20220405_PICO_MC247_RUN60_ProcessDataNestGrowth.Rds, 
+20220410_PICO_MC257_RUN62_ProcessDataNestGrowth.Rds, 
+20220420_PICO_MC257_RUN65_ProcessDataNestGrowth.Rds, 
+20220507_PICO_MC257_RUN71_ProcessDataNestGrowth.Rds, 
+20220607_PICO_MC257_RUN74_ProcessDataNestGrowth.Rds, 
+20220615_PICO_MC257_RUN77_ProcessDataNestGrowth.Rds, and
+20230816_PICO_MC257_RUN121_ProcessDataNestGrowth.Rds generated from Process_MultiCultiData.Rmd (stored in Code folder).
+
+Folder ProcessedOlisJazData contains Baltic_Photoperiod_Processed_OlisSpectraAll.Rds and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds generated from Process_OlisSpectraJazEmData.Rmd (stored in Code folder).
+
+Folder ProcessedPigmentsData contains Baltic_Photoperiod_Processed_PigmentAll.Rds and Baltic_Photoperiod_Processed_PigmentsExp.Rds generated from Process_PigmentsData.Rmd (stored in Code folder).
+
+Folder ProcessedSolisenseData contains Baltic_Photoperiod_Processed_SolisensePigmentsExp.Rds generated from Process_SolisensePigmentsData.Rmd (stored in Code folder).
+
+
+
+
+
