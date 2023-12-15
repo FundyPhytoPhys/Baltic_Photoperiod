@@ -2,6 +2,8 @@
 
 Information about documents added to this folder.
 
+- Assess_MultiCultiData.Rmd process and merge all .Rds from Data/ProcessedData/ProcessedMCData folder.
+This .Rmd generate PICO_NestedFitsData.Rds and PICO_LongerFitsData.Rds (both stored in Data/CleanData/CleanedMCData folder). 
 
 - Import_JazEmData.Rmd imports Jaz radiospectrometer files from Data/RawData/JazEmData.zip folder and stored in Data/ImportedData/ImportedJazEmData folder as: 
 Baltic_Photoperiod_Imported_JazEmData.Rds
@@ -65,6 +67,5 @@ This .Rmd implements logistic growth curve fits to MultiCulti growth trajectorie
 
 - Process_SolisensePigmentsData.Rmd process and merge Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds and Baltic_Photoperiod_Imported_SolisenseLight.Rds from Data/ImportedData/ImportedSolisenseData folder. This .Rmd generate Baltic_Photoperiod_Processed_SolisensePigmentsExp.Rds (stored in Data/ProcessedData/ProcessedSolisenseData folder) and three plots: Sigma_SupPlot.png, SigmavsPigments590_Plot, SigmavsPigments445_SupPlot.png (stored in Output/Plots folder).
 
-- Assess_MultiCultiData.Rmd process and merge all .Rds from Data/ProcessedData/ProcessedMCData folder.
-This .Rmd generate PICO_NestedFitsData.Rds and PICO_LongerFitsData.Rds (both stored in Data/CleanData/CleanedMCData folder). 
 
+- BalticPhotoperiod_MS.Rmd contained manucript.
