@@ -1,5 +1,5 @@
 ---
-title: "Process_MultiCultiData"
+title: "Process_MCData"
 author:
 - Laurel Genge
 - Carlie Barnhill
@@ -23,7 +23,7 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 # Introduction
 
-Process_MultiCultiData.Rmd processes and combines all .Rds from Data/ImportedData/ImportedMCData folder and creates: 
+Process_MCData.Rmd processes and combines all .Rds from Data/ImportedData/ImportedMCData folder and creates: 
 20211214_PICO_MC247_RUN39_ProcessDataNestGrowth.Rds, 
 20211223_PICO_MC257_RUN40_ProcessDataNestGrowth.Rds, 
 20211229_PICO_MC247_RUN43_ProcessDataNestGrowth.Rds, 

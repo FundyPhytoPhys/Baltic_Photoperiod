@@ -50,18 +50,13 @@ This chapter summarize the structure of the repository with a decription of each
 
 ### Code
 
-Code folder contains scripts for processing raw data into cleaned data, outside derived code, and user derived code. A folder OldR is used to store outdated code. Typically organize .Rmd in modules; Import and Process saving .Rds out of each step.
-
-Code folder contains 15 .Rmd: Assess_MultiCultiData.Rmd, Import_JazEmData.Rmd, Import_MetaData.Rmd, Import_MultiCultiData.Rmd, Import_OlisData.Rmd, Import_SolisenseData.Rmd, Process_GrowthCurveData.Rmd, Process_GrowthRateData.Rmd, Process_GrowthRateSolisenseData.Rmd, Process_GrowthSymmetryData.Rmd, Process_MultiCultiData.Rmd, Process_OlisSpectraJazEmData.Rmd, Process_PigmentsData.Rmd, Process_SolisensePigmentsData.Rmd, and SynechococcusPhotoperiod_MS.Rmd.
-
-- Assess_MultiCultiData.Rmd processes and combines all .Rds from Data/ProcessedData/ProcessedMCData folder.
-This .Rmd generates PICO_NestedFitsData.Rds and PICO_LongerFitsData.Rds (both stored in Data/CleanData/CleanedMCData folder). 
+Code folder contains 15 .Rmd: Import_JazEmData.Rmd, Import_MetaData.Rmd, Import_MCData.Rmd, Import_OlisData.Rmd, Import_SolisenseData.Rmd, Process_GrowthCurveData.Rmd, Process_GrowthRateData.Rmd, Process_GrowthRateSolisenseData.Rmd, Process_GrowthSymmetryData.Rmd, Process_MCData.Rmd, Process_OlisSpectraJazEmData.Rmd, Process_PigmentsData.Rmd, Process_SolisensePigmentsData.Rmd, Processed_MCData.Rmd, and SynechococcusPhotoperiod_MS.Rmd.
 
 - Import_JazEmData.Rmd imports Jaz radiospectrometer files from Data/RawData/JazEmData.zip folder and stored in Data/ImportedData/ImportedJazEmData folder as: Baltic_Photoperiod_Imported_JazEmData.Rds
 
 - Import_MetaData.Rmd imports culture Meta Data catalog from a google sheet and stored in Data folder as: CultureCatalog.Rds
 
-- Import_MultiCultiData.Rmd imports Multi-Cultivator MC247 and MC257 files from Data/RawData/MultiCultiData.zip folder and stored in Data/ImportedData/ImportedMCData folder as: 
+- Import_MCData.Rmd imports Multi-Cultivator MC247 and MC257 files from Data/RawData/MultiCultiData.zip folder and stored in Data/ImportedData/ImportedMCData folder as: 
 20211214_PICO_MC247_RUN39_TargetDataMetaFilter.Rds, 
 20211223_PICO_MC257_RUN40_TargetDataMetaFilter.Rds, 
 20211229_PICO_MC247_RUN43_TargetDataMetaFilter.Rds, 
@@ -90,7 +85,7 @@ Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds contained data taken fro
 
 - Process_GrowthSymmetryData.Rmd processes Growth Symmetry (GS) catalog from a google sheet. This .Rmd generates Baltic_Photoperiod_Processed_GrowthSymmetryData.Rds (stored in Data/ProcessedData/ProcessedGrowthSymmetryData folder) and four plots: AccLen_Plot_Plot.png, AccLen_SupPlot_Plot.png, GS_Plot.png, and TDG_SupPlot.png (stored in Output/Plots folder).
 
-- Process_MultiCultiData.Rmd processes and combines all .Rds from Data/ImportedData/ImportedMCData folder and creates: 
+- Process_MCData.Rmd processes and combines all .Rds from Data/ImportedData/ImportedMCData folder and creates: 
 20211214_PICO_MC247_RUN39_ProcessDataNestGrowth.Rds, 
 20211223_PICO_MC257_RUN40_ProcessDataNestGrowth.Rds, 
 20211229_PICO_MC247_RUN43_ProcessDataNestGrowth.Rds, 
@@ -112,6 +107,9 @@ This .Rmd implements logistic growth curve fits to MultiCulti growth trajectorie
 - Process_PigmentsData.Rmd processes and combines pigment catalog from a google sheet and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds from Data/ProcessedData/ProcessedOlisJazData folder. This .Rmd generates Baltic_Photoperiod_Processed_PigmentAll.Rds and Baltic_Photoperiod_Processed_PigmentsExp.Rds (both stored in Data/ProcessedData/ProcessedPigmentsData folder) and two plots: Pigments_SupPlot.png and  PigRatioPUR_Plot.png (stored in Output/Plots folder).
 
 - Process_SolisensePigmentsData.Rmd processes and combines Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds and Baltic_Photoperiod_Imported_SolisenseLight.Rds from Data/ImportedData/ImportedSolisenseData folder. This .Rmd generates Baltic_Photoperiod_Processed_SolisensePigmentsExp.Rds (stored in Data/ProcessedData/ProcessedSolisenseData folder) and three plots: Sigma_SupPlot.png, SigmavsPigments590_Plot, SigmavsPigments445_SupPlot.png (stored in Output/Plots folder).
+
+- Processed_MCData.Rmd processes and combines all .Rds from Data/ProcessedData/ProcessedMCData folder.
+This .Rmd generates PICO_NestedFitsData.Rds and PICO_LongerFitsData.Rds (both stored in Data/CleanData/CleanedMCData folder). 
 
 - SynechococcusPhotoperiod_MS.Rmd contains the latest version of the manuscript.
 
