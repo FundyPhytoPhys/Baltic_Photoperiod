@@ -18,7 +18,19 @@ Analyses of the responses of Baltic picocyanobacteria, of distinct pigment compo
 
 ## Data sources
 
-- Provide links to any data used from external providers.
+Data sources chapter provide links to any data used from external providers:
+
+- URL for MetaDataCatalog:
+https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0
+
+- URL for GScatalog:
+https://docs.google.com/spreadsheets/d/1zqH6iYlqMPigyloLKJPeVWugmcnmgJ-eMU3gLkR6FSU/edit#gid=0
+
+- URL for tmaxAG Catalog:
+https://docs.google.com/spreadsheets/d/1ksY7xlg9wOsICOBRmZkHPKdd9KOislNwPDzyuJ3UIUI/edit#gid=0
+
+- URL for pigments Catalog:
+xxx
 
 ## Funding sources
 
@@ -202,7 +214,7 @@ https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZ
 
 ### Docs
 
-Docs folder contains 3 fies: BalticPhotoperiod.bib, INSTRUCTIONS.md, and README.md.
+Docs folder contains: BalticPhotoperiod.bib and INSTRUCTIONS.md.
 
 ### Output
 
