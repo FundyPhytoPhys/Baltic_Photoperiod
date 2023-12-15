@@ -52,7 +52,7 @@ This chapter summarize the structure of the repository with a decription of each
 
 Code folder contains scripts for processing raw data into cleaned data, outside derived code, and user derived code. A folder OldR is used to store outdated code. Typically organize .Rmd in modules; Import and Process saving .Rds out of each step.
 
-Code folder contains 15 .Rmd: Assess_MultiCultiData.Rmd, Import_JazEmData.Rmd, Import_MetaData.Rmd, Import_MultiCultiData.Rmd, Import_OlisData.Rmd, Import_SolisenseData.Rmd, Process_GrowthCurveData.Rmd, Process_GrowthRateData.Rmd, Process_GrowthRateSolisenseData.Rmd, Process_GrowthSymmetryData.Rmd, Process_MultiCultiData.Rmd, Process_OlisSpectraJazEmData.Rmd, Process_PigmentsData.Rmd, Process_SolisensePigmentsData.Rmd, and Synechococcus_BalticPhotoperiod_MS.Rmd.
+Code folder contains 15 .Rmd: Assess_MultiCultiData.Rmd, Import_JazEmData.Rmd, Import_MetaData.Rmd, Import_MultiCultiData.Rmd, Import_OlisData.Rmd, Import_SolisenseData.Rmd, Process_GrowthCurveData.Rmd, Process_GrowthRateData.Rmd, Process_GrowthRateSolisenseData.Rmd, Process_GrowthSymmetryData.Rmd, Process_MultiCultiData.Rmd, Process_OlisSpectraJazEmData.Rmd, Process_PigmentsData.Rmd, Process_SolisensePigmentsData.Rmd, and SynechococcusPhotoperiod_MS.Rmd.
 
 - Assess_MultiCultiData.Rmd processes and combines all .Rds from Data/ProcessedData/ProcessedMCData folder.
 This .Rmd generates PICO_NestedFitsData.Rds and PICO_LongerFitsData.Rds (both stored in Data/CleanData/CleanedMCData folder). 
@@ -113,7 +113,7 @@ This .Rmd implements logistic growth curve fits to MultiCulti growth trajectorie
 
 - Process_SolisensePigmentsData.Rmd processes and combines Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds and Baltic_Photoperiod_Imported_SolisenseLight.Rds from Data/ImportedData/ImportedSolisenseData folder. This .Rmd generates Baltic_Photoperiod_Processed_SolisensePigmentsExp.Rds (stored in Data/ProcessedData/ProcessedSolisenseData folder) and three plots: Sigma_SupPlot.png, SigmavsPigments590_Plot, SigmavsPigments445_SupPlot.png (stored in Output/Plots folder).
 
-- Synechococcus_BalticPhotoperiod_MS.Rmd contains the latest version of manuscript.
+- SynechococcusPhotoperiod_MS.Rmd contains the latest version of the manuscript.
 
 ### Data/CleanData
 
