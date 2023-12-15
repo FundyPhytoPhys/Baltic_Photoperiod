@@ -6,7 +6,7 @@ Code folder contains 15 .Rmd: Import_JazEmData.Rmd, Import_MetaData.Rmd, Import_
 
 - Import_MetaData.Rmd imports culture Meta Data catalog from a google sheet and stored in Data folder as: CultureCatalog.Rds
 
-- Import_MCData.Rmd imports Multi-Cultivator MC247 and MC257 files from Data/RawData/MultiCultiData.zip folder and stored in Data/ImportedData/ImportedMCData folder as: 
+- Import_MCData.Rmd imports Multi-Cultivator MC247 and MC257 files from Data/RawData/MCData.zip folder and stored in Data/ImportedData/ImportedMCData folder as: 
 20211214_PICO_MC247_RUN39_TargetDataMetaFilter.Rds, 
 20211223_PICO_MC257_RUN40_TargetDataMetaFilter.Rds, 
 20211229_PICO_MC247_RUN43_TargetDataMetaFilter.Rds, 

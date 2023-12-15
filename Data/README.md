@@ -6,7 +6,7 @@ The Data folder contains 4 folders: CleanData, ImportedData, ProcessedData, RawD
 
 The CleanData folder contains 1 folder: CleanedMCData.
 
-- Folder CleanedMCData contains PICO_LongerFitsData.Rds and PICO_NestedFitsData.Rds generated from Assess_MultiCultiData.Rmd (stored in Code folder).
+- Folder CleanedMCData contains PICO_LongerFitsData.Rds and PICO_NestedFitsData.Rds generated from Processed_MCData.Rmd (stored in Code folder).
 
 ## Imported Data
 
@@ -27,7 +27,7 @@ ImportedData folder contains 5 folders: ImportedJazEmData, ImportedMCData, Impor
 20220507_PICO_MC257_RUN71_TargetDataMetaFilter.Rds, 
 20220607_PICO_MC257_RUN74_TargetDataMetaFilter.Rds, 
 20220615_PICO_MC257_RUN77_TargetDataMetaFilter.Rds, and
-20230816_PICO_MC257_RUN121_TargetDataMetaFilter.Rds generated from Import_MultiCultiData.Rmd (stored in Code folder).
+20230816_PICO_MC257_RUN121_TargetDataMetaFilter.Rds generated from Import_MCData.Rmd (stored in Code folder).
 
 - Folder ImportedOlisData contains Baltic_Photoperiod_Imported_OlisData.Rds generated from Import_OlisData.Rmd  (stored in Code folder).
 
@@ -57,7 +57,7 @@ ProcessedData folder contains 7 folders: ProcessedGrowthCurveData, ProcessedGrow
 20220507_PICO_MC257_RUN71_ProcessDataNestGrowth.Rds, 
 20220607_PICO_MC257_RUN74_ProcessDataNestGrowth.Rds, 
 20220615_PICO_MC257_RUN77_ProcessDataNestGrowth.Rds, and
-20230816_PICO_MC257_RUN121_ProcessDataNestGrowth.Rds generated from Process_MultiCultiData.Rmd (stored in Code folder).
+20230816_PICO_MC257_RUN121_ProcessDataNestGrowth.Rds generated from Process_MCData.Rmd (stored in Code folder).
 
 - Folder ProcessedOlisJazData contains Baltic_Photoperiod_Processed_OlisSpectraAll.Rds and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds generated from Process_OlisSpectraJazEmData.Rmd (stored in Code folder).
 
@@ -67,11 +67,11 @@ ProcessedData folder contains 7 folders: ProcessedGrowthCurveData, ProcessedGrow
 
 ## Raw Data
 
-RawData folder contains 5 zipped folders: JazEmData.zip, MultiCultiData.zip, OlisData.zip, SolisenseNSData.zip, and SolisenseOSData.zip.
+RawData folder contains 5 zipped folders: JazEmData.zip, MCData.zip, OlisData.zip, SolisenseNSData.zip, and SolisenseOSData.zip.
 
 - Folder JazEmData.zip contains files generated from Jaz radiospectrometer.
 
-- Folder MultiCultiData.zip contains files generated from Multi-Cultivator MC247 and MC257.
+- Folder MCData.zip contains files generated from Multi-Cultivator MC247 and MC257.
 
 - Folder OlisData.zip contains files generated from OLIS CLARiTY spectrophotometer.
 
