@@ -1,6 +1,6 @@
 # Code
 
-Code folder contains 15 .Rmd: Assess_MultiCultiData.Rmd, Import_JazEmData.Rmd, Import_MetaData.Rmd, Import_MultiCultiData.Rmd, Import_OlisData.Rmd, Import_SolisenseData.Rmd, Process_GrowthCurveData.Rmd, Process_GrowthRateData.Rmd, Process_GrowthRateSolisenseData.Rmd, Process_GrowthSymmetryData.Rmd, Process_MultiCultiData.Rmd, Process_OlisSpectraJazEmData.Rmd, Process_PigmentsData.Rmd, Process_SolisensePigmentsData.Rmd, and Synechococcushotoperiod_MS.Rmd.
+Code folder contains 15 .Rmd: Assess_MultiCultiData.Rmd, Import_JazEmData.Rmd, Import_MetaData.Rmd, Import_MultiCultiData.Rmd, Import_OlisData.Rmd, Import_SolisenseData.Rmd, Process_GrowthCurveData.Rmd, Process_GrowthRateData.Rmd, Process_GrowthRateSolisenseData.Rmd, Process_GrowthSymmetryData.Rmd, Process_MultiCultiData.Rmd, Process_OlisSpectraJazEmData.Rmd, Process_PigmentsData.Rmd, Process_SolisensePigmentsData.Rmd, and SynechococcusPhotoperiod_MS.Rmd.
 
 - Assess_MultiCultiData.Rmd processes and combines all .Rds from Data/ProcessedData/ProcessedMCData folder.
 This .Rmd generates PICO_NestedFitsData.Rds and PICO_LongerFitsData.Rds (both stored in Data/CleanData/CleanedMCData folder). 
