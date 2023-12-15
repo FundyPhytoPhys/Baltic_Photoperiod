@@ -38,6 +38,9 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 # Introduction
 
+Assess_MultiCultiData.Rmd process and merge all .Rds from Data/ProcessedData/ProcessedMCData folder.
+This .Rmd generate PICO_NestedFitsData.Rds and PICO_LongerFitsData.Rds (both stored in Data/CleanData/CleanedMCData folder). 
+
 # Materials and Methods
 
 ## Load Libraries and set project variables
