@@ -433,6 +433,13 @@ This .Rds is the substrate for the 'MultiDataGrowthAssessPico.Rmd to compare inf
 
 ```
 
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(ProcessDataNestGrowth)
+```
+
+
 
 ```{r plot logistics predictions}
 #improve with automated annotate placement based upon data traces; difficulty is that data is nested until expansion for ggplot b/c we need to conserve memory so data traces are not easily accessible

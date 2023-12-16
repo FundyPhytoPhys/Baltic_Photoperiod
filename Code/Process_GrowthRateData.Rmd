@@ -54,7 +54,7 @@ library(googlesheets4)
 
 ```{r set project variables}
 Project <- "Baltic_Photoperiod"
-DataOut <- file.path("..", "Data", "ProcessedData", "ProcessesGrowthRateData")
+DataOut <- file.path("..", "Data", "ProcessedData", "ProcessedGrowthRateData")
 DataIn <- file.path("..", "Data", "CleanData", "CleanedMCData", fsep = .Platform$file.sep)
 
 PlotsPath <- file.path("..", "Output", "Plots")
@@ -702,6 +702,22 @@ ggsave(file = file.path(PlotsPath, paste("GrowthRate_Plot",".png",sep = "")), he
 ```{r save rds}
 saveRDS(MultiCultiGrowthRatePURExp, file.path(DataOut, paste(Project, "Processed_GrowthRate.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
+
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(MultiCultiGrowthRatePURExp)
+```
+
+
+
+
+
+
+
+
+
+
 
 
 

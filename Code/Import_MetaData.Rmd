@@ -96,3 +96,11 @@ rm(CultureCatalog1, CultureCatalog2)
 saveRDS(object = CultureCatalog, file = file.path("..", "Data", "CultureCatalog.Rds"), compress = "xz")
 ```
 
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(CultureCatalog)
+```
+
+
+

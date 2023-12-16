@@ -420,5 +420,9 @@ saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Processed_GrowthSymmet
 saveRDS(GScatalogMeta, file.path(RDSPlotPath, paste(Project, "Plot_GrowthSymmetry.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
+# Variable names used in Data Dictionary
 
+```{r}
+colnames(GScatalogMeta)
+```
 

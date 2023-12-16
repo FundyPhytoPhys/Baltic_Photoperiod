@@ -1329,7 +1329,11 @@ rm(Turnercatalog, ChlData, SolFitsAllPigmentPCPE, SolFitsAllPigmentPCPE1s)
 saveRDS(SolFitsAllPigmentPCPETurner, file.path(DataOut, paste(Project, "Processed_SolisensePigmentsExp.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
+# Variable names used in Data Dictionary
 
+```{r}
+colnames(SolFitsAllPigmentPCPETurner)
+```
 
 
 

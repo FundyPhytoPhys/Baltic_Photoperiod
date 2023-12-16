@@ -687,5 +687,14 @@ saveRDS(SolFitsMeta, file.path(DataOut, paste(Project, "Imported_SolisenseLight.
 saveRDS(SolFitsMetaDarkafterLight, file.path(DataOut, paste(Project, "Imported_SolisenseDarkafterLight.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
+# Variable names used in Data Dictionary
 
+```{r}
+colnames(SolFitsMeta)
+```
 
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(SolFitsMetaDarkafterLight)
+```

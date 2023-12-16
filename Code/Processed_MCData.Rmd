@@ -390,6 +390,19 @@ saveRDS(object = NestedFitsData, file = file.path(DataOut, paste(Project, "Neste
 
 ```
 
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(NestedFitsData)
+```
+
+
+
+
+
+
+
+
 Plot All
 ```{r LogisticdeltaODPlots, fig.height= 10, fig.width= 10}
 

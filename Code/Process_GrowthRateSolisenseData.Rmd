@@ -514,6 +514,14 @@ GRCplatt_PredictGrowth <- SolFitsAllPigmentTurnerDayfit %>%
 
 ```
 
+# Variable names used in Data Dictionary
+
+```{r}
+# colnames(SolFitsAllPigmentTurnerDay)
+```
+
+
+
 
 Set up R codes for Greek letters
 

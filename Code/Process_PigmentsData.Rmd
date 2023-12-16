@@ -675,3 +675,18 @@ saveRDS(MCPigmenttMaxAG, file.path(DataOut, paste(Project, "Processed_PigmentAll
 saveRDS(MCPigmenttMaxAGExp, file.path(DataOut, paste(Project, "Processed_PigmentsExp.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(MCPigmenttMaxAG)
+```
+
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(MCPigmenttMaxAGExp)
+```
+
+
+
+

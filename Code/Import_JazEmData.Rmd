@@ -147,4 +147,8 @@ rm(JazSpec)
 saveRDS(JazSpecTrim, file.path(DataOut, paste(Project, "Imported_JazEmData.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
+# Variable names used in Data Dictionary
 
+```{r}
+colnames(JazSpecTrim)
+```

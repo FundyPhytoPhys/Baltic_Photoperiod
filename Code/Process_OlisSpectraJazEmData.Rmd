@@ -620,7 +620,7 @@ OLISAllPURTidy %>%
 # Cleaning df before saving as rds and removed unnecessary files from the environment
 
 ```{r}
-rm(tMaxAGLines_056Select, tMaxAGLines_077Select, tMaxAGLines_048Select, tMaxAGLines_127Select, OLISSpectraMetaPURShort, tmaxAG, tmaxAGSelect)
+rm(tMaxAGLines_056Select, tMaxAGLines_077Select, tMaxAGLines_048Select, tMaxAGLines_127Select, tmaxAG, tmaxAGSelect)
 ```
 
 # Save rds for further analysis
@@ -633,4 +633,15 @@ saveRDS(OLISAllPURTidy, file.path(DataOut, paste(Project, "Processed_OlisSpectra
 saveRDS(OLISSpectraMetaPURShort, file.path(RDSPlotPath, paste(Project, "Plot_OlisSpectra.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(OLISSpectraMetaPUR)
+```
+
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(OLISAllPURTidy)
+```
 

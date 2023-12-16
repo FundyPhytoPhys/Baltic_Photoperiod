@@ -188,3 +188,10 @@ rm(Absorbance440, CultureCatalog, TargetSpectra, OLISSpectraMeta, TargetSpectraL
 saveRDS(OLISSpectraMeta440, file.path(DataOut, paste(Project, "Imported_OlisData.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(OLISSpectraMeta440)
+```
+
+

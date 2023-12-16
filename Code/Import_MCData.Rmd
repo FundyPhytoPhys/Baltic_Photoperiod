@@ -530,3 +530,11 @@ select(-c("MovMAD680", "MovMAD720",  "MovMedian680", "MovMedian720", "IsMovMAD68
 saveRDS(object = TargetDataMetaFilter, file = file.path(DataOut, paste(TargetFileName, "TargetDataMetaFilter.Rds",  sep = "_")), ascii = FALSE, version = NULL,
         compress = "xz", refhook = NULL)
 ```
+
+# Variable names used in Data Dictionary
+
+```{r}
+colnames(TargetDataMetaFilter)
+```
+
+
