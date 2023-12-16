@@ -142,7 +142,7 @@ print(MCFiles)
 # Set Target File and read in csv
 ```{r set TargetFile and read csv}
 
-TargetFile <- "20211223_PICO_MCMIX006_RUN42.csv"
+TargetFile <- "20211214_PICO_MC247_RUN39.csv"
 
 
 # This opens a compressed file without decompressing.
