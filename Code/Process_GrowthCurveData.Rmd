@@ -41,6 +41,9 @@ library(knitr)
 library(OneR)
 library(zoo)
 library(ggpubr)
+library(data.table)
+library(googledrive)
+library(googlesheets4)
 ```
 
 ```{r set project variables}
@@ -384,6 +387,15 @@ MultiCultiDataAll<-rbind(MultiCultiData39, MultiCultiData40, MultiCultiData43, M
 rm(MultiCultiData39, MultiCultiData40, MultiCultiData43, MultiCultiData44, MultiCultiData45, MultiCultiData46, MultiCultiData60, MultiCultiData62, MultiCultiData65, MultiCultiData71, MultiCultiData74, MultiCultiData121, MultiCultiData)
 ```
 
+# Rename column names for consistency
+
+```{r}
+MultiCultiDataAll<-MultiCultiDataAll %>% 
+  rename(E_days=Day) %>% 
+  rename(FilenameMC=Filename) %>% 
+  rename(Time_h=time_h)
+```
+
 # Add facets labels and change strain name to create plot
 
 ```{r add facets labels and change strain names}
@@ -443,8 +455,8 @@ tMaxAGLines_127<-tmaxAG %>%
 ```{r create GrowthCurve plot, fig.height = 8, fig.width = 8, warning = FALSE}
 MultiCultiDataAll %>%
   ggplot() +
-  geom_area(aes(x = time_h, y = meanActinic_par_h), size = 0.1, fill = "tan1", alpha = 0.6) +
-  geom_line(aes(x = time_h, y = meanOD680_h, colour = as.factor(Strain)), size = 0.5, show.legend = T) +
+  geom_area(aes(x = Time_h, y = meanActinic_par_h), size = 0.1, fill = "tan1", alpha = 0.6) +
+  geom_line(aes(x = Time_h, y = meanOD680_h, colour = as.factor(Strain)), size = 0.5, show.legend = T) +
   geom_vline(data = tMaxAGLines_056, aes(xintercept = tMaxAG), linetype="dotdash", colour = "seagreen4", size=0.4) +
   geom_vline(data = tMaxAGLines_077, aes(xintercept = tMaxAG), linetype="dotdash", colour = "palegreen3", size=0.4) +
   geom_vline(data = tMaxAGLines_048, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown4", size=0.4) +

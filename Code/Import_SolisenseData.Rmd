@@ -663,6 +663,16 @@ SolFitsMeta <-rbind(SolFitsTrimMetaCleanOS, SolFitsTrimMetaCleanNS)
 SolFitsMetaDarkafterLight <-rbind(SolFitsTrimMetaDarkafterLightOS, SolFitsTrimMetaDarkafterLightNS)
 ```
 
+# Change variable names for consistency
+
+```{r}
+SolFitsMeta <- SolFitsMeta %>% 
+  rename(FilenameSolisense=Filename)
+
+SolFitsMetaDarkafterLight <-SolFitsMetaDarkafterLight %>% 
+  rename(FilenameSolisense=Filename)
+```
+
 # Create preliminary plots 
 
 ```{r preliminary plot}
