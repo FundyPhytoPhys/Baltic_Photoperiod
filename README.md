@@ -34,7 +34,9 @@ xxx
 
 ## Funding sources
 
-- List your funding sources, grant names, and grant numbers as applicable.
+- Canada Research Chair in Phytoplankton Ecophysiology (DAC)
+
+- Latitude & Light; NSERC of Canada Discovery Grant (DAC)
 
 ## Keywords
 
