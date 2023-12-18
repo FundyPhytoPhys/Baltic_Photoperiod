@@ -424,15 +424,22 @@ MultiCultiGrowthRatePURExpFit %>%
 # Add dummies points at 900 uE to df
 
 ```{r}
-CleanGrowthPARPURfit900clean<-MultiCultiGrowthRatePURExpFit %>% 
-  filter(Par_ue !=30 & Par_ue !=90 & Par_ue !=180 & Par_ue !=300) %>% 
+CleanDummyno900<-MultiCultiGrowthRatePURExpFit %>%
+  filter(Par_ue !=900) %>%
   select(c(Strain, deltaOD_Lmu_corr, PhotonDose, PhotonDose_value))
-  
 gs4_deauth()
 # this is the URL or ID of a Sheet readable by anyone (with a link)
 Dummy <- read_sheet("https://docs.google.com/spreadsheets/d/1Ns_u26HagT-kDCy5WgjGA_U8R6qv4LqRPubtlWB8Cxc/edit#gid=0")   
+CleanGrowthPARPURfitDummyno900<-rbind(CleanDummyno900, Dummy)
 
-CleanGrowthPARPURfit900<-rbind(CleanGrowthPARPURfit900clean, Dummy)
+
+CleanDummy900<-MultiCultiGrowthRatePURExpFit %>%
+  filter(Par_ue !=30 & Par_ue !=90 & Par_ue !=180 & Par_ue !=300) %>%
+  select(c(Strain, deltaOD_Lmu_corr, PhotonDose, PhotonDose_value))
+gs4_deauth()
+# this is the URL or ID of a Sheet readable by anyone (with a link)
+Dummy <- read_sheet("https://docs.google.com/spreadsheets/d/1Ns_u26HagT-kDCy5WgjGA_U8R6qv4LqRPubtlWB8Cxc/edit#gid=0")   
+CleanGrowthPARPURfitDummy900<-rbind(CleanDummy900, Dummy)
 ```
 # Estimated Harrison & Platt, 1986 fit - for 900uE and the rest uE
 
@@ -443,8 +450,8 @@ grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
 
 ```{r Estimated Harrison & Platt, 1986 fit}
 
-CleanGrowthPARPURfit <- MultiCultiGrowthRatePURExpFit %>%    
-  filter(Par_ue !=900) %>%  
+CleanGrowthPARPURfitno900 <- CleanGrowthPARPURfitDummyno900 %>%    
+  #filter(Par_ue !=900) %>%  
   nest(data = -c("Strain", "PhotonDose")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
                                                     data = .x,
@@ -454,13 +461,13 @@ CleanGrowthPARPURfit <- MultiCultiGrowthRatePURExpFit %>%
          GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
          GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
 
-GRCplatt_PredictGrowth <- CleanGrowthPARPURfit %>% 
+GRCplatt_PredictGrowthno900 <- CleanGrowthPARPURfitno900 %>% 
   unnest(GRCplatt_Predict)
 
 
 
 
-CleanGrowthPARPURfit900_two <- CleanGrowthPARPURfit900 %>%   
+CleanGrowthPARPURfit900 <- CleanGrowthPARPURfitDummy900 %>%   
   #filter(Par_ue !=30 & Par_ue !=90 & Par_ue !=180 & Par_ue !=300) %>%  
   nest(data = -c("Strain", "PhotonDose")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
@@ -471,10 +478,10 @@ CleanGrowthPARPURfit900_two <- CleanGrowthPARPURfit900 %>%
          GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
          GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
 
-GRCplatt_PredictGrowth900 <- CleanGrowthPARPURfit900_two %>% 
+GRCplatt_PredictGrowth900 <- CleanGrowthPARPURfit900 %>% 
   unnest(GRCplatt_Predict)
 
-  rm(CleanGrowthPARPURfit, CleanGrowthPARPURfit900_two)
+  rm(CleanGrowthPARPURfitno900, CleanGrowthPARPURfit900)
 ```
 
 # Create preliminary plot
@@ -677,6 +684,12 @@ ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
         legend.text = element_text(size=9))
 ```
 
+# Removed unneccessary df from the environment
+
+```{r}
+rm(MultiCultiGrowthRatePURExpFit30, MultiCultiGrowthRatePURExpFit90, MultiCultiGrowthRatePURExpFit180, MultiCultiGrowthRatePURExpFit300, MultiCultiGrowthRatePURExpFit900, GRCplatt_PredictGrowth30, GRCplatt_PredictGrowth90, GRCplatt_PredictGrowth180, GRCplatt_PredictGrowth300, GRCplatt_PredictGrowth900, OLISSpectra, MultiCultiGrowth, GRCplatt_PredictGrowth, MultiCultiGrowthRatePURExpFit, tmaxAG, tMaxAGLines_056, tMaxAGLines_077, tMaxAGLines_048, tMaxAGLines_127)
+```
+
 # Save RDS that create plot
 
 ```{r}
@@ -731,8 +744,8 @@ H1: The full model significantly outperforms the nested model in terms of data f
 
 
 ```{r}
-fullmodel <- glm(mpg ~ cyl + disp + hp + wt, data = mtcars)
-reducedmodel <- glm(mpg ~ cyl + disp, data = mtcars)
+fullmodel <- lm(mpg ~ cyl + disp + hp + wt, data = mtcars)
+reducedmodel <- lm(mpg ~ cyl + disp, data = mtcars)
 
 library(lmtest) #Likelihood Ratio Test
 lrtest(fullmodel, reducedmodel)
@@ -754,12 +767,14 @@ tukey.test
 summary(lm(weight ~ group, data = PlantGrowth))
 ```
 
+# Stats with letters
+
 ```{r}
-library(agricolae)
-data(sweetpotato)
-model<-aov(yield~virus, data=sweetpotato)
-out <- HSD.test(model,"virus", group=TRUE,console=TRUE)
-plot(out)
+# library(agricolae)
+# data(sweetpotato)
+# model<-aov(yield~virus, data=sweetpotato)
+# out <- HSD.test(model,"virus", group=TRUE,console=TRUE)
+# plot(out)
 ```
 
 
@@ -768,17 +783,12 @@ plot(out)
 
 
 
-# Removed unneccessary df from the environment
 
-```{r}
-rm(MultiCultiGrowthRatePURExpFit30, MultiCultiGrowthRatePURExpFit90, MultiCultiGrowthRatePURExpFit180, MultiCultiGrowthRatePURExpFit300, MultiCultiGrowthRatePURExpFit900, GRCplatt_PredictGrowth30, GRCplatt_PredictGrowth90, GRCplatt_PredictGrowth180, GRCplatt_PredictGrowth300, GRCplatt_PredictGrowth900, OLISSpectra, MultiCultiGrowth, GRCplatt_PredictGrowth, MultiCultiGrowthRatePURExpFit, tmaxAG, tMaxAGLines_056, tMaxAGLines_077, tMaxAGLines_048, tMaxAGLines_127)
-```
 
 
 
 ```{r}
 MultiCultiGrowthRatePURExpFitNested <- MultiCultiGrowthRatePURExpFit %>%    
-  # filter(Par_ue ==900) %>% 
   nest(data = -c("Strain", "PhotonDose", "Par_ue")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
                                                     data = .x,
@@ -812,17 +822,7 @@ MultiCultiGrowthRatePURExpFitNested %>%
   theme_bw()
 ```
 
-```{r}
-MultiCultiGrowthRatePURExpFitNested %>% 
-  unnest(GRCplatt_Param) %>% 
-  filter(PhotonDose %in% c("PAR")) %>% 
-  # filter(term == "a") %>% 
-  ggplot() +
-  geom_point(aes(x = Strain, y = estimate, color = as.factor(Par_ue))) +
-  # geom_line(aes(x = Par_ue, y = estimate, linetype = Strain)) +
-  ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(term), labeller = label_parsed, scales = "free") +
-  theme_bw()
-```
+
 
 
 
