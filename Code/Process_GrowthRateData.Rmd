@@ -460,6 +460,7 @@ CleanGrowthPARPURfitDummy30<-rbind(CleanDummy30, Dummy)
 
 CleanGrowthPARPURfitDummyAll<-rbind(CleanGrowthPARPURfitDummyno900, CleanGrowthPARPURfitDummy900)
 
+rm(CleanDummyno900, CleanDummy900, CleanDummy300, CleanDummy180, CleanDummy90, CleanDummy30, Dummy)
 ```
 # Estimated Harrison & Platt, 1986 fit - for 900uE and the rest uE
 
@@ -656,6 +657,14 @@ MultiCultiGrowthRatePURExpFit900 <- CleanGrowthPARPURfitDummy900 %>%
 GRCplatt_PredictGrowth900 <- MultiCultiGrowthRatePURExpFit900 %>% 
   unnest(GRCplatt_Predict)%>% 
   unnest(GRCplatt_Param)
+
+
+
+anova(MultiCultiGrowthRatePURExpFit900$GRCplatt_Model[[1]], MultiCultiGrowthRatePURExpFit900$GRCplatt_Model[[2]], MultiCultiGrowthRatePURExpFit900$GRCplatt_Model[[3]], MultiCultiGrowthRatePURExpFit900$GRCplatt_Model[[4]])
+
+
+
+
 ```
 
 # Create Growth Rate plot
@@ -771,6 +780,102 @@ GRCplatt_PredictGrowthCombine %>%
   facet_grid(PhotonDose~factor(Fit, levels=c('30','90','180','300', "900", "All"))) +
   theme_bw()
 ```
+
+```{r}
+
+DNaseSS<-GRCplatt_PredictGrowthCombine %>% 
+  filter(Strain == "PC-rich_056") %>% 
+  filter(PhotonDose == "PAR") %>% 
+  select(Fit, PhotonDose_value, deltaOD_Lmu_corr) 
+
+DNase1SS <- subset(DNaseSS, Fit == 30)
+DNase2SS <- subset(DNaseSS, Fit == 900)
+
+
+```
+
+Compare non-linear model parameter estimates between conditions
+
+https://stats.stackexchange.com/questions/458195/compare-non-linear-model-parameter-estimates-between-conditions
+
+```{r}
+DNase1 <- subset(DNase, Run == 1)
+DNase2 <- subset(DNase, Run == 2)
+## fit models and extract coefficients
+m1 <- nls(density ~ SSlogis(log(conc), Asym, xmid, scal), DNase1)
+m1_coef <- tidy(m1) %>% 
+  mutate(Run = 1)
+
+m2 <- nls(density ~ SSlogis(log(conc), Asym, xmid, scal), DNase2)
+m2_coef <- tidy(m2) %>% 
+  mutate(Run = 2)
+
+pars <- rbind(m1_coef, m2_coef) %>% 
+  dplyr::filter(term == "Asym")
+
+print(pars)
+# term Estimate Std. Error  t value     Pr(>|t|) Run
+# 1    Asym 2.345182  0.0781541 30.00715 2.165539e-13   1
+# 2    Asym 2.595948  0.0646589 40.14835 5.109901e-15   2
+
+# Is there a way test if the estimate for 'Asym' from Run 2 (2.345) is significantly different than the estimate from Run 1 (2.596)?
+
+# Answers 
+# Create a model m12 consisting of separate parameters for each run and a model m0 where the parameters are the same for each run and then compare those two models using an F test. 
+
+# m1 and m2 will be used to set starting values for m12 and a0
+fo <- density ~ SSlogis(log(conc), Asym, xmid, scal)
+m1 <- nls(fo, DNase, subset = Run == 1)
+m2 <- nls(fo, DNase, subset = Run == 2)
+
+Logis <- function(x, Asym, xmid, scal) Asym / (1 + exp((xmid - x)/ scal))
+
+# Run 1 and Run 2 each have a separate set of parameters.
+# (Run is a factor whose labels don't correspond to its levels so make it numeric.)
+m12 <- nls(density ~ Logis(log(conc), Asym[Run], xmid[Run], scal[Run]),
+  transform(DNase, Run = as.numeric(as.character(Run))), 
+  subset = Run %in% 1:2, 
+  start = as.data.frame(rbind(coef(m1), coef(m2))))
+
+# Run 1 and Run 2 have the same set of parameters
+m0 <- nls(fo, DNase, subset = Run %in% 1:2)
+
+anova(m0, m12)
+
+# Analysis of Variance Table
+# 
+# Model 1: density ~ SSlogis(log(conc), Asym, xmid, scal)
+# Model 2: density ~ Logis(log(conc), Asym[Run], xmid[Run], scal[Run])
+#   Res.Df Res.Sum Sq Df   Sum Sq F value    Pr(>F)    
+# 1     29   0.096915                                  
+# 2     26   0.008478  3 0.088437  90.408 7.044e-14 ***
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+
+# If we want to test only whether Asym differs but not whether xmid and scal are the same then create a model a0 where Asym is the same but the other parameters can differ and compare it to m12.
+
+# same Asym for Run 1 and Run 2 but other parameters separate
+a0 <- nls(density ~ Logis(log(conc), Asym, xmid[Run], scal[Run]),
+  transform(DNase, Run = as.numeric(as.character(Run))), 
+  subset = Run %in% 1:2, 
+  start = c(Asym = (coef(m1)[[1]] + coef(m2)[[1]])/2, 
+    as.data.frame(rbind(coef(m1)[-1], coef(m2)[-1]))))
+
+anova(a0, m12)
+
+# Analysis of Variance Table
+# 
+# Model 1: density ~ Logis(log(conc), Asym, xmid[Run], scal[Run])
+# Model 2: density ~ Logis(log(conc), Asym[Run], xmid[Run], scal[Run])
+#   Res.Df Res.Sum Sq Df    Sum Sq F value  Pr(>F)  
+# 1     27  0.0103246                               
+# 2     26  0.0084778  1 0.0018468  5.6639 0.02494 *
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+```
+
 
 
 
