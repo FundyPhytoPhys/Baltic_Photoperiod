@@ -421,25 +421,45 @@ MultiCultiGrowthRatePURExpFit %>%
   theme_bw()
 ```
 
-# Add dummies points at 900 uE to df
+# Add dummies points to df
 
-```{r}
+```{r add dummies point}
+gs4_deauth()
+# this is the URL or ID of a Sheet readable by anyone (with a link)
+Dummy <- read_sheet("https://docs.google.com/spreadsheets/d/1Ns_u26HagT-kDCy5WgjGA_U8R6qv4LqRPubtlWB8Cxc/edit#gid=0") 
+
 CleanDummyno900<-MultiCultiGrowthRatePURExpFit %>%
   filter(Par_ue !=900) %>%
   select(c(Strain, deltaOD_Lmu_corr, PhotonDose, PhotonDose_value))
-gs4_deauth()
-# this is the URL or ID of a Sheet readable by anyone (with a link)
-Dummy <- read_sheet("https://docs.google.com/spreadsheets/d/1Ns_u26HagT-kDCy5WgjGA_U8R6qv4LqRPubtlWB8Cxc/edit#gid=0")   
 CleanGrowthPARPURfitDummyno900<-rbind(CleanDummyno900, Dummy)
-
 
 CleanDummy900<-MultiCultiGrowthRatePURExpFit %>%
   filter(Par_ue !=30 & Par_ue !=90 & Par_ue !=180 & Par_ue !=300) %>%
   select(c(Strain, deltaOD_Lmu_corr, PhotonDose, PhotonDose_value))
-gs4_deauth()
-# this is the URL or ID of a Sheet readable by anyone (with a link)
-Dummy <- read_sheet("https://docs.google.com/spreadsheets/d/1Ns_u26HagT-kDCy5WgjGA_U8R6qv4LqRPubtlWB8Cxc/edit#gid=0")   
 CleanGrowthPARPURfitDummy900<-rbind(CleanDummy900, Dummy)
+
+CleanDummy300<-MultiCultiGrowthRatePURExpFit %>%
+  filter(Par_ue !=30 & Par_ue !=90 & Par_ue !=180 & Par_ue !=900) %>%
+  select(c(Strain, deltaOD_Lmu_corr, PhotonDose, PhotonDose_value))
+CleanGrowthPARPURfitDummy300<-rbind(CleanDummy300, Dummy)
+
+CleanDummy180<-MultiCultiGrowthRatePURExpFit %>%
+  filter(Par_ue !=30 & Par_ue !=90 & Par_ue !=900 & Par_ue !=300) %>%
+  select(c(Strain, deltaOD_Lmu_corr, PhotonDose, PhotonDose_value))
+CleanGrowthPARPURfitDummy180<-rbind(CleanDummy180, Dummy)
+
+CleanDummy90<-MultiCultiGrowthRatePURExpFit %>%
+  filter(Par_ue !=30 & Par_ue !=900 & Par_ue !=180 & Par_ue !=300) %>%
+  select(c(Strain, deltaOD_Lmu_corr, PhotonDose, PhotonDose_value))
+CleanGrowthPARPURfitDummy90<-rbind(CleanDummy90, Dummy)
+
+CleanDummy30<-MultiCultiGrowthRatePURExpFit %>%
+  filter(Par_ue !=900 & Par_ue !=90 & Par_ue !=180 & Par_ue !=300) %>%
+  select(c(Strain, deltaOD_Lmu_corr, PhotonDose, PhotonDose_value))
+CleanGrowthPARPURfitDummy30<-rbind(CleanDummy30, Dummy)
+
+CleanGrowthPARPURfitDummyAll<-rbind(CleanGrowthPARPURfitDummyno900, CleanGrowthPARPURfitDummy900)
+
 ```
 # Estimated Harrison & Platt, 1986 fit - for 900uE and the rest uE
 
@@ -494,7 +514,7 @@ scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::sc
 ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
   geom_point(aes(PhotonDose_value, deltaOD_Lmu_corr, colour=as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.9, size = 3.5, show.legend = T) +
   geom_errorbar(aes(x = PhotonDose_value, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se, colour = as.factor(Par_ue)), width=4000000, data = . %>% filter(deltaOD_Lmu_se<8.057558e-03), show.legend = F) +
-  geom_line(aes(PhotonDose_value, .fitted), show.legend = F, GRCplatt_PredictGrowth) +
+  geom_line(aes(PhotonDose_value, .fitted), show.legend = F, GRCplatt_PredictGrowthno900) +
   geom_line(aes(PhotonDose_value, .fitted), show.legend = F, GRCplatt_PredictGrowth900) +
   scale_x_continuous(label=scientific_10) +
   scale_linetype_manual(values=c("equal900" = "dotted", "less900" = "solid"), breaks=c('8', '12', '16', "24", "", "")) +
@@ -505,7 +525,7 @@ ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
   theme_bw() 
 ```
 
-# Estimated Harrison & Platt, 1986 fit - for 900uE and the rest uE
+# Estimated Harrison & Platt, 1986 fit - for all uE
 
 ```{r Added function}
 grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
@@ -513,7 +533,7 @@ grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
 
 ```{r Estimated Harrison & Platt, 1986 fit}
 
-CleanGrowthPARPURfitAll <- MultiCultiGrowthRatePURExpFit %>%    
+CleanGrowthPARPURfitAll <- CleanGrowthPARPURfitDummyAll %>%    
   nest(data = -c("Strain", "PhotonDose")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
                                                     data = .x,
@@ -524,8 +544,8 @@ CleanGrowthPARPURfitAll <- MultiCultiGrowthRatePURExpFit %>%
          GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
 
 GRCplatt_PredictGrowth <- CleanGrowthPARPURfitAll %>% 
-  unnest(GRCplatt_Predict)
-
+  unnest(GRCplatt_Predict) %>% 
+  unnest(GRCplatt_Param)
 ```
 
 # Create preliminary plot
@@ -556,8 +576,8 @@ ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
 grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
 
 
-MultiCultiGrowthRatePURExpFit30 <- MultiCultiGrowthRatePURExpFit %>%   
-  filter(Par_ue ==30) %>% 
+MultiCultiGrowthRatePURExpFit30 <- CleanGrowthPARPURfitDummy30 %>%   
+  #filter(Par_ue ==30) %>% 
   nest(data = -c("Strain", "PhotonDose")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
                                                     data = .x,
@@ -568,12 +588,13 @@ MultiCultiGrowthRatePURExpFit30 <- MultiCultiGrowthRatePURExpFit %>%
          GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
 
 GRCplatt_PredictGrowth30 <- MultiCultiGrowthRatePURExpFit30 %>% 
-  unnest(GRCplatt_Predict)
+  unnest(GRCplatt_Predict)%>% 
+  unnest(GRCplatt_Param)
 
 
 
-MultiCultiGrowthRatePURExpFit90 <- MultiCultiGrowthRatePURExpFit %>%    
-  filter(Par_ue ==90) %>%  
+MultiCultiGrowthRatePURExpFit90 <- CleanGrowthPARPURfitDummy90 %>%    
+  #filter(Par_ue ==90) %>%  
   nest(data = -c("Strain", "PhotonDose")) %>% 
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
                                                     data = .x,
@@ -584,11 +605,12 @@ MultiCultiGrowthRatePURExpFit90 <- MultiCultiGrowthRatePURExpFit %>%
          GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
 
 GRCplatt_PredictGrowth90 <- MultiCultiGrowthRatePURExpFit90 %>% 
-  unnest(GRCplatt_Predict)
+  unnest(GRCplatt_Predict)%>% 
+  unnest(GRCplatt_Param)
 
 
-MultiCultiGrowthRatePURExpFit180 <- MultiCultiGrowthRatePURExpFit %>%    
-  filter(Par_ue ==180) %>%  
+MultiCultiGrowthRatePURExpFit180 <- CleanGrowthPARPURfitDummy180 %>%    
+  #filter(Par_ue ==180) %>%  
   nest(data = -c("Strain", "PhotonDose")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
                                                     data = .x,
@@ -599,12 +621,13 @@ MultiCultiGrowthRatePURExpFit180 <- MultiCultiGrowthRatePURExpFit %>%
          GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
 
 GRCplatt_PredictGrowth180 <- MultiCultiGrowthRatePURExpFit180 %>% 
-  unnest(GRCplatt_Predict)
+  unnest(GRCplatt_Predict)%>% 
+  unnest(GRCplatt_Param)
 
 
 
-MultiCultiGrowthRatePURExpFit300 <- MultiCultiGrowthRatePURExpFit %>%   
-  filter(Par_ue ==300) %>% 
+MultiCultiGrowthRatePURExpFit300 <- CleanGrowthPARPURfitDummy300 %>%   
+  #filter(Par_ue ==300) %>% 
   nest(data = -c("Strain", "PhotonDose")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
                                                     data = .x,
@@ -615,10 +638,11 @@ MultiCultiGrowthRatePURExpFit300 <- MultiCultiGrowthRatePURExpFit %>%
          GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
 
 GRCplatt_PredictGrowth300 <- MultiCultiGrowthRatePURExpFit300 %>% 
-  unnest(GRCplatt_Predict)
+  unnest(GRCplatt_Predict)%>% 
+  unnest(GRCplatt_Param)
 
 
-MultiCultiGrowthRatePURExpFit900 <- CleanGrowthPARPURfit900 %>%    
+MultiCultiGrowthRatePURExpFit900 <- CleanGrowthPARPURfitDummy900 %>%    
   # filter(Par_ue ==900) %>% 
   nest(data = -c("Strain", "PhotonDose")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
@@ -630,8 +654,127 @@ MultiCultiGrowthRatePURExpFit900 <- CleanGrowthPARPURfit900 %>%
          GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
 
 GRCplatt_PredictGrowth900 <- MultiCultiGrowthRatePURExpFit900 %>% 
-  unnest(GRCplatt_Predict)
+  unnest(GRCplatt_Predict)%>% 
+  unnest(GRCplatt_Param)
 ```
+
+# Create Growth Rate plot
+
+```{r create growth rate plot, warning = FALSE}
+lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab2=c(expression("1 µE"), expression("2 µE"), expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+
+ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
+  geom_point(aes(PhotonDose_value, deltaOD_Lmu_corr, colour=as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.8, size = 3.5, show.legend = T) +
+  geom_errorbar(aes(x = PhotonDose_value, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se, colour = as.factor(Par_ue)), width=0, size=0.3, data = . %>% filter(deltaOD_Lmu_se<8.057558e-03), show.legend = F) +
+  geom_line(aes(PhotonDose_value, .fitted), colour = "black", show.legend = F, GRCplatt_PredictGrowth) +
+  geom_line(aes(PhotonDose_value, .fitted), colour = "darkslategray", show.legend = F, GRCplatt_PredictGrowth30) +
+  geom_line(aes(PhotonDose_value, .fitted), colour = "lightblue4", show.legend = F, GRCplatt_PredictGrowth90) +
+  geom_line(aes(PhotonDose_value, .fitted), colour = "hotpink4", show.legend = F, GRCplatt_PredictGrowth180) +
+  geom_line(aes(PhotonDose_value, .fitted), colour = "indianred3", show.legend = F, GRCplatt_PredictGrowth300) +
+  geom_line(aes(PhotonDose_value, .fitted), colour = "orange1", show.legend = F, GRCplatt_PredictGrowth900) +
+  scale_x_continuous(breaks=seq(0, 60000000, by = 30000000), label=scientific_10) +
+  coord_cartesian(xlim = c(0, 90000000)) +
+  scale_linetype_manual(values=c("equal900" = "dotted", "less900" = "solid"), breaks=c('8', '12', '16', "24", "", "")) +
+  scale_colour_manual(values = c("", "", "darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2, breaks=c('', '', '30', "90", "180", "300", "900")) +
+  scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab1) +
+  labs(y = "Logistic growth rate " ~ "("~h^-1~")", x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(Strain), labeller = label_parsed) +
+  theme_bw() 
+```
+PAR
+Strain   alphaAll      alpha30       alpha90       alpha180      alpha300      alpha900
+BA056    1.400340e-08  1.188596e-08  1.138699e-08  1.037714e-08  8.859039e-09  3.066591e-09
+BA077    1.172304e-08  1.658388e-08  1.239894e-08  1.089180e-08  8.903373e-09  5.425550e-09
+BA048    1.522161e-08  1.919832e-08  1.662370e-08  1.572847e-08  8.669605e-09  6.374990e-09
+BA127    1.276479e-08  1.482234e-08  1.506637e-08  1.145115e-08  8.080053e-09  4.834609e-09
+
+PAR
+Strain   pmaxAll       pmax30        pmax90        pmax180       pmax300       pmax900
+BA056    6.445118e-02  4.659405e+02  6.991410e+02  5.854032e-01  1.704750e+01  4.519570e+01
+BA077    1.059362e-01  1.380330e+03  1.725539e+02  8.759441e+01  2.209795e+02  6.869597e+01
+BA048    4.260384e-01  9.164986e+02  7.091772e+01  7.134062e+01  2.342481e+01  4.503300e+01
+BA127    5.732349e-01  1.759993e+02  4.598937e+01  1.866360e+01  1.171048e+02  7.516079e+01
+
+
+
+PUR
+Strain   alphaAll      alpha30       alpha90       alpha180      alpha300      alpha900
+BA056    3.107450e-08  2.413079e-08  2.474081e-08  2.181677e-08  2.368354e-08  7.216615e-09
+BA077    2.397095e-08  3.116700e-08  2.364066e-08  2.158294e-08  1.887193e-08  1.220093e-08
+BA048    2.447814e-08  2.439949e-08  2.322965e-08  2.436749e-08  1.350773e-08  1.513734e-08
+BA127    2.175588e-08  1.976595e-08  2.121864e-08  1.961708e-08  1.312215e-08  1.039225e-08
+
+PUR
+Strain   pmaxAll       pmax30        pmax90        pmax180       pmax300       pmax900
+BA056    6.729605e-02  4.555049e+03  3.698536e+02  2.229489e+01  6.440330e-02  2.226713e+01
+BA077    1.186471e-01  2.225413e+03  5.400858e+01  4.370745e+02  2.297828e+01  4.660591e+01
+BA048    2.205441e+01  1.248481e+03  1.293520e+02  8.635964e+01  1.597935e+02  8.201568e+01
+BA127    4.391496e+01  1.587186e+01  8.540572e+02  1.716320e+02  2.987066e+02  4.986371e+01
+
+# Comine fit parameters into one df
+
+```{r combine all fit parameters}
+
+GRCplatt_PredictGrowthClean<-GRCplatt_PredictGrowth %>% 
+  select(c(Strain, PhotonDose, PhotonDose_value, deltaOD_Lmu_corr, term, estimate)) %>% 
+  unique() 
+  GRCplatt_PredictGrowthClean$Fit <- 'All'
+
+GRCplatt_PredictGrowth30Clean<-GRCplatt_PredictGrowth30 %>% 
+  select(c(Strain, PhotonDose, PhotonDose_value, deltaOD_Lmu_corr, term, estimate)) %>% 
+  unique() 
+  GRCplatt_PredictGrowth30Clean$Fit <- '30'
+
+GRCplatt_PredictGrowth90Clean<-GRCplatt_PredictGrowth90 %>% 
+  select(c(Strain, PhotonDose, PhotonDose_value, deltaOD_Lmu_corr, term, estimate)) %>% 
+  unique()
+  GRCplatt_PredictGrowth90Clean$Fit <- '90'
+  
+GRCplatt_PredictGrowth180Clean<-GRCplatt_PredictGrowth180 %>% 
+  select(c(Strain, PhotonDose, PhotonDose_value, deltaOD_Lmu_corr, term, estimate)) %>% 
+  unique()
+  GRCplatt_PredictGrowth180Clean$Fit <- '180'
+
+GRCplatt_PredictGrowth300Clean<-GRCplatt_PredictGrowth300 %>% 
+  select(c(Strain, PhotonDose, PhotonDose_value, deltaOD_Lmu_corr, term, estimate)) %>% 
+  unique()
+  GRCplatt_PredictGrowth300Clean$Fit <- '300'
+
+GRCplatt_PredictGrowth900Clean<-GRCplatt_PredictGrowth900 %>% 
+  select(c(Strain, PhotonDose, PhotonDose_value, deltaOD_Lmu_corr, term, estimate)) %>% 
+  unique()
+  GRCplatt_PredictGrowth900Clean$Fit <- '900'
+
+GRCplatt_PredictGrowthCombine<-rbind(GRCplatt_PredictGrowthClean, GRCplatt_PredictGrowth30Clean, GRCplatt_PredictGrowth90Clean, GRCplatt_PredictGrowth180Clean, GRCplatt_PredictGrowth300Clean, GRCplatt_PredictGrowth900Clean)
+```
+
+# Create preliminary plot
+
+```{r preliminary plot}
+GRCplatt_PredictGrowthCombine %>% 
+  filter(term == "a") %>% 
+  filter(PhotonDose == "PAR") %>% 
+  ggplot() +
+  geom_point(aes(x = term, y = estimate, color = Strain)) +
+  # ggh4x::facet_nested(cols = vars(Fit), rows = vars(Strain), labeller = label_parsed, scales = "free") +
+  facet_grid(PhotonDose~factor(Fit, levels=c('30','90','180','300', "900", "All"))) +
+  theme_bw()
+
+GRCplatt_PredictGrowthCombine %>% 
+  filter(term == "Pmax") %>% 
+  filter(PhotonDose == "PAR") %>% 
+  ggplot() +
+  geom_point(aes(x = term, y = estimate, color = Strain)) +
+  # ggh4x::facet_nested(cols = vars(Fit), rows = vars(Strain), labeller = label_parsed, scales = "free") +
+  facet_grid(PhotonDose~factor(Fit, levels=c('30','90','180','300', "900", "All"))) +
+  theme_bw()
+```
+
+
+
+
 
 # Added facets labels
 
@@ -684,6 +827,12 @@ ggplot(MultiCultiGrowthRatePURExpFit, aes(PhotonDose_value, deltaOD_Lmu_corr)) +
         legend.text = element_text(size=9))
 ```
 
+
+
+
+
+
+
 # Removed unneccessary df from the environment
 
 ```{r}
@@ -702,6 +851,8 @@ saveRDS(GRCplatt_PredictGrowth90, file.path(RDSPlotPath, paste(Project, "Plot_Gr
 saveRDS(GRCplatt_PredictGrowth180, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_4.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
 saveRDS(GRCplatt_PredictGrowth300, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_5", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(GRCplatt_PredictGrowth900, file.path(RDSPlotPath, paste(Project, "Plot_Growthrate_6", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 # Save plot 
@@ -813,7 +964,7 @@ MultiCultiGrowthRatePURExpFitNested %>%
 ```{r}
 MultiCultiGrowthRatePURExpFitNested %>% 
   unnest(GRCplatt_Param) %>% 
-  filter(PhotonDose %in% c("PAR")) %>% 
+  #filter(PhotonDose %in% c("PAR")) %>% 
   # filter(term == "a") %>% 
   ggplot() +
   geom_point(aes(x = Par_ue, y = estimate, color = Strain)) +
