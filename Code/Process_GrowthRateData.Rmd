@@ -938,41 +938,6 @@ summary(lm(weight ~ group, data = PlantGrowth))
 
 
 
-```{r}
-MultiCultiGrowthRatePURExpFitNested <- MultiCultiGrowthRatePURExpFit %>%    
-  nest(data = -c("Strain", "PhotonDose", "Par_ue")) %>%  
-  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PhotonDose_value, a, b, Pmax),
-                                                    data = .x,
-                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
-                                                    lower = c(0, 0, 0)))) %>%    
-  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
-         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
-         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
-```
-
-```{r}
-MultiCultiGrowthRatePURExpFitNested %>% 
-  unnest(GRCplatt_Predict, .sep = "_") %>% 
-  unnest(data) %>% 
-  ggplot() +
-  geom_line(aes(x = GRCplatt_Predict_PhotonDose_value, y = GRCplatt_Predict_.fitted, color = as.factor(Par_ue))) +
-  geom_point(aes(x = GRCplatt_Predict_PhotonDose_value, y = GRCplatt_Predict_deltaOD_Lmu_corr, color = as.factor(Par_ue))) +
-  ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw()
-```
-
-```{r}
-MultiCultiGrowthRatePURExpFitNested %>% 
-  unnest(GRCplatt_Param) %>% 
-  #filter(PhotonDose %in% c("PAR")) %>% 
-  # filter(term == "a") %>% 
-  ggplot() +
-  geom_point(aes(x = Par_ue, y = estimate, color = Strain)) +
-  geom_line(aes(x = Par_ue, y = estimate, linetype = Strain)) +
-  ggh4x::facet_nested(cols = vars(PhotonDose), rows = vars(term), labeller = label_parsed, scales = "free") +
-  theme_bw()
-```
-
 
 
 
