@@ -527,8 +527,8 @@ data_text_yf<- data.frame(WL = c("WW", "WW"), Ex_WL = c(590), O2=c(21, 21, 21, 2
 data_text_yf<-data_text_yf %>% 
   mutate(Ex_WL=as.factor(Ex_WL))
 
-data_text_lambda<- data.frame(WL = c("WW", "WW"), Ex_WL = c(590), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('\u03BB = 2.8', '\u03BB = 2.6', '\u03BB = 1.9', '\u03BB = 3.6'))
-data_text_lambda<-data_text_lambda %>% 
+data_text_alpha<- data.frame(WL = c("WW", "WW"), Ex_WL = c(590), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('\u03B1 = 2.8', '\u03B1 = 2.6', '\u03B1 = 1.9', '\u03B1 = 3.6'))
+data_text_alpha<-data_text_alpha %>% 
   mutate(Ex_WL=as.factor(Ex_WL))
 
 WL.labs <- c("Excitation (nm)")
@@ -547,7 +547,7 @@ ggplot(SolFitsExpFitAll, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
   geom_line(aes(PARPhotonDose_day, .fitted), show.legend = F, SolFitsExpmeanAllPlot) +
   geom_text(data=data_text_y0, aes(x=80000000, y=8, label=label), size=3.5) +
   geom_text(data=data_text_yf, aes(x=80000000, y=7.1, label=label), size=3.5) +
-  geom_text(data=data_text_lambda, aes(x=80000000, y=6.2, label=label), size=3.5) +
+  geom_text(data=data_text_alpha, aes(x=80000000, y=6.2, label=label), size=3.5) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*" quanta"^"-1"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
