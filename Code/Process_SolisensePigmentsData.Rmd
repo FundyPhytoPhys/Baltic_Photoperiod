@@ -69,7 +69,7 @@ list.files(path = DataIn, pattern = Project, full.names = TRUE)
 # This RDS contained only data from corresponding growth light 
 # Also, conteined mean sig - mean for replica measured on the same day
 
-```{r read ProcessFile}
+```{r read ProcessFile Sol}
 SolisenseFile <- "../Data/ImportedData/ImportedSolisenseData/Baltic_Photoperiod_Imported_SolisenseLight.Rds"  
 
 SolisenseFileName <- str_split(string = SolisenseFile, "/")[[1]][3] %>%
@@ -82,7 +82,7 @@ SolFits <- readRDS(SolisenseFile)  %>%
 # This RDS contained only sigma in 1s of dark after corresponding light (it caused problems when I tried to combain them with sig in the light)
 # Also, conteined mean for sig1s - mean for replica measured on the same day
 
-```{r read ProcessFile}
+```{r read ProcessFile Sol1s}
 Solisense1sFile <- "../Data/ImportedData/ImportedSolisenseData/Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds"
 
 Solisense1sFileName <- str_split(string = Solisense1sFile, "/")[[1]][3] %>%
@@ -529,43 +529,70 @@ SolFitsExpSt<-SolFitsExpSt %>%
 
 # Filter otliers to calculate exponential decay function
 
-```{r filter outliers (4 data points)}
-Sol1<-SolFitsExpSt %>% 
+```{r filter outliers (5 data points from Exp)}
+Sol1<-SolFitsExpSt %>% #keeping all data
   filter(Phase == "Exponential") %>% 
   filter(Ex_WL==590) %>% 
   filter(Par_ue !=900) %>% 
   filter(Strain=="PE-rich_048") 
-Sol2<-SolFitsExpSt %>% 
+Sol2<-SolFitsExpSt %>% #keeping all data
   filter(Phase == "Exponential") %>% 
   filter(Ex_WL==590) %>% 
   filter(Par_ue !=900) %>% 
   filter(Strain=="PC-rich_077") 
-Sol3<-SolFitsExpSt %>% 
+
+Sol3<-SolFitsExpSt %>% #keeping all data except <180 (one data point)
   filter(Phase == "Exponential") %>% 
   filter(Ex_WL==590) %>% 
   filter(Par_ue !=900) %>% 
   filter(Strain=="PC-rich_056") %>% 
-  filter(Sig>200)
-Sol4<-SolFitsExpSt %>%
-  filter(Phase == "Exponential") %>% 
+  filter(Sig>180)
+
+Sol4<-SolFitsExpSt %>% #removing one data point
+  filter(Phase == "Exponential") %>%
   filter(Ex_WL==590) %>%
-  filter(Par_ue !=900) %>% 
+  filter(Par_ue ==30) %>%
   filter(Strain=="PE-rich_127") %>%
-  filter(Sig>310) 
-Sol5<-SolFitsExpSt %>% 
+  filter(Sig>310)
+
+Sol5<-SolFitsExpSt %>%
+  filter(Phase == "Exponential") %>% #removing 3 data points
+  filter(Ex_WL==590) %>%
+  filter(Par_ue ==300 | Par_ue ==180 | Par_ue ==90) %>%
+  filter(Strain=="PE-rich_127") %>%
+  filter(Sig>200)
+
+Sol6<-SolFitsExpSt %>% # keeping all except 2 data points
   filter(Phase == "Exponential") %>% 
   filter(Ex_WL==590) %>% 
   filter(Par_ue ==900) %>% 
   filter(Sig<600)
-Sol6<-SolFitsExpSt %>% 
-  filter(Phase == "Pre-stationary") 
+
 Sol7<-SolFitsExpSt %>% 
   filter(Ex_WL==445) 
 
-SolFitsExpFit590<-rbind(Sol1, Sol2, Sol3, Sol4, Sol5, Sol6)
-SolFitsExpFitAll<-rbind(Sol1, Sol2, Sol3, Sol4, Sol5, Sol6, Sol7)
+Sol10<-SolFitsExpSt %>% 
+  filter(Phase == "Pre-stationary") %>% 
+  filter(Par_ue !=900) 
 
-rm(Sol1, Sol2, Sol3, Sol4, Sol5, Sol6, Sol7)
+Sol11<-SolFitsExpSt %>% 
+  filter(Phase == "Pre-stationary") %>% 
+  filter(Par_ue ==900) %>% 
+  filter(Strain=="PC-rich_077" | Strain=="PE-rich_048" | Strain=="PE-rich_127") %>% 
+  filter(Sig<300)
+
+Sol12<-SolFitsExpSt %>% 
+  filter(Phase == "Pre-stationary") %>% 
+  filter(Par_ue ==900) %>% 
+  filter(Strain=="PC-rich_056") %>% 
+  filter(Sig<100)
+
+
+
+
+SolFitsExpFitAll<-rbind(Sol1, Sol2, Sol3, Sol4, Sol5, Sol6, Sol7, Sol10, Sol11, Sol12)
+
+rm(Sol1, Sol2, Sol3, Sol4, Sol5, Sol6, Sol7, Sol10, Sol11, Sol12)
 ```
 
 # Create plot to check data before and after filtering outliers
@@ -581,7 +608,6 @@ SolFitsExpSt %>%
   # geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  # labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   ggh4x::facet_nested(cols = vars(Phase), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 
@@ -593,7 +619,6 @@ SolFitsExpFitAll %>%
   # geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  # labs(y=expression(paste(sigma,""["PSII"]*"'(nm"^"2"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   ggh4x::facet_nested(cols = vars(Phase), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 ```
@@ -604,9 +629,10 @@ SolFitsExpFitAll %>%
 
 SolFitsExpFit590Clean <-SolFitsExpFitAll %>% 
   drop_na(Sig_nm2psii) %>%
-  # filter(Phase == "Exponential") %>% 
+  filter(Phase != "Exponential") %>% 
+  #filter(Strain == "PE-rich_127") %>% 
   filter(Ex_WL == 590) %>% 
-  select(c(Sig_nm2psii, PARPhotonDose_day, Strain)) 
+  select(c(Sig_nm2psii, PARPhotonDose_day, Strain, Phase)) 
 
 # Fit the data
 fitted <- SolFitsExpFit590Clean %>% 
@@ -644,19 +670,13 @@ SolFitsExpStPlot<-rbind(SolFitsExpSt590Plot, SolFitsExpSt445)
 
 ```{r create Sigma plot, fig.height = 8, fig.width = 8, warning = FALSE}
 
-data_text_y0<- data.frame(WL = c("WW", "WW"), Ex_WL = c(590), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('y0 = 7.2', 'y0 = 5.8', 'y0 = 8.5', 'y0 = 7.9'))
-data_text_y0<-data_text_y0 %>% 
-  mutate(Ex_WL=as.factor(Ex_WL))
+data_text_y0<- data.frame(WL = c("WW", "WW"), Phase = c("Exponential"), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('y0 = 7.2', 'y0 = 5.8', 'y0 = 8.5', 'y0 = 7.9'))
 
-data_text_yf<- data.frame(WL = c("WW", "WW"), Ex_WL = c(590), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('yf = 3.2', 'yf = 1.5', 'yf = 3.8', 'yf = 4.1'))
-data_text_yf<-data_text_yf %>% 
-  mutate(Ex_WL=as.factor(Ex_WL))
+data_text_yf<- data.frame(WL = c("WW", "WW"), Phase = c("Exponential"), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('yf = 3.2', 'yf = 1.5', 'yf = 3.8', 'yf = 4.1'))
 
-data_text_lambda<- data.frame(WL = c("WW", "WW"), Ex_WL = c(590), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('\u03BB = 2.8', '\u03BB = 2.6', '\u03BB = 1.9', '\u03BB = 3.6'))
-data_text_lambda<-data_text_lambda %>% 
-  mutate(Ex_WL=as.factor(Ex_WL))
+data_text_lambda<- data.frame(WL = c("WW", "WW"), Phase = c("Exponential"), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('\u03BB = 2.8', '\u03BB = 2.6', '\u03BB = 1.9', '\u03BB = 3.6'))
 
-WL.labs <- c("Excitation (nm)")
+WL.labs <- c("Phase of growth")
 names(WL.labs) <- c("WW")
 O2.labs <- c("Strain")
 names(O2.labs) <- c(21)
@@ -665,11 +685,14 @@ scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::sc
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
+SolFitsExpFitAll<-SolFitsExpFitAll %>% 
+  filter(Ex_WL!=445)
+
 ggplot(SolFitsExpFitAll, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
   geom_point(aes(x = PARPhotonDose_day, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   geom_point(aes(x = PARPhotonDose_day, y = Sig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, show.legend = F) +
   geom_errorbar(aes(x = PARPhotonDose_day, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Par_ue)), width=0, size=0.3, show.legend = F) +
-  geom_line(aes(PARPhotonDose_day, .fitted), show.legend = F, SolFitsExpStPlot) +
+  #geom_line(aes(PARPhotonDose_day, .fitted), show.legend = F, SolFitsExpStPlot) +
   geom_text(data=data_text_y0, aes(x=80000000, y=8, label=label), size=3.5) +
   geom_text(data=data_text_yf, aes(x=80000000, y=7.1, label=label), size=3.5) +
   geom_text(data=data_text_lambda, aes(x=80000000, y=6.2, label=label), size=3.5) +
@@ -679,7 +702,7 @@ ggplot(SolFitsExpFitAll, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
   scale_x_continuous(breaks=seq(0, 60000000, by = 30000000), label=scientific_10) +
   scale_y_continuous(breaks=seq(0, 8, by = 2)) +
   coord_cartesian(xlim = c(0, 90000000)) +
-  ggh4x::facet_nested(rows = vars(O2,Strain), cols = vars(WL,Ex_WL), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
+  ggh4x::facet_nested(rows = vars(O2,Strain), cols = vars(WL, Phase), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
         panel.grid.major = element_blank(),
@@ -691,7 +714,7 @@ ggplot(SolFitsExpFitAll, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
         axis.title.y = element_text(margin=margin(r=10)),
         axis.title.x = element_text(margin=margin(t=10)),
         legend.background = element_rect(fill="transparent"),
-        legend.position = c(0.075,0.9),
+        legend.position = c(0.93,0.9),
         legend.key.height= unit(0.003, 'cm'),
         legend.spacing.y = unit(-0.1, "cm"),
         legend.spacing.x = unit(-0.1, 'cm'),
