@@ -486,6 +486,7 @@ GRCplatt_PredictGrowth <- SolFitsAllPigmentTurnerDayfittest %>%
 
 ```
 
+# Cos nie tak!!! Dziwna skala, fix this Sylwia!
 
 # Create preliminary plot
 

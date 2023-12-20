@@ -654,7 +654,6 @@ SolFitsTrimMetaDarkafterLightNS<-SolFitsTrimMetaDarkafterLightNS %>%
   select(c(SampleID, Run, Strain, ExpDate, Par_ue, Photoperiod, MC, Tube, O2, WL, LightShape, ExpEndDate, PARPhotonDose_day, Time__mSec, Fo, Fm, Fv, FvFm, Tau1QA, Tau2QA, Tau3QA, Alp1QA, Alp2QA, Alp3QA, Alpha, Ek, Pmax,  Filename, ObsDate, ObsTime, ObsDateTime, Step_s, Dark1s, Ex_WL, ActPAR, LR_s, StartDateTimeSol, nm445, nm445, nm470, nm505, nm535, nm590, IR, TempCont, nm445Corr, nm470Corr, nm505Corr, nm535Corr, nm590Corr, IRCorr, ActPARCorr, Sig1s, Sig1s_m2psii, Sig1s_nm2psii, Sigdark, Sigdark_m2psii, Sigdark_nm2psii, ActPARCorr_photonsm2s, TauAv, Ctauav, aLHIIdark, Fodark, Fmdark, Fomin, Fmmax, Sigmax, Sigmax_m2psii, FoOxbo, qpOxbo, aLHIIOxbomax, JVPSII_aLHIIOxbomax, ETRCtauav, ETRqpOxbo, JVPSII_ETRtauav_FoSig, JVPSII_ETRqpOxbo_FoSig, JVPSII_ETRtauav_aLHII_Sig, JVPSII_ETRqpOxbo_aLHII_Sig, E_days, Time_h))
 ```
 
-
 # Merge df from old and new Software for data taken from the corresponding light and at 1s of dark after corresponding light
 
 ```{r combine data from old and new Software}
