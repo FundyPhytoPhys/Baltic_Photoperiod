@@ -492,10 +492,37 @@ names(O2.labs) <- c(21)
 
 MCGrowthRateExpFit24 %>%
   ggplot() +
-  geom_point(aes(x = PhotonDose_value, y = deltaOD_Lmu_corr, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.9, show.legend = T) +
-  geom_errorbar(aes(x = PhotonDose_value, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), alpha = 0.5, width=2000000) +
+  geom_point(aes(x = PhotonDose_value, y = deltaOD_Lmu_corr*24, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.9, show.legend = T) +
+  geom_errorbar(aes(x = PhotonDose_value, ymin = deltaOD_Lmu_corr*24 - deltaOD_Lmu_se*24, ymax = deltaOD_Lmu_corr*24 + deltaOD_Lmu_se*24), alpha = 0.5, width=2000000) +
   scale_x_continuous(breaks=seq(0, 80000000, by = 20000000)) +
   coord_cartesian(xlim = c(-100, 83000000)) +
+  #scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab1) +
+  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
+  #labs(y = "Logistic growth rate " ~ "("~h^-1~")", x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  ggh4x::facet_nested(rows = vars(O2, Strain), cols = vars(PhotonDose), labeller = labeller(O2 = O2.labs)) +
+  scale_x_continuous(label=scientific_10) +
+  guides(color = guide_legend(order = 1), shape = guide_legend(order = 2)) +
+  theme_bw()
+```
+
+```{r}
+MCGrowthRateExpFitno24<-MCGrowthRateExpFit %>%
+  filter(Photoperiod!=24)
+
+
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+#lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
+O2.labs <- c("Strain")
+names(O2.labs) <- c(21)
+
+MCGrowthRateExpFitno24 %>%
+  ggplot() +
+  geom_point(aes(x = PhotonDose_value, y = deltaOD_Lmu_corr, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.9, show.legend = T) +
+  geom_errorbar(aes(x = PhotonDose_value, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se), alpha = 0.5, width=0) +
+  # scale_x_continuous(breaks=seq(0, 80000000, by = 20000000)) +
+  # coord_cartesian(xlim = c(-100, 83000000)) +
   #scale_shape_manual(values = c(15, 16, 17, 18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   labs(y = "Logistic growth rate " ~ "("~h^-1~")", x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
@@ -504,8 +531,6 @@ MCGrowthRateExpFit24 %>%
   guides(color = guide_legend(order = 1), shape = guide_legend(order = 2)) +
   theme_bw()
 ```
-
-
 
 
 # 
