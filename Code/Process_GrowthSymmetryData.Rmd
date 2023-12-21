@@ -215,7 +215,7 @@ data_text_yf<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"),
 
 data_text_lambda<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"), Phase = c("Exponential"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('\u03BB = 3.4', '\u03BB = 1.7', '\u03BB = 1.2', '\u03BB = 2.1'))
 
-data_segment<- data.frame(x=1000000,y=0,xend=26000000,yend=0, facetsPhase = c("Phase~of~growth"), Phase = c("Pre-stationary", "Pre-stationary", "Pre-stationary", "Pre-stationary"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"))
+# data_segment<- data.frame(x=1000000,y=0,xend=26000000,yend=0, facetsPhase = c("Phase~of~growth"), Phase = c("Pre-stationary", "Pre-stationary", "Pre-stationary", "Pre-stationary"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"))
 
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
@@ -231,7 +231,7 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
   geom_text(data=data_text_yf, aes(x=24000000, y=2.7, label=label), size=3.5) +
   geom_text(data=data_text_lambda, aes(x=24000000, y=2.4, label=label), size=3.5) +
   #geom_segment(data=data_segment, aes(x=x,y=y,yend=yend,xend=xend),inherit.aes=FALSE)+
-  labs(y = "Diel growth symmetry (AccLen/DecLen ratio)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  labs(y = "Diel growth symmetry (AccLen/DecLen ratio)", x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   scale_x_continuous(label=scientific_10) +
@@ -251,6 +251,12 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
         legend.spacing.y = unit(-0.1, "cm"),
         legend.title = element_blank(),
         legend.text = element_text(size=10))
+```
+
+# Cleaning the environment
+
+```{r}
+rm(data_text_y0, data_text_yf, data_text_lambda)
 ```
 
 # Save plot 
@@ -285,10 +291,60 @@ GScatalogMeta %>%
   geom_hline(data = data_hlineGS8, aes(yintercept = value), linetype="dashed", size=0.4) +
   geom_hline(data = data_hlineGS12, aes(yintercept = value), linetype="dashed", size=0.4) +
   geom_hline(data = data_hlineGS16, aes(yintercept = value), linetype="dashed", size=0.4) +
-  labs(y = "AccLen (h)", x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  labs(y = "AccLen (h)", x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   scale_linetype_manual(values = c("solid", "solid", "solid"), name="", labels = lab1) +
+  scale_x_continuous(breaks=seq(0, 30000000, by = 10000000), label=scientific_10) +
+  scale_y_continuous(breaks=seq(0, 10, by = 2)) +
+  coord_cartesian(ylim = c(0, 12), xlim = c(0, 36000000)) +
+  ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="white"),
+        legend.position = c(0.912,0.9),
+        legend.key.height= unit(0.005, 'cm'),
+        legend.spacing.y = unit(-0.1, "cm"),
+        legend.title = element_blank(),
+        legend.text = element_text(size=10))
+```
+
+
+```{r AccLen Plot, fig.height = 8, fig.width = 8, warning = FALSE}
+data_text_8<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"), Phase = c("Exponential"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('Max light at   8h', 'Max light at   8h', 'Max light at   8h', 'Max light at   8h'))
+
+data_text_12<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"), Phase = c("Exponential"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('Max light at 12h', 'Max light at 12h', 'Max light at 12h', 'Max light at 12h'))
+
+data_text_16<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"), Phase = c("Exponential"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('Max light at 16h', 'Max light at 16h', 'Max light at 16h', 'Max light at 16h'))
+
+
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
+lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
+GScatalogMeta %>%
+  filter(meanAccLen>0) %>% 
+  ggplot() +
+  geom_point(aes(x = PARPhotonDose_day, y = meanAccLen, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T) +
+  geom_line(aes(x = PARPhotonDose_day, y = meanAccLen, colour = as.factor(Par_ue)), size = 0.3, show.legend = F) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanAccLen - sdAccLen, ymax = meanAccLen + sdAccLen, colour = as.factor(Par_ue)), show.legend = F, width=0, size=0.3) +
+  geom_point(aes(x = PARPhotonDose_day, y = AccLen, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, alpha = 0.8, show.legend = F) +
+  geom_text(data=data_text_8, aes(x=32000000, y=3.5, label=label), size=2.8) +
+  geom_text(data=data_text_12, aes(x=32000000, y=5.5, label=label), size=2.8) +
+  geom_text(data=data_text_16, aes(x=32000000, y=7.5, label=label), size=2.8) +
+  geom_hline(data = data_hlineGS8, aes(yintercept = value), linetype="dashed", size=0.4) +
+  geom_hline(data = data_hlineGS12, aes(yintercept = value), linetype="dashed", size=0.4) +
+  geom_hline(data = data_hlineGS16, aes(yintercept = value), linetype="dashed", size=0.4) +
+  labs(y = "AccLen (h)", x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
+  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   scale_x_continuous(breaks=seq(0, 30000000, by = 10000000), label=scientific_10) +
   scale_y_continuous(breaks=seq(0, 10, by = 2)) +
   coord_cartesian(ylim = c(0, 12), xlim = c(0, 36000000)) +
@@ -421,10 +477,10 @@ labs(y = "TDG ("~OD[680]~")", x = "Elapsed time (h)") +
 ggsave(file = file.path(PlotsPath, paste("TDG_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
-# Cleaning df before saving as rds and removed unnecessary files from the environment
+# Removed unnecessary files from the environment
 
 ```{r cleaning the environment}
-rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  CultureCatalog, tMaxAGLines_056, tMaxAGLines_077, tMaxAGLines_048, tMaxAGLines_127, GScatalogMetaFinalPlot, GSMetaExp, GSMetaExpPlot)
+rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  CultureCatalog, tMaxAGLines_056, tMaxAGLines_077, tMaxAGLines_048, tMaxAGLines_127, GScatalogMetaFinalPlot, GSMetaExp, GSMetaExpPlot, data_text_8, data_text_12, data_text_16)
 ```
 
 # Save rds for further analysis
@@ -432,7 +488,9 @@ rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  
 ```{r save rds}
 saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Processed_GrowthSymmetryData.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-saveRDS(GScatalogMeta, file.path(RDSPlotPath, paste(Project, "Plot_GrowthSymmetry.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+saveRDS(GScatalogMeta, file.path(RDSPlotPath, paste(Project, "Plot_GrowthSymmetry_1.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+saveRDS(fitted_GS_Param, file.path(RDSPlotPath, paste(Project, "Plot_GrowthSymmetry_2.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 # Variable names used in Data Dictionary
