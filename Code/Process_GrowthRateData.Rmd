@@ -150,6 +150,25 @@ MCGrowthRate %>%
   ggh4x::facet_nested(rows = vars(Strain), cols = vars(Photoperiod)) +
   theme_bw()
 ```
+```{r}
+
+MCGrowthRateStats<-MCGrowthRate
+model<-aov(deltaOD_Lmu_corr~Strain*Par_ue*Photoperiod, data=MCGrowthRateStats)
+summary(model)
+
+# TUKEY <- TukeyHSD(x=model, 'MCGrowthRateStats$Strain', conf.level=0.95)
+# plot(TUKEY)
+# 
+# 
+# tukey.test <- TukeyHSD(model)
+
+
+# out <- HSD.test(model,"Strain", group=TRUE,console=TRUE)
+# plot(out)
+#https://r-graph-gallery.com/84-tukey-test.html
+#https://pyoflife.com/anova-and-tukeys-hsd-test-with-r-how-to-compare-multiple-means-pdf/
+```
+
 
 # Exstracted Exp PUR
 
@@ -658,62 +677,42 @@ ggsave(file = file.path(PlotsPath, paste("GrowthRate_Plot",".png",sep = "")), he
 
 STATS
 
-# Estimated Harrison & Platt, 1986 fit - for all uE and each uE separately
+# PC
 
-```{r platt fit}
-
+```{r}
 #Harrison & Platt, 1986
 grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
-
 
 MCGrowthDummy30 <- MCGrowthDummy %>%   
   filter(Par_ue ==30) %>% 
   nest(data = -c("Strain", "facetsStrain")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
-                                                    data = .x,
-                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
-                                                    lower = c(0, 0, 0)))) %>%    
-  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
-         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
-         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
-
-
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
 
 MCGrowthDummy3090 <- MCGrowthDummy %>%   
   filter(Par_ue ==30 | Par_ue == 90) %>% 
   nest(data = -c("Strain", "facetsStrain")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
-                                                    data = .x,
-                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
-                                                    lower = c(0, 0, 0)))) %>%    
-  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
-         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
-         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
-
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
 
 MCGrowthDummy3090180 <- MCGrowthDummy %>%   
   filter(Par_ue ==30 | Par_ue == 90 | Par_ue == 180) %>% 
   nest(data = -c("Strain", "facetsStrain")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
-                                                    data = .x,
-                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
-                                                    lower = c(0, 0, 0)))) %>%    
-  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
-         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
-         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
-
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
 
 MCGrowthDummy3090180300 <- MCGrowthDummy %>%   
   filter(Par_ue ==30 | Par_ue == 90 | Par_ue == 180 | Par_ue == 300) %>% 
   nest(data = -c("Strain", "facetsStrain")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
-                                                    data = .x,
-                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
-                                                    lower = c(0, 0, 0)))) %>%    
-  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
-         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
-         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
 
+MCGrowthDummy3090180300900 <- MCGrowthDummy %>%   
+  filter(Par_ue ==30 | Par_ue == 90 | Par_ue == 180 | Par_ue == 300 | Par_ue == 900) %>% 
+  nest(data = -c("Strain", "facetsStrain")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
+####
 
 MCGrowthDummy30_BA56<-MCGrowthDummy30 %>% 
   filter(Strain == "PC-rich_056")
@@ -723,94 +722,257 @@ MCGrowthDummy3090180_BA56<-MCGrowthDummy3090180 %>%
   filter(Strain == "PC-rich_056")
 MCGrowthDummy3090180300_BA56<-MCGrowthDummy3090180300 %>% 
   filter(Strain == "PC-rich_056")
+MCGrowthDummy3090180300900_BA56<-MCGrowthDummy3090180300900 %>% 
+  filter(Strain == "PC-rich_056")
 
+MCGrowth30<-MCGrowthDummy30_BA56
 MCGrowth3090<-rbind(MCGrowthDummy30_BA56, MCGrowthDummy3090_BA56)
 MCGrowth3090180<-rbind(MCGrowthDummy3090_BA56, MCGrowthDummy3090180_BA56)
-MCGrowth3090180300<-rbind(MCGrowthDummy3090180_BA56, MCGrowthDummy3090300_BA56)
-#mniejszy porownuje z wiekszym
+MCGrowth3090180300<-rbind(MCGrowthDummy3090180_BA56, MCGrowthDummy3090180300_BA56)
+MCGrowth3090180300900<-rbind(MCGrowthDummy3090180300_BA56, MCGrowthDummy3090180300900_BA56)
+# comparing simple with more complex model
 anova056_3090<-anova(MCGrowth30[[4]][[1]], MCGrowth3090[[4]][[2]]) #signifucant
 anova056_3090180<-anova(MCGrowth3090[[4]][[1]], MCGrowth3090180[[4]][[2]]) #signifucant
 anova056_3090180300<-anova(MCGrowth3090180[[4]][[1]], MCGrowth3090180300[[4]][[2]]) #signifucant
+anova056_3090180300900<-anova(MCGrowth3090180300[[4]][[1]], MCGrowth3090180300900[[4]][[2]]) #signifucant
+
+anova056_3090$FitComparison <- '30_3090'
+anova056_3090180$FitComparison <- '180_3090'
+anova056_3090180300$FitComparison <- '300_3090180'
+anova056_3090180300900$FitComparison <- '900_3090180300'
+
+ANOVAPC056<-rbind(anova056_3090, anova056_3090180, anova056_3090180300, anova056_3090180300900)
+
+###
+
+MCGrowthDummy30_BA77<-MCGrowthDummy30 %>% 
+  filter(Strain == "PC-rich_077")
+MCGrowthDummy3090_BA77<-MCGrowthDummy3090 %>% 
+  filter(Strain == "PC-rich_077")
+MCGrowthDummy3090180_BA77<-MCGrowthDummy3090180 %>% 
+  filter(Strain == "PC-rich_077")
+MCGrowthDummy3090180300_BA77<-MCGrowthDummy3090180300 %>% 
+  filter(Strain == "PC-rich_077")
+MCGrowthDummy3090180300900_BA77<-MCGrowthDummy3090180300900 %>% 
+  filter(Strain == "PC-rich_077")
+
+MCGrowth30<-MCGrowthDummy30_BA77
+MCGrowth3090<-rbind(MCGrowthDummy30_BA77, MCGrowthDummy3090_BA77)
+MCGrowth3090180<-rbind(MCGrowthDummy3090_BA77, MCGrowthDummy3090180_BA77)
+MCGrowth3090180300<-rbind(MCGrowthDummy3090180_BA77, MCGrowthDummy3090180300_BA77)
+MCGrowth3090180300900<-rbind(MCGrowthDummy3090180300_BA77, MCGrowthDummy3090180300900_BA77)
+# comparing simple with more complex model
+anova077_3090<-anova(MCGrowth30[[4]][[1]], MCGrowth3090[[4]][[2]]) #signifucant
+anova077_3090180<-anova(MCGrowth3090[[4]][[1]], MCGrowth3090180[[4]][[2]]) #signifucant
+anova077_3090180300<-anova(MCGrowth3090180[[4]][[1]], MCGrowth3090180300[[4]][[2]]) #signifucant
+anova077_3090180300900<-anova(MCGrowth3090180300[[4]][[1]], MCGrowth3090180300900[[4]][[2]]) #signifucant
+
+anova077_3090$FitComparison <- '30_3090'
+anova077_3090180$FitComparison <- '180_3090'
+anova077_3090180300$FitComparison <- '300_3090180'
+anova077_3090180300900$FitComparison <- '900_3090180300'
+
+ANOVAPC077<-rbind(anova077_3090, anova077_3090180, anova077_3090180300, anova077_3090180300900)
+
+rm(MCGrowth30, MCGrowth3090, MCGrowth3090180, MCGrowth3090180300, MCGrowth3090180300900, MCGrowthDummy30_BA77, MCGrowthDummy3090_BA77, MCGrowthDummy3090180_BA77, MCGrowthDummy3090180300_BA77, MCGrowthDummy3090180300900_BA77, MCGrowthDummy30, MCGrowthDummy3090, MCGrowthDummy3090180, MCGrowthDummy3090180300, MCGrowthDummy3090180300900, MCGrowthDummy30_BA56, MCGrowthDummy3090_BA56, MCGrowthDummy3090180_BA56, MCGrowthDummy3090180300_BA56, MCGrowthDummy3090180300900_BA56, anova077_3090, anova077_3090180, anova077_3090180300, anova077_3090180300900, anova056_3090, anova056_3090180, anova056_3090180300, anova056_3090180300900)
+```
 
 
+# PE
 
+```{r platt fit}
 
+#Harrison & Platt, 1986
+grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
 
-
-
-
-
-
-
-
-MCGrowthDummy90 <- MCGrowthDummy %>%    
-  filter(Par_ue ==90) %>%  
-  nest(data = -c("Strain", "facetsStrain")) %>% 
-  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
-                                                    data = .x,
-                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
-                                                    lower = c(0, 0, 0)))) %>%    
-  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
-         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
-         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
-
-GRCplatt_PredictGrowth90 <- MCGrowthDummy90 %>% 
-  unnest(GRCplatt_Predict)%>% 
-  unnest(GRCplatt_Param)
-
-
-MCGrowthDummy180 <- MCGrowthDummy %>%    
-  filter(Par_ue ==180) %>%  
+MCGrowthDummy30 <- MCGrowthDummy %>%   
+  filter(Par_ue ==30) %>% 
   nest(data = -c("Strain", "facetsStrain")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
-                                                    data = .x,
-                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
-                                                    lower = c(0, 0, 0)))) %>%   
-  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
-         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
-         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
 
-GRCplatt_PredictGrowth180 <- MCGrowthDummy180 %>% 
-  unnest(GRCplatt_Predict)%>% 
-  unnest(GRCplatt_Param)
-
-
-
-MCGrowthDummy300 <- MCGrowthDummy %>%   
-  filter(Par_ue ==300) %>% 
+MCGrowthDummy3090 <- MCGrowthDummy %>%   
+  filter(Par_ue ==30 | Par_ue == 90) %>% 
   nest(data = -c("Strain", "facetsStrain")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
-                                                    data = .x,
-                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
-                                                    lower = c(0, 0, 0)))) %>%    
-  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
-         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
-         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
-
-GRCplatt_PredictGrowth300 <- MCGrowthDummy300 %>% 
-  unnest(GRCplatt_Predict)%>% 
-  unnest(GRCplatt_Param)
-
-
-MCGrowthDummy900 <- MCGrowthDummy %>%    
-  filter(Par_ue ==900) %>% 
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
+###
+MCGrowthDummy90 <- MCGrowthDummy %>%   
+  filter(Par_ue == 90) %>% 
   nest(data = -c("Strain", "facetsStrain")) %>%  
   mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
-                                                    data = .x,
-                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
-                                                    lower = c(0, 0, 0)))) %>%    
-  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
-         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
-         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
-        #ANOVA = map(GRCplatt_Model, anova))
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
 
-GRCplatt_PredictGrowth900 <- MCGrowthDummy900 %>% 
-  unnest(GRCplatt_Predict) %>% 
-  unnest(GRCplatt_Param)
-# 
-# anova(MCGrowthDummy900$GRCplatt_Model[[1]], MCGrowthDummy900$GRCplatt_Model[[2]], MCGrowthDummy900$GRCplatt_Model[[3]], MCGrowthDummy900$GRCplatt_Model[[4]])
+MCGrowthDummy90180 <- MCGrowthDummy %>%   
+  filter(Par_ue == 90 | Par_ue == 180) %>% 
+  nest(data = -c("Strain", "facetsStrain")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
+
+MCGrowthDummy90180300 <- MCGrowthDummy %>%   
+  filter(Par_ue == 90 | Par_ue == 180 | Par_ue == 300) %>% 
+  nest(data = -c("Strain", "facetsStrain")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
+
+MCGrowthDummy90180300900 <- MCGrowthDummy %>%   
+  filter(Par_ue == 90 | Par_ue == 180 | Par_ue == 300 | Par_ue == 900) %>% 
+  nest(data = -c("Strain", "facetsStrain")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
+         data = .x, start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2), lower = c(0, 0, 0)))) 
+
+
+MCGrowthDummy30_BA048<-MCGrowthDummy30 %>% 
+  filter(Strain == "PE-rich_048")
+MCGrowthDummy3090_BA048<-MCGrowthDummy3090 %>% 
+  filter(Strain == "PE-rich_048")
+MCGrowthDummy90_BA048<-MCGrowthDummy90 %>% 
+  filter(Strain == "PE-rich_048")
+MCGrowthDummy90180_BA048<-MCGrowthDummy90180 %>% 
+  filter(Strain == "PE-rich_048")
+MCGrowthDummy90180300_BA048<-MCGrowthDummy90180300 %>%
+  filter(Strain == "PE-rich_048")
+MCGrowthDummy90180300900_BA048<-MCGrowthDummy90180300900 %>%
+  filter(Strain == "PE-rich_048")
+
+MCGrowth30<-MCGrowthDummy30_BA048
+MCGrowth3090<-rbind(MCGrowthDummy30_BA048, MCGrowthDummy3090_BA048)
+MCGrowth90<-MCGrowthDummy90_BA048
+MCGrowth90180<-rbind(MCGrowthDummy90_BA048, MCGrowthDummy90180_BA048)
+MCGrowth90180300<-rbind(MCGrowthDummy90180_BA048, MCGrowthDummy90180300_BA048)
+MCGrowth90180300900<-rbind(MCGrowthDummy90180300_BA048, MCGrowthDummy90180300900_BA048)
+
+#mniejszy porownuje z wiekszym
+anova048_3090<-anova(MCGrowth30[[4]][[1]], MCGrowth3090[[4]][[2]]) #no signifucant 30
+anova048_90180<-anova(MCGrowth90[[4]][[1]], MCGrowth90180[[4]][[2]]) #signifucant
+anova048_90180300<-anova(MCGrowth90180[[4]][[1]], MCGrowth90180300[[4]][[2]]) #signifucant
+anova048_90180300900<-anova(MCGrowth90180300[[4]][[1]], MCGrowth90180300900[[4]][[2]]) #signifucant
+
+
+
+
+
+
+
+
+MCGrowthDummy30_BA127<-MCGrowthDummy30 %>% 
+  filter(Strain == "PE-rich_127")
+MCGrowthDummy3090_BA127<-MCGrowthDummy3090 %>% 
+  filter(Strain == "PE-rich_127")
+MCGrowthDummy30180_BA127<-MCGrowthDummy30180 %>% 
+  filter(Strain == "PE-rich_127")
+MCGrowthDummy30180300_BA127<-MCGrowthDummy30180300 %>%
+  filter(Strain == "PE-rich_127")
+MCGrowthDummy30180300900_BA127<-MCGrowthDummy30180300900 %>%
+  filter(Strain == "PE-rich_127")
+
+MCGrowth30<-MCGrowthDummy30_BA127
+MCGrowth3090<-rbind(MCGrowthDummy30_BA127, MCGrowthDummy3090_BA127)
+MCGrowth30180<-rbind(MCGrowthDummy30_BA127, MCGrowthDummy30180_BA127)
+MCGrowth30180300<-rbind(MCGrowthDummy30180_BA127, MCGrowthDummy30180300_BA127)
+MCGrowth30180300900<-rbind(MCGrowthDummy30180300_BA127, MCGrowthDummy30180300900_BA127)
+
+#mniejszy porownuje z wiekszym
+anova127_3090<-anova(MCGrowth30[[4]][[1]], MCGrowth3090[[4]][[2]]) #no signifucant 90
+anova127_30180<-anova(MCGrowth30[[4]][[1]], MCGrowth30180[[4]][[2]]) #signifucant
+anova127_30180300<-anova(MCGrowth30180[[4]][[1]], MCGrowth30180300[[4]][[2]]) #signifucant
+anova127_30180300900<-anova(MCGrowth30180300[[4]][[1]], MCGrowth30180300900[[4]][[2]]) #signifucant
+
 
 ```
+
+
+# porownuje od dolu
+```{r}
+MCGrowthDummy900 <- MCGrowthDummy %>%   
+  filter(Par_ue == 900) %>% 
+  nest(data = -c("Strain", "facetsStrain")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
+                                                    data = .x,
+                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
+                                                    lower = c(0, 0, 0)))) %>%    
+  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
+         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
+         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
+
+
+MCGrowthDummy300900 <- MCGrowthDummy %>%   
+  filter(Par_ue == 300 | Par_ue == 900) %>% 
+  nest(data = -c("Strain", "facetsStrain")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
+                                                    data = .x,
+                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
+                                                    lower = c(0, 0, 0)))) %>%    
+  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
+         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
+         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
+
+
+MCGrowthDummy180300900 <- MCGrowthDummy %>%   
+  filter(Par_ue == 180 | Par_ue == 300 | Par_ue == 900) %>% 
+  nest(data = -c("Strain", "facetsStrain")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
+                                                    data = .x,
+                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
+                                                    lower = c(0, 0, 0)))) %>%    
+  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
+         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
+         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
+
+
+MCGrowthDummy90180300900 <- MCGrowthDummy %>%   
+  filter(Par_ue == 90 | Par_ue == 180 | Par_ue == 300 | Par_ue == 900) %>% 
+  nest(data = -c("Strain", "facetsStrain")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
+                                                    data = .x,
+                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
+                                                    lower = c(0, 0, 0)))) %>%    
+  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
+         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
+         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
+
+
+MCGrowthDummy30180300900 <- MCGrowthDummy %>%   
+  filter(Par_ue == 30 | Par_ue == 180 | Par_ue == 300 | Par_ue == 900) %>% 
+  nest(data = -c("Strain", "facetsStrain")) %>%  
+  mutate(GRCplatt_Model = map(data, ~nlsLM(deltaOD_Lmu_corr ~ grcplatt(I = PARPhotonDose_day, a, b, Pmax),
+                                                    data = .x,
+                                                    start = list(a = 0.1/2e7, b = 0.01/2e7, Pmax = 0.2),
+                                                    lower = c(0, 0, 0)))) %>%    
+  mutate(GRCplatt_Param = map(GRCplatt_Model, tidy),          
+         GRCplatt_Predict = map(GRCplatt_Model, possibly(augment)),          
+         GRCplatt_Glance = map(GRCplatt_Model, possibly(glance)))
+
+
+
+MCGrowthDummy900_BA127<-MCGrowthDummy900 %>% 
+  filter(Strain == "PE-rich_127")
+MCGrowthDummy300900_BA127<-MCGrowthDummy300900 %>% 
+  filter(Strain == "PE-rich_127")
+MCGrowthDummy180300900_BA127<-MCGrowthDummy180300900 %>%
+  filter(Strain == "PE-rich_127")
+MCGrowthDummy90180300900_BA127<-MCGrowthDummy90180300900 %>%
+  filter(Strain == "PE-rich_127")
+MCGrowthDummy30180300900_BA127<-MCGrowthDummy30180300900 %>%
+  filter(Strain == "PE-rich_127")
+
+MCGrowth900<-MCGrowthDummy900_BA127
+MCGrowth300900<-rbind(MCGrowthDummy900_BA127, MCGrowthDummy300900_BA127)
+MCGrowth180300900<-rbind(MCGrowthDummy300900_BA127, MCGrowthDummy180300900_BA127)
+MCGrowth90180300900<-rbind(MCGrowthDummy180300900_BA127, MCGrowthDummy90180300900_BA127)
+MCGrowth30180300900<-rbind(MCGrowthDummy180300900_BA127, MCGrowthDummy30180300900_BA127)
+
+#mniejszy porownuje z wiekszym
+anova127_300900<-anova(MCGrowth900[[4]][[1]], MCGrowth300900[[4]][[2]]) #signifucant 
+anova127_180300900<-anova(MCGrowth300900[[4]][[1]], MCGrowth180300900[[4]][[2]]) #signifucant
+anova127_90180300900<-anova(MCGrowth180300900[[4]][[1]], MCGrowth90180300900[[4]][[2]]) # no signifucant 90
+anova127_30180300900<-anova(MCGrowth180300900[[4]][[1]], MCGrowth30180300900[[4]][[2]]) # signifucant 
+
+
+```
+
+
+
 
 
 
