@@ -480,40 +480,6 @@ MultiCultiDataAll %>%
         legend.text = element_text(size=10))
 ```
 
-```{r create GrowthCurve plot, fig.height = 8, fig.width = 8, warning = FALSE}
-MultiCultiDataAll24<-MultiCultiDataAll %>%
-  filter(Photoperiod==24)
-
-MultiCultiDataAll24 %>%
-  ggplot() +
-  geom_area(aes(x = Time_h, y = meanActinic_par_h), size = 0.1, fill = "tan1", alpha = 0.6) +
-  geom_line(aes(x = Time_h, y = meanOD680_h), colour = "blue", size = 0.5, show.legend = T) +
-  geom_line(aes(x = Time_h, y = meanOD720_h), colour = "black", size = 0.5, show.legend = T) +
-  geom_line(aes(x = Time_h, y = meanDeltaOD_h), colour = "darkgreen", size = 0.5, show.legend = T) +
-  # geom_vline(data = tMaxAGLines_056, aes(xintercept = tMaxAG), linetype="dotdash", colour = "seagreen4", size=0.4) +
-  # geom_vline(data = tMaxAGLines_077, aes(xintercept = tMaxAG), linetype="dotdash", colour = "palegreen3", size=0.4) +
-  # geom_vline(data = tMaxAGLines_048, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown4", size=0.4) +
-  # geom_vline(data = tMaxAGLines_127, aes(xintercept = tMaxAG), linetype="dotdash", colour = "brown1", size=0.4) +
-  # scale_colour_discrete(type=c("seagreen4", "palegreen3", "brown1", "brown4"), name="") +
-  #labs(y = "Optical density ("~OD[680]~")", x = "Elapsed time (h)") +
-  ggh4x::facet_nested(cols = vars(Par_ue), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() +
-  theme(panel.grid.minor = element_blank(),
-        panel.grid.major = element_blank(),
-        axis.text = element_text(size=12),
-        axis.title = element_text(size=16),
-        strip.background = element_rect(fill="white"),
-        strip.text = element_text(size=12),
-        axis.title.y = element_text(margin=margin(r=10)),
-        axis.title.x = element_text(margin=margin(t=10)),
-        legend.background = element_rect(fill="transparent"),
-        legend.position = c(0.1,0.95),
-        legend.key.height= unit(0.005, 'cm'),
-        legend.spacing.x = unit(0.01, 'cm'),
-        legend.text = element_text(size=10))
-```
-
-
 # Save plot 
 
 ```{r save plot}
