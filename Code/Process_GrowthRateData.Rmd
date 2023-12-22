@@ -50,6 +50,7 @@ library(minpack.lm) #Standard 'nls' framework that uses 'nls.lm' for fitting
 library(data.table)
 library(googledrive)
 library(googlesheets4)
+library(multcomp) #stats
 ```
 
 ```{r set project variables}
@@ -151,24 +152,45 @@ MCGrowthRate %>%
   theme_bw()
 ```
 ```{r}
+# Multiple comparisons using multcomp package
+# 
+# It’s possible to use the function glht() [in multcomp package] to perform multiple comparison procedures for an ANOVA. glht stands for general linear hypothesis tests. 
+# 
+#     model: a fitted model, for example an object returned by aov().
+#     lincft(): a specification of the linear hypotheses to be tested. Multiple comparisons in ANOVA models are specified by objects returned from the function mcp().
+# Use glht() to perform multiple pairwise-comparisons.
+# 
+# For two-way ANOVA models, one might be interested in comparing the levels
+# of the two factors simultaneously.
 
 MCGrowthRateStats<-MCGrowthRate
-model<-aov(deltaOD_Lmu_corr~Strain*Par_ue*Photoperiod, data=MCGrowthRateStats)
+#MCGrowthRateStats2<-rbind(MCGrowthRateStats, MCGrowthRateStats) 
+
+
+MCGrowthRateStats$Par_ue <- factor(MCGrowthRateStats$Par_ue)
+MCGrowthRateStats$Photoperiod <- factor(MCGrowthRateStats$Photoperiod)
+MCGrowthRateStats$Strain <- factor(MCGrowthRateStats$Strain)
+
+
+model<-aov(deltaOD_Lmu_corr~Strain+Par_ue+Photoperiod, data=MCGrowthRateStats)
 summary(model)
-
-# TUKEY <- TukeyHSD(x=model, 'MCGrowthRateStats$Strain', conf.level=0.95)
-# plot(TUKEY)
-# 
-# 
-# tukey.test <- TukeyHSD(model)
+anovadf<-data.frame(unclass(summary(model)), check.names = FALSE, stringsAsFactors = FALSE)
 
 
-# out <- HSD.test(model,"Strain", group=TRUE,console=TRUE)
-# plot(out)
+as.data.frame(summary(model))
+
+
+# http://www.sthda.com/english/wiki/two-way-anova-test-in-r
+# https://cran.r-project.org/web/packages/multcomp/vignettes/multcomp-examples.pdf
+
+K1 <- glht(model, mcp(Strain = "Tukey"))$linfct
+K2 <- glht(model, mcp(Par_ue = "Tukey"))$linfc
+K3 <- glht(model, mcp(Photoperiod = "Tukey"))$linfc
+summary(glht(model, linfct = rbind(K1, K2, K3)))
+
+```
 #https://r-graph-gallery.com/84-tukey-test.html
 #https://pyoflife.com/anova-and-tukeys-hsd-test-with-r-how-to-compare-multiple-means-pdf/
-```
-
 
 # Exstracted Exp PUR
 
