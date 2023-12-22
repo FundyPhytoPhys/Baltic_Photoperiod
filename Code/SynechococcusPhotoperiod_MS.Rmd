@@ -106,6 +106,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Hypotheses {.unnumbered}
 
+
 -Daily growth symmetry, daily change in OD~680~ increment (TDG), and cell-specific pigment content in PhycoCyanin(PC)-rich and PhycoErythrin(PE)-rich picocyanobacteria change after the transition to the pre-stationary phase.
 
 -Daily growth symmetry, logistic growth rate, and pigments light-capture in *Synechococcus* sp. are dependent on combination of light intensity (PAR or PUR) and duration (photoperiod), not on the corresponding PAR or PUR daily photon dose.
@@ -151,7 +152,7 @@ Panel B- Could be replaced by the short term exponential growth rate take over 1
 
 ```{r AbsoluteGrowth, fig.cap = AbsoluteGrowth_cap, fig.height = 6, fig.width = 8, echo = FALSE}
 AbsoluteGrowth_cap<- glue("A) Example of growth (OD~680~, thin black line) of a *Synechococcus* sp. strain fit with logistic growth curve fit (red).  Thin grey line shows the first derivative (taken over 1 h increments) for growth. Within a diel period the acceleration length (AccLen) is the time between the start of the photoperiod and the time to reach the diel maximum of the first derivative of growth; tMaxDG, marked with dotted vertical lines. Deceleration length (DecLen) is then the time from tMaxDG to the end of the photoperiod. We then define the diel growth symmetry (GS) as AccLen/DecLen. The solid vertical line marks the time for the of the hourly first derivative, used as to indicate the transition from near-exponential to pre-stationary growth phases.", .sep = " ")
-knitr::include_graphics(file.path( FiguresFP,"AbsoluteGrowth.png"))   #XXXXRemovve Absolute growth increment, replace through out with First Derivative (hourly)
+knitr::include_graphics(file.path( FiguresFCellSize_cap<- glue("RepresentatP,"AbsoluteGrowth.png"))   #XXXXRemovve Absolute growth increment, replace through out with First Derivative (hourly)
 ```
 
 Based on the first derivative (taken over 1 h increments) for growth were determined the acceleration length (AccLen), defined as the time (expressed in h) between the start of the photoperiod and the time of the tMaxDG. Decleration length (DecLen) is the time from tMaxDG to the end of the photoperiod. We define the diel growth symmetry (GS) as AccLen/DecLen (Eq. \@ref(eq:GS)).
@@ -175,7 +176,7 @@ The size of picocyanobacterial cells was imaged using a Nikon Eclipse 80i Nomars
 
 
 ```{r CellSize, fig.cap = CellSize_cap, fig.height = 6, fig.width = 8, echo = FALSE}
-CellSize_cap<- glue("Representative photograph of two PhycoCyanin(PC)-rich cultures (Culture Collection of Baltic Algae; 056, 077) and two PhycoErythrin(PE)-rich (Culture Collection of Baltic Algae; 048, 127) *Synechococcus* sp. strains together with a diagram showing the cell size calculation procedure. Bar denotes 10 μm.", .sep = " ")
+ive photograph of two PhycoCyanin(PC)-rich cultures (Culture Collection of Baltic Algae; 056, 077) and two PhycoErythrin(PE)-rich (Culture Collection of Baltic Algae; 048, 127) *Synechococcus* sp. strains together with a diagram showing the cell size calculation procedure. Bar denotes 10 μm.", .sep = " ")
 knitr::include_graphics(file.path( FiguresFP,"CellSize2.png"))
 ```
 
@@ -412,5 +413,21 @@ knitr::include_graphics(file.path( FiguresFP,"PhycoChlaNew.png"))
 GSPARcorr_cap<- glue("Hours of photoperiod to reach maximum hourly growth increment (AccLen), for two PhycoCyanin(PC)-rich cultures (Culture Collection of Baltic Algae; 056, 077) and two PhycoErythrin(PE)-rich cultures (Culture Collection of Baltic Algae; 048, 127) and of *Synechococcus* sp. grown at 30, 90, 180, 300, or 900 peak diel PAR µmol photons m^−2^s^−1^; and photoperiods of 8, 12, or 16 h. Data represent means for n = 0-5 days from exponential phase, prior to reaching maximum absolute hourly growth; or from pre-stationary growth phase, after reaching maximum absolute hourly growth.", .sep = " ")
 knitr::include_graphics(file.path( FiguresFP,"AccLenNewSup.png"))
 ```
+
+
+Stats
+
+```{r TableName, echo = TRUE}
+
+XXX_cap <- glue("A) Example of growth (OD~680~, thin black line) of a *Synechococcus* sp. strain fit with logistic growth curve fit (red).  Thin grey line shows the first derivative (taken over 1 h increments) for growth. Within a diel period ")
+                          
+                          
+readRDS(file.path("..", "Output", "TablesRDS", "Baltic_Photoperiod_GrowthRateAnova.Rds")) %>% 
+  as.data.frame() %>% 
+  kable(caption = XXX_cap) %>% 
+  kableExtra::kable_classic()
+```
+
+according to table \@ref(tab:TableName)
 
 
