@@ -657,10 +657,10 @@ fitted <- SolFitsExpFit590Clean %>%
   mutate(
     fit = map(data, ~nls(Sig_nm2psii ~ SSasymp(PARPhotonDose_day, yf, y0, log_alpha), data = .)),
     tidied = map(fit, tidy),
-    augmented = map(fit, augment))  
+    augmented590 = map(fit, augment))  
 
 # Produce a table of fit parameters: y0, yf, alpha
-fitted_Param<-fitted %>% 
+fitted_Param590<-fitted %>% 
   unnest(tidied) %>% 
   select(Strain, Phase, term, estimate) %>% 
 pivot_wider(., names_from = c(term), values_from = c(estimate)) %>% 
@@ -668,8 +668,8 @@ pivot_wider(., names_from = c(term), values_from = c(estimate)) %>%
 ```
 
 ```{r unnest, preparing df to preparing final plot, echo=FALSE, warning = FALSE}
-augmented<-fitted  %>%
-  unnest(augmented) %>%
+augmented590<-fitted  %>%
+  unnest(augmented590) %>%
   select(c(Strain, Phase, O2, WL, PARPhotonDose_day,Sig_nm2psii, .fitted)) 
 ```
 
@@ -701,7 +701,7 @@ ggplot(SolFitsExpFitAll590, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
   geom_point(aes(x = PARPhotonDose_day, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   geom_point(aes(x = PARPhotonDose_day, y = Sig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, show.legend = F) +
   geom_errorbar(aes(x = PARPhotonDose_day, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Par_ue)), width=0, size=0.3, show.legend = F) +
-  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, augmented) +
+  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, augmented590) +
   geom_text(data=data_text_y0Exp, aes(x=75000000, y=10, label=label), size=3.5) +
   geom_text(data=data_text_yfExp, aes(x=75000000, y=8.5, label=label), size=3.5) +
   geom_text(data=data_text_lambdaExp, aes(x=75000000, y=7, label=label), size=3.5) +
@@ -711,7 +711,7 @@ ggplot(SolFitsExpFitAll590, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
   geom_text(data=data_text_lambdaSt, aes(x=7500000, y=7, label=label), size=3.5) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*" quanta"^"-1"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*" quanta"^"-1"*")")), x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_x_continuous(breaks=seq(0, 60000000, by = 30000000), label=scientific_10) +
   scale_y_continuous(breaks=seq(0, 10, by = 2)) +
   coord_cartesian(xlim = c(0, 80000000), ylim = c(0, 11)) +
@@ -741,6 +741,25 @@ ggplot(SolFitsExpFitAll590, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
 ggsave(file = file.path(PlotsPath, paste("Sigma590_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
+```{r}
+SolFitsExpFit445Clean <-SolFitsExpFitAll %>% 
+  drop_na(Sig_nm2psii) %>%
+  filter(Ex_WL == 445) %>% 
+  select(c(Sig_nm2psii, PARPhotonDose_day, Strain, Phase, O2, WL)) 
+
+# Fit the data
+fitted <- SolFitsExpFit445Clean %>% 
+  nest(-c(Strain, Phase, O2, WL)) %>%
+  mutate(Linear_Model = map(data, ~lm(Sig_nm2psii ~ PARPhotonDose_day, data = .))) %>% 
+  mutate(Linear_Model_Param = map(Linear_Model, tidy),          
+         Linear_Model_Predict = map(Linear_Model, possibly(augment)),          
+         Linear_Model_Glance = map(Linear_Model, possibly(glance)))   
+
+augmented445<-fitted %>% 
+  unnest(Linear_Model_Predict) %>% 
+  select(c(Strain, Phase, O2, WL, PARPhotonDose_day,Sig_nm2psii, .fitted)) 
+```
+
 # Create Sigma plot at 445
 
 ```{r create Sigma plot, fig.height = 8, fig.width = 8, warning = FALSE}
@@ -761,13 +780,13 @@ ggplot(SolFitsExpFitAll445, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
   geom_point(aes(x = PARPhotonDose_day, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   geom_point(aes(x = PARPhotonDose_day, y = Sig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, show.legend = F) +
   geom_errorbar(aes(x = PARPhotonDose_day, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Par_ue)), width=0, size=0.3, show.legend = F) +
-  # geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, augmented) +
+  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, augmented445) +
   scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*" quanta"^"-1"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*" quanta"^"-1"*")")), x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_x_continuous(breaks=seq(0, 60000000, by = 30000000), label=scientific_10) +
-  scale_y_continuous(breaks=seq(0, 2, by = 0.5)) +
-  coord_cartesian(xlim = c(0, 80000000), ylim = c(0, 2)) +
+  scale_y_continuous(breaks=seq(0, 10, by = 2)) +
+  coord_cartesian(xlim = c(0, 80000000), ylim = c(0, 10)) +
   ggh4x::facet_nested(rows = vars(O2, Strain), cols = vars(WL, Phase), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),

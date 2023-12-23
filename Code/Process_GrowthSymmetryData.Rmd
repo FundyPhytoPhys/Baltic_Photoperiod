@@ -186,6 +186,42 @@ pivot_wider(., names_from = c(term), values_from = c(estimate)) %>%
   mutate(alpha = exp(log_alpha)) 
 ```
 
+# Fit the data to exponential decays
+problem 127!
+
+```{r fitting exponential decays, warning = FALSE}
+# GScatalogMetaSt<-GScatalogMeta %>% 
+#   filter(Phase == "Pre-stationary") %>% 
+#   filter(Strain == "PE-rich_127") %>%  
+#   filter(GS <= 1.2) %>% 
+#   filter(Photoperiod !=16) %>% 
+#   filter(Par_ue !=300)
+
+
+GScatalogMetaSt <-GScatalogMetaSt %>% 
+  drop_na(GS) %>%
+  filter(Phase == "Pre-stationary") %>% 
+  filter(Strain == "PE-rich_127") %>% 
+  select(c(GS, PARPhotonDose_day, Strain, Phase, O2, WL)) 
+
+# Fit the data
+fitted <- GScatalogMetaSt %>% 
+  nest(-c(Strain, Phase, O2, WL)) %>%
+  mutate(
+    fit = map(data, ~nls(GS ~ SSasymp(PARPhotonDose_day, yf, y0, log_alpha), data = .)),
+    tidied = map(fit, tidy),
+    augmented = map(fit, augment)) 
+
+# Produce a table of fit parameters: y0, yf, alpha
+fitted_GS_Param<-fitted %>% 
+  unnest(tidied) %>% 
+  select(Strain, Phase, term, estimate) %>% 
+pivot_wider(., names_from = c(term), values_from = c(estimate)) %>% 
+  mutate(alpha = exp(log_alpha)) 
+
+```
+
+
 ```{r unnest, preparing df to preparing final plot, warning = FALSE}
 augmented<-fitted  %>%
   unnest(augmented) %>%
