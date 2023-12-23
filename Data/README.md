@@ -59,7 +59,7 @@ ProcessedData folder contains 7 folders: ProcessedGrowthCurveData, ProcessedGrow
 20220615_PICO_MC257_RUN77_ProcessDataNestGrowth.Rds, and
 20230816_PICO_MC257_RUN121_ProcessDataNestGrowth.Rds generated from Process_MCData.Rmd (stored in Code folder).
 
-- Folder ProcessedOlisJazData contains Baltic_Photoperiod_Processed_OlisSpectraAll.Rds and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds generated from Process_OlisSpectraJazEmData.Rmd (stored in Code folder).
+- Folder ProcessedOlisJazData contains Baltic_Photoperiod_Processed_OlisSpectraAll.Rds and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds generated from Process_OlisJazEmData.Rmd (stored in Code folder).
 
 - Folder ProcessedPigmentsData contains Baltic_Photoperiod_Processed_PigmentAll.Rds and Baltic_Photoperiod_Processed_PigmentsExp.Rds generated from Process_PigmentsData.Rmd (stored in Code folder).
 

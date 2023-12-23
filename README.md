@@ -64,7 +64,7 @@ This chapter summarizes the structure of the repository with a decription of eac
 
 ### Code
 
-Code folder contains 15 .Rmd: Import_JazEmData.Rmd, Import_MetaData.Rmd, Import_MCData.Rmd, Import_OlisData.Rmd, Import_SolisenseData.Rmd, Process_GrowthCurveData.Rmd, Process_GrowthRateData.Rmd, Process_GrowthRateSolisenseData.Rmd, Process_GrowthSymmetryData.Rmd, Process_MCData.Rmd, Process_OlisSpectraJazEmData.Rmd, Process_PigmentsData.Rmd, Process_SolisensePigmentsData.Rmd, Processed_MCData.Rmd, and SynechococcusPhotoperiod_MS.Rmd.
+Code folder contains 15 .Rmd: Import_JazEmData.Rmd, Import_MetaData.Rmd, Import_MCData.Rmd, Import_OlisData.Rmd, Import_SolisenseData.Rmd, Process_GrowthCurveData.Rmd, Process_GrowthRateData.Rmd, Process_GrowthRateSolisenseData.Rmd, Process_GrowthSymmetryData.Rmd, Process_MCData.Rmd, Process_OlisJazEmData.Rmd, Process_PigmentsData.Rmd, Process_SolisensePigmentsData.Rmd, Processed_MCData.Rmd, and SynechococcusPhotoperiod_MS.Rmd.
 
 - Import_JazEmData.Rmd imports Jaz radiospectrometer files from Data/RawData/JazEmData.zip folder and stores tidied data in Data/ImportedData/ImportedJazEmData folder as: Baltic_Photoperiod_Imported_JazEmData.Rds
 
@@ -117,7 +117,7 @@ Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds contained data taken fro
 
 This .Rmd implements logistic growth curve fits to MultiCulti growth trajectories.
 
-- Process_OlisSpectraJazEmData.Rmd processes and combines Baltic_Photoperiod_Imported_JazEmData.Rds from Data/ImportedData/ImportedJazEmData folder and Baltic_Photoperiod_Imported_OlisData.Rds from Data/ImportedData/ImportedOlisData folder. This .Rmd generates Baltic_Photoperiod_Processed_OlisSpectraAll.Rds and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds (both stored in Data/ProcessedData/ProcessedOlisJazData folder) and OlisSpectra_Plot.png (stored in Output/Plots folder).
+- Process_OlisJazEmData.Rmd processes and combines Baltic_Photoperiod_Imported_JazEmData.Rds from Data/ImportedData/ImportedJazEmData folder and Baltic_Photoperiod_Imported_OlisData.Rds from Data/ImportedData/ImportedOlisData folder. This .Rmd generates Baltic_Photoperiod_Processed_OlisSpectraAll.Rds and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds (both stored in Data/ProcessedData/ProcessedOlisJazData folder) and OlisSpectra_Plot.png (stored in Output/Plots folder).
 
 - Process_PigmentsData.Rmd processes and combines pigment catalog from a google sheet and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds from Data/ProcessedData/ProcessedOlisJazData folder. This .Rmd generates Baltic_Photoperiod_Processed_PigmentAll.Rds and Baltic_Photoperiod_Processed_PigmentsExp.Rds (both stored in Data/ProcessedData/ProcessedPigmentsData folder) and two plots: Pigments_SupPlot.png and  PigRatioPUR_Plot.png (stored in Output/Plots folder).
 
@@ -191,7 +191,7 @@ ProcessedData folder contains 7 folders: ProcessedGrowthCurveData, ProcessedGrow
 20220615_PICO_MC257_RUN77_ProcessDataNestGrowth.Rds, and
 20230816_PICO_MC257_RUN121_ProcessDataNestGrowth.Rds generated from Process_MCData.Rmd (stored in Code folder).
 
-- Folder ProcessedOlisJazData contains Baltic_Photoperiod_Processed_OlisSpectraAll.Rds and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds generated from Process_OlisSpectraJazEmData.Rmd (stored in Code folder).
+- Folder ProcessedOlisJazData contains Baltic_Photoperiod_Processed_OlisSpectraAll.Rds and Baltic_Photoperiod_Processed_OlisSpectraTidy.Rds generated from Process_OlisJazEmData.Rmd (stored in Code folder).
 
 - Folder ProcessedPigmentsData contains Baltic_Photoperiod_Processed_PigmentAll.Rds and Baltic_Photoperiod_Processed_PigmentsExp.Rds generated from Process_PigmentsData.Rmd (stored in Code folder).
 

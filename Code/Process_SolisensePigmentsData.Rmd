@@ -631,18 +631,6 @@ SolFitsExpSt %>%
   ggh4x::facet_nested(cols = vars(Phase), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 
-SolFitsExpSt %>% 
-  filter(Ex_WL == 590) %>% 
-  #filter(Par_ue!=900) %>% 
-  ggplot() +
-  geom_point(aes(x = PARPhotonDose_day, y = Sig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  # geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanSig_nm2psii - sdSig_nm2psii, ymax = meanSig_nm2psii + sdSig_nm2psii, colour=as.factor(Par_ue))) +
-  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  ggh4x::facet_nested(cols = vars(Phase), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() 
-
-
 SolFitsExpFitAll %>% 
   filter(Ex_WL == 590) %>% 
   ggplot() +
@@ -653,30 +641,6 @@ SolFitsExpFitAll %>%
   ggh4x::facet_nested(cols = vars(Phase), rows = vars(Strain), labeller = label_parsed) +
   theme_bw() 
 ```
-
-```{r}
-SolFitsExpSt24 <-SolFitsExpSt %>% 
-  filter(Photoperiod==24)
-
-#lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
-lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
-
-SolFitsExpSt24 %>% 
-  #filter(Phase=="Exponential") %>% 
-  #filter(Ex_WL == 590) %>% 
-  ggplot() +
-  geom_point(aes(x = PARPhotonDose_day, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
-  geom_point(aes(x = PARPhotonDose_day, y = Sig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, show.legend = F) +
-  
-  geom_errorbar(aes(x = PARPhotonDose_day, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Par_ue)), width=0, size=0.3) +
-  #scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
-  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
-  ggh4x::facet_nested(cols = vars(Ex_WL), rows = vars(Strain), labeller = label_parsed) +
-  theme_bw() 
-```
-
-
-
 
 # Fit the data to exponential decays
 
@@ -693,8 +657,7 @@ fitted <- SolFitsExpFit590Clean %>%
   mutate(
     fit = map(data, ~nls(Sig_nm2psii ~ SSasymp(PARPhotonDose_day, yf, y0, log_alpha), data = .)),
     tidied = map(fit, tidy),
-    augmented = map(fit, augment),
-  )  
+    augmented = map(fit, augment))  
 
 # Produce a table of fit parameters: y0, yf, alpha
 fitted_Param<-fitted %>% 
@@ -710,7 +673,7 @@ augmented<-fitted  %>%
   select(c(Strain, Phase, O2, WL, PARPhotonDose_day,Sig_nm2psii, .fitted)) 
 ```
 
-# Create Sigma plot
+# Create Sigma plot at 590
 
 ```{r create Sigma plot, fig.height = 8, fig.width = 8, warning = FALSE}
 
@@ -731,14 +694,14 @@ scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::sc
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
-SolFitsExpFitAll<-SolFitsExpFitAll %>% 
-  filter(Ex_WL!=445) 
+SolFitsExpFitAll590<-SolFitsExpFitAll %>% 
+  filter(Ex_WL==590) 
 
-ggplot(SolFitsExpFitAll, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
+ggplot(SolFitsExpFitAll590, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
   geom_point(aes(x = PARPhotonDose_day, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
   geom_point(aes(x = PARPhotonDose_day, y = Sig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, show.legend = F) +
   geom_errorbar(aes(x = PARPhotonDose_day, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Par_ue)), width=0, size=0.3, show.legend = F) +
-  geom_line(aes(PARPhotonDose_day, .fitted), show.legend = F, augmented) +
+  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, augmented) +
   geom_text(data=data_text_y0Exp, aes(x=75000000, y=10, label=label), size=3.5) +
   geom_text(data=data_text_yfExp, aes(x=75000000, y=8.5, label=label), size=3.5) +
   geom_text(data=data_text_lambdaExp, aes(x=75000000, y=7, label=label), size=3.5) +
@@ -772,6 +735,65 @@ ggplot(SolFitsExpFitAll, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
         legend.text = element_text(size=9))
 ```
 
+# Save plot 
+
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("Sigma590_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
+```
+
+# Create Sigma plot at 445
+
+```{r create Sigma plot, fig.height = 8, fig.width = 8, warning = FALSE}
+
+WL.labs <- c("Phase of growth")
+names(WL.labs) <- c("WW")
+O2.labs <- c("Strain")
+names(O2.labs) <- c(21)
+
+scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
+lab1=c(expression("8 h"), expression("12 h"), expression("16 h"), expression("24 h"))
+lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
+
+SolFitsExpFitAll445<-SolFitsExpFitAll %>% 
+  filter(Ex_WL==445) 
+
+ggplot(SolFitsExpFitAll445, aes(x = PARPhotonDose_day, y = Sig_nm2psii)) +
+  geom_point(aes(x = PARPhotonDose_day, y = AllmeanSig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, show.legend = T) +
+  geom_point(aes(x = PARPhotonDose_day, y = Sig_nm2psii, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, show.legend = F) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = AllmeanSig_nm2psii - AllsdSig_nm2psii, ymax = AllmeanSig_nm2psii + AllsdSig_nm2psii, colour=as.factor(Par_ue)), width=0, size=0.3, show.legend = F) +
+  # geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, augmented) +
+  scale_shape_manual(values = c(15, 16, 17,18), name="", labels = lab1) +
+  scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
+  labs(y=expression(paste(sigma,""["PSII"]*"' (nm"^"2"*" quanta"^"-1"*")")), x = "PAR photon dose ( µmol photons "~m^-2~""~d^-1~")") +
+  scale_x_continuous(breaks=seq(0, 60000000, by = 30000000), label=scientific_10) +
+  scale_y_continuous(breaks=seq(0, 2, by = 0.5)) +
+  coord_cartesian(xlim = c(0, 80000000), ylim = c(0, 2)) +
+  ggh4x::facet_nested(rows = vars(O2, Strain), cols = vars(WL, Phase), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.text.x = element_text(size=11),
+        axis.title = element_text(size=16),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=12),
+        axis.title.y = element_text(margin=margin(r=10)),
+        axis.title.x = element_text(margin=margin(t=10)),
+        legend.background = element_rect(fill="transparent"),
+        legend.position = c(0.93,0.9),
+        legend.key.height= unit(0.003, 'cm'),
+        legend.spacing.y = unit(-0.1, "cm"),
+        legend.spacing.x = unit(-0.1, 'cm'),
+        legend.title = element_blank(),
+        legend.text = element_text(size=9))
+```
+
+# Save plot 
+
+```{r save plot}
+ggsave(file = file.path(PlotsPath, paste("Sigma445_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
+```
+
 # Save RDS that create plot
 
 ```{r}
@@ -780,12 +802,6 @@ saveRDS(SolFitsExpFitAll, file.path(RDSPlotPath, paste(Project, "Plot_Sigma_1.Rd
 saveRDS(augmented, file.path(RDSPlotPath, paste(Project, "Plot_Sigma_2.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
 saveRDS(fitted_Param, file.path(RDSPlotPath, paste(Project, "Plot_Sigma_3.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
-```
-
-# Save plot 
-
-```{r save plot}
-ggsave(file = file.path(PlotsPath, paste("Sigma_SupPlot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
 ```
 
 # Removed unneccessary df from the environment

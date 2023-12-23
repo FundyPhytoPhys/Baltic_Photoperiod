@@ -833,9 +833,9 @@ scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::sc
 ggplot(MCGrowthSP, aes(PARPhotonDose_day, deltaOD_Lmu_corr)) +
   geom_point(aes(PARPhotonDose_day, deltaOD_Lmu_corr, colour=as.factor(Par_ue), shape = as.factor(Photoperiod)), alpha = 0.8, size = 3.5, show.legend = T) +
   geom_errorbar(aes(x = PARPhotonDose_day, ymin = deltaOD_Lmu_corr - deltaOD_Lmu_se, ymax = deltaOD_Lmu_corr + deltaOD_Lmu_se, colour = as.factor(Par_ue)), width=0, size=0.3, data = . %>% filter(deltaOD_Lmu_se<8.057558e-03), show.legend = F) +
-  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.5, show.legend = F, GRCplatt_PredictGrowthPC) +
-  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.5, show.legend = F, GRCplatt_PredictGrowthPE90900) +
-  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.5, show.legend = F, GRCplatt_PredictGrowthPE30) +
+  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, GRCplatt_PredictGrowthPC) +
+  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, GRCplatt_PredictGrowthPE90900) +
+  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, GRCplatt_PredictGrowthPE30) +
   scale_x_continuous(label=scientific_10) +
   scale_linetype_manual(values=c("equal900" = "dotted", "less900" = "solid"), breaks=c('8', '12', '16', "24", "", "")) +
   scale_colour_manual(values = c("", "", "darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2, breaks=c('', '', '30', "90", "180", "300", "900")) +
