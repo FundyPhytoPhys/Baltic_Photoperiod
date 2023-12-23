@@ -159,10 +159,6 @@ MCGrowthRateStats$Strain <- factor(MCGrowthRateStats$Strain)
 model<-aov(deltaOD_Lmu_corr~Strain*Par_ue*Photoperiod, data=MCGrowthRateStats)
 AnovaTest_GrowthRate<-data.frame(unclass(summary(model)), check.names = FALSE, stringsAsFactors = FALSE)
 TukeyHSDTest_GrowthRate<-TukeyHSD(model, which = c("Strain", "Par_ue", "Photoperiod"))
-
-#TUKEY<-data.frame(unclass(summary(TukeyHSDTest)), check.names = FALSE, stringsAsFactors = FALSE)
-
-rm(MCGrowthRateStats, model)
 ```
 
 # Save RDS that create stats and tables
@@ -171,6 +167,12 @@ rm(MCGrowthRateStats, model)
 saveRDS(AnovaTest_GrowthRate, file.path(RDSTablePath, paste(Project, "GrowthRateAnova.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
 saveRDS(TukeyHSDTest_GrowthRate, file.path(RDSTablePath, paste(Project, "GrowthRateTukey.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+```
+
+# Cleaning the environment
+
+```{r}
+rm(MCGrowthRateStats, model, AnovaTest_GrowthRate, TukeyHSDTest_GrowthRate)
 ```
 
 # Exstracted Exp PUR
@@ -763,7 +765,7 @@ rm(MCGrowthSP30_BA127, MCGrowthSP3090_BA127, MCGrowthSP90_BA127, MCGrowthSP90180
 
 ```{r}
 AnovaModel_GrowthRate<-rbind(ANOVAPC056, ANOVAPC077, ANOVAPE048, ANOVAPE127)
-rm(ANOVAPC056, ANOVAPC077, ANOVAPE048, ANOVAPE127)
+  rm(ANOVAPC056, ANOVAPC077, ANOVAPE048, ANOVAPE127)
 ```
 
 # Save RDS that create stats and tables
@@ -936,6 +938,22 @@ MCParamAll %>%
   theme_bw()
 ```
 
+# Calculated Anova and Tukey test from fit param
+
+```{r calculated statistics}
+# MCParamAllStats<-MCParamAll %>% 
+#   filter(Fit!="All") %>% 
+#   filter(term == "a")
+# 
+# MCParamAllStats$Fit <- factor(MCParamAllStats$Fit)
+# MCParamAllStats$Strain <- factor(MCParamAllStats$Strain)
+# 
+# # Two way Anova with interactions
+# model<-aov(estimate~Fit+Strain, data=MCParamAllStats)
+# AnovaTest_GrowthRateFitParam<-data.frame(unclass(summary(model)), check.names = FALSE, stringsAsFactors = FALSE)
+# TukeyHSDTest_GrowthRateFitParam<-TukeyHSD(model, which = c("Fit", "Strain"))
+```
+
 # Exstracting models for each fit (for each light and all light together)
 
 ```{r}
@@ -971,7 +989,7 @@ MCModelAll<-MCModelAll %>%
 rm(MCGrowthSPAllModel, MCGrowthSP30Model, MCGrowthSP90Model, MCGrowthSP180Model, MCGrowthSP300Model, MCGrowthSP900Model, GRCplatt_PredictGrowthAll, GRCplatt_PredictGrowth30, GRCplatt_PredictGrowth90, GRCplatt_PredictGrowth180, GRCplatt_PredictGrowth300, GRCplatt_PredictGrowth900)
 ```
 
-# Anova from the model - compare fit from all light to selected light
+# Anova from the model - compare fit from all light to selected one light
 
 ```{r}
 #1->All
@@ -1000,15 +1018,15 @@ MCModelAll_BA56<-MCModelAll %>%
 
 MCModelAll_BA77<-MCModelAll %>% 
   filter(Strain == "PC-rich_077") 
-  anova077_30<-anova(MCModelAll_BA56[[2]][[2]], MCModelAll_BA56[[2]][[1]])
+  anova077_30<-anova(MCModelAll_BA77[[2]][[2]], MCModelAll_BA77[[2]][[1]])
   anova077_30$FitComparison <- '30_All'
-  anova077_90<-anova(MCModelAll_BA56[[2]][[3]], MCModelAll_BA56[[2]][[1]])
+  anova077_90<-anova(MCModelAll_BA77[[2]][[3]], MCModelAll_BA77[[2]][[1]])
   anova077_90$FitComparison <- '90_All'
-  anova077_180<-anova(MCModelAll_BA56[[2]][[4]], MCModelAll_BA56[[2]][[1]])
+  anova077_180<-anova(MCModelAll_BA77[[2]][[4]], MCModelAll_BA77[[2]][[1]])
   anova077_180$FitComparison <- '180_All'
-  anova077_300<-anova(MCModelAll_BA56[[2]][[5]], MCModelAll_BA56[[2]][[1]])
+  anova077_300<-anova(MCModelAll_BA77[[2]][[5]], MCModelAll_BA77[[2]][[1]])
   anova077_300$FitComparison <- '300_All'
-  anova077_900<-anova(MCModelAll_BA56[[2]][[6]], MCModelAll_BA56[[2]][[1]])
+  anova077_900<-anova(MCModelAll_BA77[[2]][[6]], MCModelAll_BA77[[2]][[1]])
   anova077_900$FitComparison <- '900_All'
   anova077<-rbind(anova077_30, anova077_90, anova077_180, anova077_300, anova077_900)
   rm(anova077_30, anova077_90, anova077_180, anova077_300, anova077_900)
@@ -1017,153 +1035,54 @@ MCModelAll_BA77<-MCModelAll %>%
 
 MCModelAll_BA48<-MCModelAll %>% 
   filter(Strain == "PE-rich_048") 
-  anova048_30<-anova(MCModelAll_BA56[[2]][[2]], MCModelAll_BA56[[2]][[1]])
+  anova048_30<-anova(MCModelAll_BA48[[2]][[2]], MCModelAll_BA48[[2]][[1]])
   anova048_30$FitComparison <- '30_All'
-  anova048_90<-anova(MCModelAll_BA56[[2]][[3]], MCModelAll_BA56[[2]][[1]])
+  anova048_90<-anova(MCModelAll_BA48[[2]][[3]], MCModelAll_BA48[[2]][[1]])
   anova048_90$FitComparison <- '90_All'
-  anova048_180<-anova(MCModelAll_BA56[[2]][[4]], MCModelAll_BA56[[2]][[1]])
+  anova048_180<-anova(MCModelAll_BA48[[2]][[4]], MCModelAll_BA48[[2]][[1]])
   anova048_180$FitComparison <- '180_All'
-  anova048_300<-anova(MCModelAll_BA56[[2]][[5]], MCModelAll_BA56[[2]][[1]])
+  anova048_300<-anova(MCModelAll_BA48[[2]][[5]], MCModelAll_BA48[[2]][[1]])
   anova048_300$FitComparison <- '300_All'
-  anova048_900<-anova(MCModelAll_BA56[[2]][[6]], MCModelAll_BA56[[2]][[1]])
+  anova048_900<-anova(MCModelAll_BA48[[2]][[6]], MCModelAll_BA48[[2]][[1]])
   anova048_900$FitComparison <- '900_All'
   anova048<-rbind(anova048_30, anova048_90, anova048_180, anova048_300, anova048_900)
   rm(anova048_30, anova048_90, anova048_180, anova048_300, anova048_900)
   anova048$Strain <- 'PE-rich_048'
-#900 no sig different - so 2 fits: all and 900
-
-# MCModelAll_BA127<-MCModelAll %>% 
-#   filter(Strain == "PE-rich_127")
-# anova127<-anova(MCModelAll_BA127[[2]][[6]], MCModelAll_BA127[[2]][[1]])
 #all different - one fit
+
+MCModelAll_BA127<-MCModelAll %>% 
+  filter(Strain == "PE-rich_127") 
+  anova127_30<-anova(MCModelAll_BA127[[2]][[2]], MCModelAll_BA127[[2]][[1]])
+  anova127_30$FitComparison <- '30_All'
+  anova127_90<-anova(MCModelAll_BA127[[2]][[3]], MCModelAll_BA127[[2]][[1]])
+  anova127_90$FitComparison <- '90_All'
+  anova127_180<-anova(MCModelAll_BA127[[2]][[4]], MCModelAll_BA127[[2]][[1]])
+  anova127_180$FitComparison <- '180_All'
+  anova127_300<-anova(MCModelAll_BA127[[2]][[5]], MCModelAll_BA127[[2]][[1]])
+  anova127_300$FitComparison <- '300_All'
+  anova127_900<-anova(MCModelAll_BA127[[2]][[6]], MCModelAll_BA127[[2]][[1]])
+  anova127_900$FitComparison <- '900_All'
+  anova127<-rbind(anova127_30, anova127_90, anova127_180, anova127_300, anova127_900)
+  rm(anova127_30, anova127_90, anova127_180, anova127_300, anova127_900)
+  anova127$Strain <- 'PE-rich_127'
+#all different - one fit
+  
+AnovaModel_GrowthRate2<-rbind(anova056, anova077, anova048, anova127)
+  rm(anova056, anova077, anova048, anova127, MCModelAll_BA56, MCModelAll_BA77, MCModelAll_BA48, MCModelAll_BA127)
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Save RDS that create stats and tables
 
 ```{r}
+saveRDS(AnovaModel_GrowthRate2, file.path(RDSTablePath, paste(Project, "GrowthRateAnovaModel2.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
-DNaseSS<-GRCplatt_PredictGrowthCombine %>% 
-  filter(Strain == "PC-rich_056") %>% 
-  filter(PhotonDose == "PAR") %>% 
-  dplyr::select(Fit, PhotonDose_value, deltaOD_Lmu_corr) 
-
-DNase1SS <- subset(DNaseSS, Fit == 30)
-DNase2SS <- subset(DNaseSS, Fit == 900)
-
-
+saveRDS(MCParamAll, file.path(RDSTablePath, paste(Project, "GrowthRate_FitParam.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
-
-Compare non-linear model parameter estimates between conditions
-
-https://stats.stackexchange.com/questions/458195/compare-non-linear-model-parameter-estimates-between-conditions
-
-```{r}
-DNase1 <- subset(DNase, Run == 1)
-DNase2 <- subset(DNase, Run == 2)
-## fit models and extract coefficients
-m1 <- nls(density ~ SSlogis(log(conc), Asym, xmid, scal), DNase1)
-m1_coef <- tidy(m1) %>% 
-  mutate(Run = 1)
-
-m2 <- nls(density ~ SSlogis(log(conc), Asym, xmid, scal), DNase2)
-m2_coef <- tidy(m2) %>% 
-  mutate(Run = 2)
-
-pars <- rbind(m1_coef, m2_coef) %>% 
-  dplyr::filter(term == "Asym")
-
-print(pars)
-# term Estimate Std. Error  t value     Pr(>|t|) Run
-# 1    Asym 2.345182  0.0781541 30.00715 2.165539e-13   1
-# 2    Asym 2.595948  0.0646589 40.14835 5.109901e-15   2
-
-# Is there a way test if the estimate for 'Asym' from Run 2 (2.345) is significantly different than the estimate from Run 1 (2.596)?
-
-# Answers 
-# Create a model m12 consisting of separate parameters for each run and a model m0 where the parameters are the same for each run and then compare those two models using an F test. 
-
-# m1 and m2 will be used to set starting values for m12 and a0
-fo <- density ~ SSlogis(log(conc), Asym, xmid, scal)
-m1 <- nls(fo, DNase, subset = Run == 1)
-m2 <- nls(fo, DNase, subset = Run == 2)
-
-Logis <- function(x, Asym, xmid, scal) Asym / (1 + exp((xmid - x)/ scal))
-
-# Run 1 and Run 2 each have a separate set of parameters.
-# (Run is a factor whose labels don't correspond to its levels so make it numeric.)
-m12 <- nls(density ~ Logis(log(conc), Asym[Run], xmid[Run], scal[Run]),
-  transform(DNase, Run = as.numeric(as.character(Run))), 
-  subset = Run %in% 1:2, 
-  start = as.data.frame(rbind(coef(m1), coef(m2))))
-
-# Run 1 and Run 2 have the same set of parameters
-m0 <- nls(fo, DNase, subset = Run %in% 1:2)
-
-anova(m0, m12)
-
-# Analysis of Variance Table
-# 
-# Model 1: density ~ SSlogis(log(conc), Asym, xmid, scal)
-# Model 2: density ~ Logis(log(conc), Asym[Run], xmid[Run], scal[Run])
-#   Res.Df Res.Sum Sq Df   Sum Sq F value    Pr(>F)    
-# 1     29   0.096915                                  
-# 2     26   0.008478  3 0.088437  90.408 7.044e-14 ***
-# ---
-# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-
-
-# If we want to test only whether Asym differs but not whether xmid and scal are the same then create a model a0 where Asym is the same but the other parameters can differ and compare it to m12.
-
-# same Asym for Run 1 and Run 2 but other parameters separate
-a0 <- nls(density ~ Logis(log(conc), Asym, xmid[Run], scal[Run]),
-  transform(DNase, Run = as.numeric(as.character(Run))), 
-  subset = Run %in% 1:2, 
-  start = c(Asym = (coef(m1)[[1]] + coef(m2)[[1]])/2, 
-    as.data.frame(rbind(coef(m1)[-1], coef(m2)[-1]))))
-
-anova(a0, m12)
-
-# Analysis of Variance Table
-# 
-# Model 1: density ~ Logis(log(conc), Asym, xmid[Run], scal[Run])
-# Model 2: density ~ Logis(log(conc), Asym[Run], xmid[Run], scal[Run])
-#   Res.Df Res.Sum Sq Df    Sum Sq F value  Pr(>F)  
-# 1     27  0.0103246                               
-# 2     26  0.0084778  1 0.0018468  5.6639 0.02494 *
-# ---
-# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-```
-
-
-
-
-
-
-
-
-
-
 
 # Removed unneccessary df from the environment
 
 ```{r}
-rm(MCGrowthSP30, MCGrowthSP90, MCGrowthSP180, MCGrowthSP300, MCGrowthSP900, GRCplatt_PredictGrowth30, GRCplatt_PredictGrowth90, GRCplatt_PredictGrowth180, GRCplatt_PredictGrowth300, GRCplatt_PredictGrowth900, OLISSpectra, MultiCultiGrowth, GRCplatt_PredictGrowth, MultiCultiGrowthRatePURExpFit, tmaxAG, tMaxAGLines_056, tMaxAGLines_077, tMaxAGLines_048, tMaxAGLines_127)
+rm(GRCplatt_PredictGrowthPC, GRCplatt_PredictGrowthPE30, GRCplatt_PredictGrowthPE90900, MCGrowthSP, MCModelAll, AnovaModel_GrowthRate, AnovaModel_GrowthRate2, MCParamAll)
 ```
 
 # Save rds for further analysis
@@ -1190,7 +1109,9 @@ colnames(MCGrowthRateExp)
 
 
 
-# Statistics
+
+
+# Other statistics
 
 The likelihood-ratio test in statistics compares the goodness of fit of two nested regression models based on the ratio of their likelihoods, specifically one obtained by maximization over the entire parameter space and another obtained after imposing some constraint.
 To see if these two models differ significantly, we can use a likelihood ratio test with the following null and alternative hypotheses.
@@ -1198,29 +1119,28 @@ To see if these two models differ significantly, we can use a likelihood ratio t
 H0: Both the full and nested models fit the data equally well. As a result, you should employ the nested model. #jezeli nie ma roznic, to nie trzeba dodawac ekstra czynnika
 H1: The full model significantly outperforms the nested model in terms of data fit. As a result, you should use the entire model.
 
-
 ```{r}
-fullmodel <- lm(mpg ~ cyl + disp + hp + wt, data = mtcars)
-reducedmodel <- lm(mpg ~ cyl + disp, data = mtcars)
-
-library(lmtest) #Likelihood Ratio Test
-lrtest(fullmodel, reducedmodel)
+# fullmodel <- lm(mpg ~ cyl + disp + hp + wt, data = mtcars)
+# reducedmodel <- lm(mpg ~ cyl + disp, data = mtcars)
+# 
+# library(lmtest) #Likelihood Ratio Test
+# lrtest(fullmodel, reducedmodel)
 ```
 
 ANOVA testing whether the more complex model is significantly better at capturing the data than the simpler model. 
 
 ```{r}
-library(agricolae)
-data("PlantGrowth")
-plant.lm <- lm(weight ~ group, data = PlantGrowth)
-plant.av <- aov(plant.lm)
-#plant.av <- aov(weight ~ group, data = PlantGrowth) #gives the same result
-summary(plant.av)
-
-tukey.test <- TukeyHSD(plant.av)
-tukey.test
-
-summary(lm(weight ~ group, data = PlantGrowth))
+# library(agricolae)
+# data("PlantGrowth")
+# plant.lm <- lm(weight ~ group, data = PlantGrowth)
+# plant.av <- aov(plant.lm)
+# #plant.av <- aov(weight ~ group, data = PlantGrowth) #gives the same result
+# summary(plant.av)
+# 
+# tukey.test <- TukeyHSD(plant.av)
+# tukey.test
+# 
+# summary(lm(weight ~ group, data = PlantGrowth))
 ```
 
 # Stats with letters
@@ -1258,9 +1178,8 @@ multcomp statistic
 # detach("package:multcomp", unload = TRUE)
 ```
 
-
-
-
+Compare non-linear model parameter estimates between conditions
+https://stats.stackexchange.com/questions/458195/compare-non-linear-model-parameter-estimates-between-conditions
 
 
 
