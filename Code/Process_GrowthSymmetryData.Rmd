@@ -162,50 +162,37 @@ data_hlineGS12 <- data.frame(Photoperiod= c(12),facets2= c("Photoperiod~(h)"),va
 data_hlineGS16 <- data.frame(Photoperiod= c(16),facets2= c("Photoperiod~(h)"),value = c(8))
 ```
 
-# Fit the data to exponential decays
+# Filter 3 data points from stationary phase
 
-```{r fitting exponential decays, warning = FALSE}
-GScatalogMetaExp <-GScatalogMeta %>% 
-  drop_na(GS) %>%
-  filter(Phase == "Exponential") %>% 
-  select(c(GS, PARPhotonDose_day, Strain)) 
-
-# Fit the data
-fitted <- GScatalogMetaExp %>% 
-  nest(-Strain) %>%
-  mutate(
-    fit = map(data, ~nls(GS ~ SSasymp(PARPhotonDose_day, yf, y0, log_alpha), data = .)),
-    tidied = map(fit, tidy),
-    augmented = map(fit, augment)) 
-
-# Produce a table of fit parameters: y0, yf, alpha
-fitted_GS_Param<-fitted %>% 
-  unnest(tidied) %>% 
-  select(Strain, term, estimate) %>% 
-pivot_wider(., names_from = c(term), values_from = c(estimate)) %>% 
-  mutate(alpha = exp(log_alpha)) 
+```{r}
+GScatalogMeta_1<-GScatalogMeta %>%
+  filter(Phase == "Pre-stationary") %>%
+  filter(Strain != "PE-rich_127")
+GScatalogMeta_2<-GScatalogMeta %>%
+  filter(Phase == "Pre-stationary") %>%
+  filter(Strain == "PE-rich_127") %>%
+  filter(Par_ue ==300) %>%
+  filter(GS < 0.65)
+GScatalogMeta_3<-GScatalogMeta %>%
+  filter(Phase == "Pre-stationary") %>%
+  filter(Strain == "PE-rich_127") %>%
+  filter(Par_ue ==90| Par_ue ==180 | Par_ue ==900)
+GScatalogMeta_4<-GScatalogMeta %>%
+  filter(Phase == "Exponential")
+GScatalogMetaFit<-rbind(GScatalogMeta_1, GScatalogMeta_2, GScatalogMeta_3, GScatalogMeta_4)
+  rm(GScatalogMeta_1, GScatalogMeta_2, GScatalogMeta_3, GScatalogMeta_4)
 ```
 
 # Fit the data to exponential decays
-problem 127!
 
 ```{r fitting exponential decays, warning = FALSE}
-# GScatalogMetaSt<-GScatalogMeta %>% 
-#   filter(Phase == "Pre-stationary") %>% 
-#   filter(Strain == "PE-rich_127") %>%  
-#   filter(GS <= 1.2) %>% 
-#   filter(Photoperiod !=16) %>% 
-#   filter(Par_ue !=300)
-
-
-GScatalogMetaSt <-GScatalogMetaSt %>% 
+GScatalogMetaExp <-GScatalogMetaFit %>% 
   drop_na(GS) %>%
-  filter(Phase == "Pre-stationary") %>% 
-  filter(Strain == "PE-rich_127") %>% 
+  #filter(Phase == "Exponential") %>% 
   select(c(GS, PARPhotonDose_day, Strain, Phase, O2, WL)) 
 
 # Fit the data
-fitted <- GScatalogMetaSt %>% 
+fitted <- GScatalogMetaExp %>% 
   nest(-c(Strain, Phase, O2, WL)) %>%
   mutate(
     fit = map(data, ~nls(GS ~ SSasymp(PARPhotonDose_day, yf, y0, log_alpha), data = .)),
@@ -213,65 +200,59 @@ fitted <- GScatalogMetaSt %>%
     augmented = map(fit, augment)) 
 
 # Produce a table of fit parameters: y0, yf, alpha
-fitted_GS_Param<-fitted %>% 
+fitted_GS_Param<-fitted%>% 
   unnest(tidied) %>% 
   select(Strain, Phase, term, estimate) %>% 
 pivot_wider(., names_from = c(term), values_from = c(estimate)) %>% 
   mutate(alpha = exp(log_alpha)) 
 
-```
-
-
-```{r unnest, preparing df to preparing final plot, warning = FALSE}
 augmented<-fitted  %>%
   unnest(augmented) %>%
-  select(c(Strain, PARPhotonDose_day,GS, .fitted)) 
-
-GSMetaExp <-GScatalogMeta %>% 
-  filter(Phase == "Exponential") 
-
-GSMetaExpPlot <- GSMetaExp %>%
-  left_join(., augmented, by = c("Strain"="Strain", "PARPhotonDose_day"="PARPhotonDose_day", "GS"="GS"))
-
-GSMetaSt <-GScatalogMeta %>% 
-  filter(Phase == "Pre-stationary") %>% 
-  mutate(.fitted=0)
-
-GScatalogMetaFinalPlot<-rbind(GSMetaExpPlot, GSMetaSt)
-
-rm(augmented, fitted, GSMetaSt)
+  select(c(Strain, Phase, O2, WL, PARPhotonDose_day,GS, .fitted)) 
 ```
 
 # Create GS and AccLen plots
 
 ```{r create GS plot, fig.height = 8, fig.width = 8, warning = FALSE}
-data_text_y0<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"), Phase = c("Exponential"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('y0 = 2.6', 'y0 = 1.6', 'y0 = 1.2', 'y0 = 1.4'))
 
-data_text_yf<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"), Phase = c("Exponential"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('yf = 0.8', 'yf = 0.5', 'yf = 0.3', 'yf = 0.5'))
+data_text_y0Exp<- data.frame(WL = c("WW", "WW"), Phase = c("Exponential"), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('y0 = 2.6', 'y0 = 1.6', 'y0 = 1.2', 'y0 = 1.4'))
+data_text_yfExp<- data.frame(WL = c("WW", "WW"), Phase = c("Exponential"), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('yf = 0.8', 'yf = 0.5', 'yf = 0.3', 'yf = 0.5'))
+data_text_lambdaExp<- data.frame(WL = c("WW", "WW"), Phase = c("Exponential"), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('\u03BB = 3.4e-07', '\u03BB = 1.7e-07', '\u03BB = 1.2e-07', '\u03BB = 2.1e-07'))
 
-data_text_lambda<- data.frame(facetsPhase = c("Phase~of~growth", "Phase~of~growth"), Phase = c("Exponential"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('\u03BB = 3.4', '\u03BB = 1.7', '\u03BB = 1.2', '\u03BB = 2.1'))
+data_text_y0St<- data.frame(WL = c("WW", "WW"), Phase = c("Pre-stationary"), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('y0 = NA', '  y0 = 3.8', 'y0 = 0.6', 'y0 = 0.6'))
+data_text_yfSt<- data.frame(WL = c("WW", "WW"), Phase = c("Pre-stationary"), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('yf = 0.7', 'yf = 0.4', 'yf = 0.3', 'yf = 0.2'))
+data_text_lambdaSt<- data.frame(WL = c("WW", "WW"), Phase = c("Pre-stationary"), O2=c(21, 21, 21, 21), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"),  label = c('\u03BB = NA', '     \u03BB = 1.8e-06', '    \u03BB = 7.8e-08', '    \u03BB = 6.3e-08'))
 
-# data_segment<- data.frame(x=1000000,y=0,xend=26000000,yend=0, facetsPhase = c("Phase~of~growth"), Phase = c("Pre-stationary", "Pre-stationary", "Pre-stationary", "Pre-stationary"), facetsStrain=c("Strain", "Strain", "Strain", "Strain"), Strain  = c("PC-rich_056", "PC-rich_077", "PE-rich_048", "PE-rich_127"))
+
+WL.labs <- c("Phase of growth")
+names(WL.labs) <- c("WW")
+O2.labs <- c("Strain")
+names(O2.labs) <- c(21)
 
 scientific_10 <- function(x) {   parse(text=gsub("e\\+*", " %*% 10^", scales::scientific_format()(x))) }
 lab1=c(expression("8 h"), expression("12 h"), expression("16 h"))
 lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expression("300 µE"), expression("900 µE"))
 
-  ggplot(GScatalogMetaFinalPlot, aes(x = PARPhotonDose_day, y = meanGS)) +
-  geom_point(aes(x = PARPhotonDose_day, y = meanGS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T, GScatalogMetaFinalPlot) +
-  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanGS - sdGS, ymax = meanGS + sdGS, colour = as.factor(Par_ue)), show.legend = F, width=0, size=0.3, GScatalogMetaFinalPlot) +
-  geom_point(aes(x = PARPhotonDose_day, y = GS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, alpha = 0.8, show.legend = F, GScatalogMetaFinalPlot) +
-  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, GSMetaExpPlot) +
+  ggplot(GScatalogMetaFit, aes(x = PARPhotonDose_day, y = meanGS)) +
+  geom_point(aes(x = PARPhotonDose_day, y = meanGS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 3.5, alpha = 0.8, show.legend = T, GScatalogMetaFit) +
+  geom_errorbar(aes(x = PARPhotonDose_day, ymin = meanGS - sdGS, ymax = meanGS + sdGS, colour = as.factor(Par_ue)), show.legend = F, width=0, size=0.3, GScatalogMetaFit) +
+  geom_point(aes(x = PARPhotonDose_day, y = GS, colour = as.factor(Par_ue), shape = as.factor(Photoperiod)), size = 1, alpha = 0.8, show.legend = F, GScatalogMetaFit) +
+  geom_line(aes(PARPhotonDose_day, .fitted), colour = "gray20", size=0.7, show.legend = F, augmented) +
   geom_hline(yintercept = 1, linetype="dashed", size=0.4, colour = "cornsilk4") +
-  geom_text(data=data_text_y0, aes(x=24000000, y=3, label=label), size=3.5) +
-  geom_text(data=data_text_yf, aes(x=24000000, y=2.7, label=label), size=3.5) +
-  geom_text(data=data_text_lambda, aes(x=24000000, y=2.4, label=label), size=3.5) +
-  #geom_segment(data=data_segment, aes(x=x,y=y,yend=yend,xend=xend),inherit.aes=FALSE)+
+
+  geom_text(data=data_text_y0Exp, aes(x=23000000, y=3, label=label), size=3.5) +
+  geom_text(data=data_text_yfExp, aes(x=23000000, y=2.5, label=label), size=3.5) +
+  geom_text(data=data_text_lambdaExp, aes(x=24000000, y=2.0, label=label), size=3.5) +
+  
+  geom_text(data=data_text_y0St, aes(x=2400000, y=3, label=label), size=3.5) +
+  geom_text(data=data_text_yfSt, aes(x=2400000, y=2.5, label=label), size=3.5) +
+  geom_text(data=data_text_lambdaSt, aes(x=2400000, y=2.0, label=label), size=3.5) +
+    
   labs(y = "Diel growth symmetry (AccLen/DecLen ratio)", x = "Photon dose ( µmol photons "~m^-2~""~d^-1~")") +
   scale_shape_manual(values = c(15, 16, 17), name="", labels = lab1) +
   scale_colour_manual(values = c("darkslategray", "lightblue4", "hotpink4", "indianred3", "orange1"), name="", labels = lab2) +
   scale_x_continuous(label=scientific_10) +
-  ggh4x::facet_nested(cols = vars(facetsPhase, Phase), rows = vars(facetsStrain, Strain), labeller = label_parsed) +
+  ggh4x::facet_nested(rows = vars(O2, Strain), cols = vars(WL, Phase), labeller = labeller(WL = WL.labs, O2 = O2.labs)) +
   theme_bw() +
   theme(panel.grid.minor = element_blank(),
         panel.grid.major = element_blank(),
