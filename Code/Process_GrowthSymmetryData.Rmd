@@ -54,6 +54,7 @@ DataOut <- file.path("..", "Data", "ProcessedData", "ProcessedGrowthSymmetryData
 
 PlotsPath <- file.path("..", "Output", "Plots")
 RDSPlotPath <- file.path("..", "Output", "PlotsRDS")
+RDSTablePath <- file.path("..", "Output", "TablesRDS")
 
 FileID <- "Smooth"
 FileEncode <- "UTF-8" 
@@ -186,13 +187,13 @@ GScatalogMetaFit<-rbind(GScatalogMeta_1, GScatalogMeta_2, GScatalogMeta_3, GScat
 # Fit the data to exponential decays
 
 ```{r fitting exponential decays, warning = FALSE}
-GScatalogMetaExp <-GScatalogMetaFit %>% 
+GScatalogMetaExpSt <-GScatalogMetaFit %>% 
   drop_na(GS) %>%
   #filter(Phase == "Exponential") %>% 
   select(c(GS, PARPhotonDose_day, Strain, Phase, O2, WL)) 
 
 # Fit the data
-fitted <- GScatalogMetaExp %>% 
+fitted <- GScatalogMetaExpSt %>% 
   nest(-c(Strain, Phase, O2, WL)) %>%
   mutate(
     fit = map(data, ~nls(GS ~ SSasymp(PARPhotonDose_day, yf, y0, log_alpha), data = .)),
@@ -200,7 +201,7 @@ fitted <- GScatalogMetaExp %>%
     augmented = map(fit, augment)) 
 
 # Produce a table of fit parameters: y0, yf, alpha
-fitted_GS_Param<-fitted%>% 
+fitted_GS_Param<-fitted %>% 
   unnest(tidied) %>% 
   select(Strain, Phase, term, estimate) %>% 
 pivot_wider(., names_from = c(term), values_from = c(estimate)) %>% 
@@ -209,6 +210,8 @@ pivot_wider(., names_from = c(term), values_from = c(estimate)) %>%
 augmented<-fitted  %>%
   unnest(augmented) %>%
   select(c(Strain, Phase, O2, WL, PARPhotonDose_day,GS, .fitted)) 
+
+rm(GScatalogMetaExpSt, fitted)
 ```
 
 # Create GS and AccLen plots
@@ -273,13 +276,54 @@ lab2=c(expression("30 µE"), expression("90 µE"), expression("180 µE"), expres
 # Cleaning the environment
 
 ```{r}
-rm(data_text_y0, data_text_yf, data_text_lambda)
+rm(data_text_y0Exp, data_text_yfExp, data_text_lambdaExp, data_text_y0St, data_text_yfSt, data_text_lambdaSt)
 ```
 
 # Save plot 
 
 ```{r save plot}
 ggsave(file = file.path(PlotsPath, paste("GS_Plot",".png",sep = "")), height=10, width= 8,  dpi = 300, limitsize = TRUE)
+```
+
+# Calculated Anova and Tukey test from exponential decay parameters
+
+```{r calculated statistics}
+
+fitted_GS_Param[2, 4] = NA
+fitted_GS_Param[2, 6] = NA
+
+GSStats<-fitted_GS_Param 
+GSStats2<-rbind(GSStats, GSStats)
+GSStats2$Strain <- factor(GSStats2$Strain)
+GSStats2$Phase <- factor(GSStats2$Phase)
+
+# Two-way Anova
+model<-aov(y0~Strain*Phase, data=GSStats2)
+AnovaTest_GS_y0<-data.frame(unclass(summary(model)), check.names = FALSE, stringsAsFactors = FALSE)
+#TukeyHSDTest_GS_y0<-TukeyHSD(model, which = c("Strain", "Phase"))
+AnovaTest_GS_y0$Parameter <- 'y0'
+
+model<-aov(yf~Strain*Phase, data=GSStats2)
+AnovaTest_GS_yf<-data.frame(unclass(summary(model)), check.names = FALSE, stringsAsFactors = FALSE)
+#TukeyHSDTest_GS_yf<-TukeyHSD(model, which = c("Strain", "Phase"))
+AnovaTest_GS_yf$Parameter <- 'yf'
+
+model<-aov(alpha~Strain*Phase, data=GSStats2)
+AnovaTest_GS_alpha<-data.frame(unclass(summary(model)), check.names = FALSE, stringsAsFactors = FALSE)
+#TukeyHSDTest_GS_alpha<-TukeyHSD(model, which = c("Strain", "Phase"))
+AnovaTest_GS_alpha$Parameter <- 'alpha'
+
+AnovaTest_GS_Param<-rbind(AnovaTest_GS_y0, AnovaTest_GS_yf, AnovaTest_GS_alpha)
+
+  rm(AnovaTest_GS_y0, AnovaTest_GS_yf, AnovaTest_GS_alpha, GSStats, GSStats2, model)
+```
+
+# Save RDS that create stats and tables
+
+```{r}
+saveRDS(AnovaTest_GS_Param, file.path(RDSTablePath, paste(Project, "GSAnova.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+
+# saveRDS(TukeyHSDTest_y0_alpha, file.path(RDSTablePath, paste(Project, "GSTukey_y0.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 ```{r AccLen Plot, fig.height = 8, fig.width = 8, warning = FALSE}
@@ -505,14 +549,19 @@ ggsave(file = file.path(PlotsPath, paste("TDG_SupPlot",".png",sep = "")), height
 rm(data_hlineGS8, data_hlineGS12, data_hlineGS16, GScatalog, GScatalogMetaExp,  CultureCatalog, tMaxAGLines_056, tMaxAGLines_077, tMaxAGLines_048, tMaxAGLines_127, GScatalogMetaFinalPlot, GSMetaExp, GSMetaExpPlot, data_text_8, data_text_12, data_text_16)
 ```
 
-# Save rds for further analysis
+# Save Rds that create plot
 
-```{r save rds}
-saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Processed_GrowthSymmetryData.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
-
+```{r}
 saveRDS(GScatalogMeta, file.path(RDSPlotPath, paste(Project, "Plot_GrowthSymmetry_1.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 
 saveRDS(fitted_GS_Param, file.path(RDSPlotPath, paste(Project, "Plot_GrowthSymmetry_2.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
+```
+
+
+# Save Rds for further analysis
+
+```{r save Rds}
+saveRDS(GScatalogMeta, file.path(DataOut, paste(Project, "Processed_GrowthSymmetryData.Rds", sep = "_"), fsep = .Platform$file.sep), ascii = FALSE, version = NULL, compress = "xz", refhook = NULL)
 ```
 
 # Variable names used in Data Dictionary
