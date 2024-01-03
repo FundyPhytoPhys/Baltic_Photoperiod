@@ -150,9 +150,10 @@ Using the 5-minute time interval, the absolute growth increment (AGI) was comput
 COMMENT: Fix line colour coding!!!
 Panel B- Could be replaced by the short term exponential growth rate take over 1 h periods using a 'roll' function. (lnOD680h - lnOD680h-1)/1 h
 
+#XXXXRemovve Absolute growth increment, replace through out with First Derivative (hourly)
 ```{r AbsoluteGrowth, fig.cap = AbsoluteGrowth_cap, fig.height = 6, fig.width = 8, echo = FALSE}
 AbsoluteGrowth_cap<- glue("A) Example of growth (OD~680~, thin black line) of a *Synechococcus* sp. strain fit with logistic growth curve fit (red).  Thin grey line shows the first derivative (taken over 1 h increments) for growth. Within a diel period the acceleration length (AccLen) is the time between the start of the photoperiod and the time to reach the diel maximum of the first derivative of growth; tMaxDG, marked with dotted vertical lines. Deceleration length (DecLen) is then the time from tMaxDG to the end of the photoperiod. We then define the diel growth symmetry (GS) as AccLen/DecLen. The solid vertical line marks the time for the of the hourly first derivative, used as to indicate the transition from near-exponential to pre-stationary growth phases.", .sep = " ")
-knitr::include_graphics(file.path( FiguresFCellSize_cap<- glue("RepresentatP,"AbsoluteGrowth.png"))   #XXXXRemovve Absolute growth increment, replace through out with First Derivative (hourly)
+knitr::include_graphics(file.path(FiguresFCellSize_cap<- glue(RepresentatP,"AbsoluteGrowth.png")))   
 ```
 
 Based on the first derivative (taken over 1 h increments) for growth were determined the acceleration length (AccLen), defined as the time (expressed in h) between the start of the photoperiod and the time of the tMaxDG. Decleration length (DecLen) is the time from tMaxDG to the end of the photoperiod. We define the diel growth symmetry (GS) as AccLen/DecLen (Eq. \@ref(eq:GS)).
@@ -201,10 +202,10 @@ Using whole-cell absorbance spectra of *Synechococcus* sp. cultures as described
 \end{equation}
 
 
-
+XXXDrop PCB-rich from pigment namesXXXX
 ```{r OlisSpectra2, fig.cap = OlisSpectra2_cap, fig.height = 6, fig.width = 8, echo = FALSE}
 OlisSpectra2_cap<- glue("Example of representative whole-cell absorbance spectra of PC-rich (solid green lines) or PE-rich (dashed red lines)cultures of *Synechococcus* sp., normalized to absorbance at 440 nm, measured from the  the  exponential or pre-stationary phases of growth, together with emission spectra of the white LED lamps (Photosynthetically Active Radiation (PAR), normalized to emission at 440 nm (light gray area),  of 300 µmol photons m^−2^s^−1^) used for culture growth. Estimated Photosynthetically Usable Radiation (PUR) is shown as a  green area for the PC-rich strain and a red area for teh PE-rich strain. Peaks characteristic of known pigments are labelled; Chl a, chlorophyll a; PC, phycocyanin; PEB-rich PE, phycoerythin-rich phycoerythrin; PUB-rich PE, phycourobilin-rich phycoerythrin,Car, carotenoids.", .sep = " ")
-knitr::include_graphics(file.path( FiguresFP,"OlisSpectra2.png")) XXXDrop PCB-rich from pigment namesXXXX
+knitr::include_graphics(file.path( FiguresFP,"OlisSpectra2.png")) 
 ```
 
 ## Pigment content analysis {.unnumbered}
