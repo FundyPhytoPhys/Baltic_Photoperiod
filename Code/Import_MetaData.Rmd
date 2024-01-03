@@ -63,6 +63,11 @@ CultureCatalog <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto
   filter(str_detect(SampleID,  ProjectRows)) %>% 
   select(all_of(ProjectCols))          
 ```
+# Remove a unrelated character (1899-12-30) in data frame column
+
+```{r remove a unrelated character}
+CultureCatalog$ExpStartTime<-gsub("1899-12-30 ","",as.character(CultureCatalog$ExpStartTime))
+```
 
 # Filter MetaData for specific project
 

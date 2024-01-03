@@ -1,5 +1,5 @@
 ---
-title: "Processed_MCData"
+title: "Merge_MCData"
 author:
 - Laurel Genge
 - Carlie Barnhill
@@ -38,7 +38,7 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 # Introduction
 
-Processed_MCData.Rmd processes and combines all .Rds from Data/ProcessedData/ProcessedMCData folder.
+Merge_MCData.Rmd processes and combines all .Rds from Data/ProcessedData/ProcessedMCData folder.
 This .Rmd generates PICO_NestedFitsData.Rds and PICO_LongerFitsData.Rds (both stored in Data/CleanData/CleanedMCData folder). 
 
 # Materials and Methods
