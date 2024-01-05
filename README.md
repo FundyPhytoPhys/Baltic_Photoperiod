@@ -48,7 +48,7 @@ Light intensity, PAR, PC-rich strain, PE-rich strain, Photic regime, Photoperiod
 - Sensitive Data Flag - Indigenous Partnerships: NO
 - Sensitive Data Flag - Government Partnerships: NO
 - Sensitive Data Flag - Industry Partnerships: NO
-- Access Restrictions - NA
+- Access Restrictions - NO
 
 ## Software  
 
@@ -126,7 +126,7 @@ This .Rmd implements logistic growth curve fits to MultiCulti growth trajectorie
 
 - Process_SolisensePigmentsData.Rmd processes and combines Baltic_Photoperiod_Imported_SolisenseDarkafterLight.Rds and Baltic_Photoperiod_Imported_SolisenseLight.Rds from Data/ImportedData/ImportedSolisenseData folder. This .Rmd generates Baltic_Photoperiod_Processed_SolisensePigmentsExp.Rds (stored in Data/ProcessedData/ProcessedSolisenseData folder) and three plots: Sigma_SupPlot.png, SigmavsPigments590_Plot, SigmavsPigments445_SupPlot.png (stored in Output/Plots folder).
 
-- SynechococcusPhotoperiod_MS.Rmd contains the latest version of the manuscript.
+- BalticPhotoperiod_MS.Rmd contains the latest version of the manuscript.
 
 ### Data/CleanData
 
